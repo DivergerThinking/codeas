@@ -1,9 +1,14 @@
 import ast
-from typing import List
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from divergen.codebase_manager.entity import Entity
+class Entity(BaseModel):
+    name: str
+    label: Literal["class", "function", "method"]
+    source_code: str
+    docstring: Optional[str]
+    node: object
 
 class ModuleParser(ast.NodeVisitor, BaseModel):
     """NOTE: currently only supports classes with one level of nested
@@ -11,12 +16,12 @@ class ModuleParser(ast.NodeVisitor, BaseModel):
     Nested functions with more than one level of nesting will be ignored, as
     well as nested class methods.
     """
-    path: str = ""
+    file_path: str
     source_code: str = ""
     entities: List[Entity] = Field(default_factory=list)
     
-    def model_post_init(self, __context):
-        with open(self.path) as source:
+    def parse_file(self):
+        with open(self.file_path) as source:
             content = ast.parse(source.read())
             self.source_code = ast.unparse(content)
             self.visit(content)

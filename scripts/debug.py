@@ -1,6 +1,8 @@
-from divergen.codebase_assistant import CodebaseAssistant
+from divergen import CodebaseAssistant, CodebaseManager
 
-code_assist = CodebaseAssistant(
-    code_manager={"source_dir":"./src/"}
-)
-code_assist.generate_docstrings()
+codebase_assistant = CodebaseAssistant(source_dir="./src/")
+codebase_assistant.generate_docstrings()
+codebase_assistant.apply_changes()
+codebase_assistant.revert_changes()
+codebase_assistant.reject_changes()
+print("ok")
