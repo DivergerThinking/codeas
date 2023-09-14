@@ -1,0 +1,10 @@
+_type: prompt
+input_variables:
+  ["code"]
+template: |
+  Generate docstrings for the following python code wherever necessary.
+  For classes, do not include private attributes and methods in the docstrings.
+  The docstrings should be in numpy format.
+  Only return the code back, no other description.
+
+  {code}

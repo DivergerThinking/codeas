@@ -1,22 +1,13 @@
-from langchain import PromptTemplate
+import os
+
+from pydantic import BaseModel
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.fake import FakeMessagesListChatModel
 from langchain.schema import HumanMessage, AIMessage
+from langchain.prompts import load_prompt
 
 from divergen.prompt_manager.output_parsers import PythonOutputParser
 
-GENERATE_DOCSTRING = """
-Generate docstrings for the following python code wherever necessary.
-For classes, do not include private attributes and methods in the docstrings.
-The docstrings should be in numpy format.
-Only return the code back, no other description.
-
-{code}
-"""
-
-PROMPT_TEMPLATES = {
-    "generate_docstring": GENERATE_DOCSTRING
-}
 
 OUTPUT_PARSERS = {
     "python_output": PythonOutputParser
@@ -28,17 +19,18 @@ MODELS = {
 }
 
 
-class PromptManager:
+class PromptManager(BaseModel):
+    prompt_library: str
+
     def execute(
-        self, 
+        self,
         template_name: str, 
         template_inputs: dict,
         model_name: object = "chat-openai",
         model_params: dict = None,
         parser_name: str = None
     ):
-        template = self.get_template(template_name)
-        prompt_template = PromptTemplate.from_template(template)
+        prompt_template = load_prompt(os.path.join(self.prompt_library, template_name))
         prompt = prompt_template.format(**template_inputs)    
         model = self.get_model(model_name, model_params)
         model_output = model([HumanMessage(content=prompt)])
@@ -66,9 +58,3 @@ class PromptManager:
             return OUTPUT_PARSERS[parser_name]()
         except KeyError:
             raise ValueError(f"Parser {parser_name} not found")
-    
-    def get_template(self, template_name: str):
-        try:
-            return PROMPT_TEMPLATES[template_name]
-        except KeyError:
-            raise ValueError(f"Template {template_name} not found")

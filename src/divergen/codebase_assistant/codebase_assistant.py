@@ -7,7 +7,7 @@ from divergen.prompt_manager import PromptManager
 class CodebaseAssistant(BaseModel, arbitrary_types_allowed=True):
     source_dir: str
     backup_dir: str = ".backup"
-    prompt_manager: PromptManager = PromptManager()
+    prompt_manager: PromptManager
     codebase_manager: CodebaseManager = CodebaseManager()
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
@@ -24,7 +24,7 @@ class CodebaseAssistant(BaseModel, arbitrary_types_allowed=True):
         for module in self.codebase_manager.parse_modules(self.source_dir):
             for entity in module.entities:
                 model_output = self.prompt_manager.execute(
-                    template_name="generate_docstring", 
+                    template_name="generate-docstring.yaml", 
                     template_inputs={"code": entity.source_code},
                     model_name=model_name,
                     model_params=model_params,
