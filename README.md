@@ -38,8 +38,9 @@ code_assist.generate_docstrings()
 
 ## Limitations
 
-### General 
-- only classes and standalone functions are retrieved (full modules, global constants, etc. are not).
+### General
+- currently only designed for src/ codebase, parsing .md (/docs) and other file types /assets is not yet included.
 
 ### Docstring generation
 - all classes and functions are passed to the API to ask for docstrings, even if some of them already have docstrings
+- asking to generate docstring only for a specific method is currently still buggy

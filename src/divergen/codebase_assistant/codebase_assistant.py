@@ -1,40 +1,73 @@
 import os
-from pydantic import BaseModel, PrivateAttr
+from pydantic import PrivateAttr
 
 from divergen.codebase_manager import CodebaseManager
 from divergen.prompt_manager import PromptManager
 
-class CodebaseAssistant(BaseModel, arbitrary_types_allowed=True):
-    source_dir: str
+class CodebaseAssistant(CodebaseManager):
     backup_dir: str = ".backup"
     prompt_manager: PromptManager
-    codebase_manager: CodebaseManager = CodebaseManager()
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
     
     def generate_docstrings(
         self,
-        model_name: str = "chat-openai",
-        model_params: dict = None,
-        parser_name: str = "python_output",
+        entity_name: str = None,
+        module_name: str = None,
         preview: bool = True
     ):
         self.reset_codebase()
-        for module in self.codebase_manager.parse_modules(self.source_dir):
-            for entity in module.entities:
-                model_output = self.prompt_manager.execute(
-                    template_name="generate-docstring.yaml", 
-                    template_inputs={"code": entity.source_code},
-                    model_name=model_name,
-                    model_params=model_params,
-                    parser_name=parser_name
-                )
-                module.source_code = module.source_code.replace(
-                    entity.source_code, model_output
-                )
-            self.write_to_file(module.source_code, module.file_path, preview)
-            break
+        self.parse_modules()
+        if entity_name is not None:
+            self.generate_entity_docstrings(entity_name, module_name, preview)
+        elif module_name is not None:
+            self.generate_module_docstrings(module_name, preview)
+        else:
+            self.generate_codebase_docstrings(preview)
+    
+    def generate_entity_docstrings(self, entity_name, module_name=None, preview=True):
+        if module_name is not None:
+            module_path = self.get_module_path(module_name)
+            module_source_code = self.get_module_source_code(module_name)
+            entity_source_code = self.get_entity_source_code(entity_name, module_name)
+        else:
+            module_path = self.get_entity_module_path(entity_name)
+            module_source_code = self._modules[module_path].source_code
+            entity_source_code = self.get_entity_source_code(entity_name)
+        model_output = self.execute_generate_docstring_template(
+            template_inputs={"code": entity_source_code}
+        )
+        self.write_to_file(
+            content=module_source_code.replace(entity_source_code, model_output),
+            file_path=module_path,
+            preview=preview
+        )
+        
+    def generate_module_docstrings(self, module_name, preview=True):
+        module_path = self.get_module_path(module_name)
+        module_source_code = self.get_module_source_code(module_name)
+        model_output = self.execute_generate_docstring_template(
+            template_inputs={"code": module_source_code}
+        )
+        self.write_to_file(
+            content=module_source_code.replace(module_source_code, model_output),
+            file_path=module_path,
+            preview=preview
+        )
+        
+    def generate_codebase_docstrings(self, preview):
+        for module_name in self.get_modules_names():
+            self.generate_module_docstrings(module_name, preview)
+    
+    def execute_generate_docstring_template(self, template_inputs):
+        return self.prompt_manager.execute(
+            template_name="generate-docstring.yaml", 
+            template_inputs=template_inputs,
+            model_name="fake", # chat-openai
+            model_params=None,
+            parser_name="python_output"
+        )
     
     def reset_codebase(self):
         self.remove_backup_files()
@@ -54,7 +87,7 @@ class CodebaseAssistant(BaseModel, arbitrary_types_allowed=True):
     def parse_model_output(self, model_output: str):
         return model_output.replace("```python", "").replace("```", "")
 
-    def write_to_file(self, code: str, file_path: str, preview: bool = True):
+    def write_to_file(self, content: str, file_path: str, preview: bool = True):
         self._target_files.append(file_path)
         
         if preview:
@@ -62,7 +95,7 @@ class CodebaseAssistant(BaseModel, arbitrary_types_allowed=True):
             self._preview_files.append(file_path)
 
         with open(file_path, "w") as f:
-            f.write(code)
+            f.write(content)
     
     def apply_changes(self, backup: bool = True):
         if backup:
