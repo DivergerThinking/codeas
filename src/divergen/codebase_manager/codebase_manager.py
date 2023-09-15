@@ -13,11 +13,10 @@ class CodebaseManager(BaseModel):
         codebase_source_code = ''
         for module_path, module_content in self._modules.items():
             codebase_source_code += (
-                f"""===========================
-                Code for module {module_path}:
-                ============================
-                {module_content.source_code}\n
-                """
+                f"\n\n===========================\n"
+                + f"Code for module {module_path}:\n"
+                + "===========================\n\n"
+                + f"{module_content.source_code}"
             )
         return codebase_source_code
     

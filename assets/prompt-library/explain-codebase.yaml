@@ -1,0 +1,7 @@
+_type: prompt
+input_variables:
+  ["code"]
+template: |
+  Explain the following python code:
+
+  {code}

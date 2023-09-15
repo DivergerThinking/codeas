@@ -22,7 +22,7 @@ MODELS = {
 class PromptManager(BaseModel):
     prompt_library: str
 
-    def execute(
+    def execute_template(
         self,
         template_name: str, 
         template_inputs: dict,
@@ -39,6 +39,10 @@ class PromptManager(BaseModel):
         else:
             parser = self.get_parser(parser_name)
             return parser.parse(output=model_output.content)
+    
+    def build_template(self, template_name, template_inputs):
+        prompt_template = load_prompt(os.path.join(self.prompt_library, template_name))
+        return prompt_template.format(**template_inputs)  
     
     def get_model(self, model_name: str, model_params: dict = None):
         try:

@@ -1,5 +1,6 @@
 import os
 from pydantic import PrivateAttr
+import pyperclip
 
 from divergen.codebase_manager import CodebaseManager
 from divergen.prompt_manager import PromptManager
@@ -10,6 +11,33 @@ class CodebaseAssistant(CodebaseManager):
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
+    
+    def explain_codebase(
+        self,
+        entity_name: str = None,
+        module_name: str = None,
+        copy_to_clipboard: bool = True
+    ):
+        self.reset_codebase()
+        self.parse_modules()
+        if entity_name is not None:
+            source_code = self.get_entity_source_code(entity_name, module_name)
+        elif module_name is not None:
+            source_code = self.get_module_source_code(module_name)
+        else:
+            source_code = self.get_codebase_source_code()
+        
+        if copy_to_clipboard:
+            prompt = self.prompt_manager.build_template(
+                template_name="explain-codebase.yaml", 
+                template_inputs={"code":source_code}
+            )
+            pyperclip.copy(prompt)
+        else:
+            return self.execute_generate_docstring_template(
+                template_inputs={"code":source_code}
+            )
+            
     
     def generate_docstrings(
         self,
@@ -61,12 +89,23 @@ class CodebaseAssistant(CodebaseManager):
             self.generate_module_docstrings(module_name, preview)
     
     def execute_generate_docstring_template(self, template_inputs):
-        return self.prompt_manager.execute(
+        return self.prompt_manager.execute_template(
             template_name="generate-docstring.yaml", 
             template_inputs=template_inputs,
-            model_name="fake", # chat-openai
+            # model_name="fake",
+            model_name = "chat-openai",
             model_params=None,
             parser_name="python_output"
+        )
+    
+    def execute_explain_codebase_template(self, template_inputs):
+        return self.prompt_manager.execute_template(
+            template_name="explain-codebase.yaml", 
+            template_inputs=template_inputs,
+            # model_name="fake", 
+            model_name = "chat-openai",
+            model_params=None,
+            parser_name=None
         )
     
     def reset_codebase(self):
