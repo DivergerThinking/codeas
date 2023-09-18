@@ -1,0 +1,8 @@
+_type: prompt
+input_variables:
+  ["code"]
+template: |
+  Generate a docstring for the following python code. 
+  Only return the docstring, not the rest of the code.
+
+  {code}

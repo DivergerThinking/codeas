@@ -1,4 +1,12 @@
-from divergen import CodebaseAssistant, CodebaseManager
+from divergen import CodebaseAssistant, PromptManager
+
+prompt_manager = PromptManager(prompt_library="./assets/prompt-library")
+print(
+    prompt_manager.build_template(
+        template_name="explain-codebase.yaml", 
+        template_inputs={"code":"def function: ..."}
+    )
+)
 
 codebase_assistant = CodebaseAssistant(
     source_dir="./src/",
