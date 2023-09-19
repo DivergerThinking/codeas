@@ -12,6 +12,21 @@ class CodebaseAssistant(CodebaseManager):
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
     
+    def execute(self, action, preview=True, **user_input):
+        self.reset_codebase()
+        output = self.prompt_manager.execute_prompt(action, **user_input)
+        # postprocessors
+        self.write_to_file(
+            content=module_source_code.replace(entity_source_code, output),
+            file_path=module_path,
+            preview=preview
+        )
+    
+    def copy_prompt(self, action, **user_input):
+        self.reset_codebase()
+        prompt = self.prompt_manager.build_prompt(action, **user_input)
+        pyperclip.copy(prompt)
+        
     def explain_codebase(
         self,
         entity_name: str = None,
@@ -19,19 +34,9 @@ class CodebaseAssistant(CodebaseManager):
         copy_to_clipboard: bool = True
     ):
         self.reset_codebase()
-        self.parse_modules()
-        if entity_name is not None:
-            source_code = self.get_entity_source_code(entity_name, module_name)
-        elif module_name is not None:
-            source_code = self.get_module_source_code(module_name)
-        else:
-            source_code = self.get_codebase_source_code()
-        
+        prompt = self.prompt_manager.build_prompt()
         if copy_to_clipboard:
-            prompt = self.prompt_manager.build_template(
-                template_name="explain-codebase.yaml", 
-                template_inputs={"code":source_code}
-            )
+            prompt = self.prompt_manager.build_prompt_template()
             pyperclip.copy(prompt)
         else:
             return self.execute_generate_docstring_template(
@@ -52,7 +57,7 @@ class CodebaseAssistant(CodebaseManager):
         elif module_name is not None:
             self.generate_module_docstrings(module_name, preview)
         else:
-            self.generate_codebase_docstrings(preview)
+            raise ValueError("Either entity_name or module_name must be provided to explain_codebase")
     
     def generate_entity_docstrings(self, entity_name, module_name=None, preview=True):
         if module_name is not None:

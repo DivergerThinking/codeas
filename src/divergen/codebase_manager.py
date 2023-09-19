@@ -3,22 +3,11 @@ import os
 from typing import Dict
 
 from pydantic import BaseModel, PrivateAttr
-from divergen.codebase_manager.module_parser import ModuleParser
+from divergen.module_parser import ModuleParser
 
 class CodebaseManager(BaseModel):
     source_dir: str
     _modules: Dict[str, ModuleParser] = PrivateAttr(default_factory=dict)
-    
-    def get_codebase_source_code(self):
-        codebase_source_code = ''
-        for module_path, module_content in self._modules.items():
-            codebase_source_code += (
-                f"\n\n===========================\n"
-                + f"Code for module {module_path}:\n"
-                + "===========================\n\n"
-                + f"{module_content.source_code}"
-            )
-        return codebase_source_code
     
     def get_module_source_code(self, module_name):
         module_path = self.get_module_path(module_name)
