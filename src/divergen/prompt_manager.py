@@ -1,11 +1,14 @@
-from typing import Dict
 import os
-from langchain.prompts.chat import SystemMessage
-from langchain.prompts import load_prompt, ChatPromptTemplate, HumanMessagePromptTemplate, BasePromptTemplate
+from typing import Dict
+
+import pyperclip
 from langchain.chains import LLMChain
+from langchain.prompts import (ChatPromptTemplate,
+                               HumanMessagePromptTemplate, load_prompt)
+from langchain.prompts.chat import SystemMessage
 from pydantic import BaseModel
 
-from divergen.config import PromptConfig, DEFAULT_CONFIGS
+from divergen.config import DEFAULT_CONFIGS, PromptConfig
 
 
 class PromptManager(BaseModel):
@@ -19,8 +22,6 @@ class PromptManager(BaseModel):
             llm=self.prompt_configs[action].model,
             memory=self.prompt_configs[action].memory
         )
-        retriever = self.prompt_configs[action].retriever
-        user_input = retriever.retrieve(**user_input)
         return chain.run(**user_input)
     
     def build_prompt_template(self, action):
@@ -63,3 +64,7 @@ class PromptManager(BaseModel):
             return f"{system_prompt}\n{user_prompt}"
         else:
             return user_prompt
+
+    def copy_prompt(self, action, **user_input):
+        prompt = self.build_prompt(action, **user_input)
+        pyperclip.copy(prompt)
