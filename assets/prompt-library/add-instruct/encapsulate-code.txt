@@ -1,0 +1,6 @@
+Any code which you output should be encapsulated in <code></code>. Example:
+
+<code>
+def hello_world():
+    print("hello world")
+</code>

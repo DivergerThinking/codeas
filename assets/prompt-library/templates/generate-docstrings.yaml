@@ -1,0 +1,8 @@
+context:
+  - context/modify-codebase
+  - context/{code}
+request:
+  - request/generate-docstrings
+additional_instructions:
+  - add-instruct/return-code-only
+  - add-instruct/return-entire-code

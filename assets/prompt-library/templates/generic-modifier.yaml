@@ -1,0 +1,12 @@
+format:
+  - format/request-format
+tone:
+  - tone/coding-expert
+context:
+  - context/modify-codebase
+  - context/{code}
+request:
+  - request/generate-docstring
+add_instruct:
+  - add-instruct/return-code-only
+  - add-instruct/return-entire-code
