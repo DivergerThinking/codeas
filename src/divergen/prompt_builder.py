@@ -3,7 +3,13 @@ import yaml
 
 from pydantic import BaseModel, PrivateAttr
 
+def read_yaml(path):
+    with open(path, 'r') as yaml_file:
+        data = yaml.safe_load(yaml_file)
+        return data
+
 class Prompt(BaseModel):
+    prompt_library: str
     request: list
     tone: list = None
     context: list = None
@@ -11,33 +17,27 @@ class Prompt(BaseModel):
     order: list = ["tone", "context", "request", "additional_instructions"]
     _prompt: str = PrivateAttr("")
     
-    def build(self, prompt_library: str, add_titles: bool = True):
-        for part in self.order:
-            prompt_files = getattr(self, part)
-            if prompt_files is not None:
+    def build(self, add_titles: bool = True):
+        for sequence in self.order:
+            prompt_sequence = getattr(self, sequence)
+            if prompt_sequence is not None:
                 if add_titles:
-                    self._prompt += "\n" + part.upper() + ":\n"
-                for file_ in prompt_files:
-                    path = os.path.join(prompt_library, file_ + ".txt")
-                    file_content = self.read(path)
-                    self._prompt += file_content + "\n"
+                    self._prompt += "\n" + sequence.upper() + ":\n"
+                
+                prompt_chunks = read_yaml(
+                    os.path.join(self.prompt_library, sequence + ".yaml")
+                )
+
+                for chunk_name in prompt_sequence:
+                    self._prompt += prompt_chunks[chunk_name] + "\n"
         
         return self._prompt
-        
-    def read(self, path):
-        with open(path, "r") as f:
-            return f.read()
 
 class PromptBuilder(BaseModel):
     prompt_library: str
     
     def build(self, template: str):
         template_path = os.path.join(self.prompt_library, template + ".yaml")
-        template = self.read_template(template_path)
-        prompt = Prompt(**template)
-        return prompt.build(self.prompt_library)
-    
-    def read_template(self, path):
-        with open(path, 'r') as yaml_file:
-            data = yaml.safe_load(yaml_file)
-            return data
+        template = read_yaml(template_path)
+        prompt = Prompt(prompt_library=self.prompt_library, **template)
+        return prompt.build()        

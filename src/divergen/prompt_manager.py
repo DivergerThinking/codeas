@@ -1,70 +1,22 @@
-import os
-from typing import Dict
-
 import pyperclip
-from langchain.chains import LLMChain
-from langchain.prompts import (ChatPromptTemplate,
-                               HumanMessagePromptTemplate, load_prompt)
-from langchain.prompts.chat import SystemMessage
 from pydantic import BaseModel
 
-from divergen.config import DEFAULT_CONFIGS, PromptConfig
-
+from divergen.config import DEFAULT_CHAT_MODEL
+from divergen.prompt_builder import PromptBuilder
 
 class PromptManager(BaseModel):
     prompt_library: str
-    prompt_configs: Dict[str, PromptConfig] = DEFAULT_CONFIGS
     
-    def execute_prompt(self, action, **user_input):
-        prompt_template = self.build_prompt_template(action)
-        chain = LLMChain(
-            prompt=prompt_template,
-            llm=self.prompt_configs[action].model,
-            memory=self.prompt_configs[action].memory
-        )
-        return chain.run(**user_input)
+    def execute(self, template, **user_input):
+        prompt = self.build(template, **user_input)
+        model = DEFAULT_CHAT_MODEL
+        return model.predict(prompt)
     
-    def build_prompt_template(self, action):
-        system_prompt = self._get_system_prompt(action)
-        return self._build_prompt_template(system_prompt, action)
-        
-    def _get_system_prompt(self, action):
-        system_prompt_path = os.path.join(
-            self.prompt_library, self.prompt_configs[action].system_prompt
-        )
-        with open(system_prompt_path, "r") as f:
-            return f.read()
+    def build(self, template, **user_input):
+        builder = PromptBuilder(prompt_library=self.prompt_library)
+        prompt_template = builder.build(template)
+        return prompt_template.format(**user_input)
     
-    def _build_prompt_template(self, system_prompt, action):
-        prompt_template = load_prompt(
-            os.path.join(self.prompt_library, self.prompt_configs[action].user_prompt)
-        )
-        if system_prompt:
-            return ChatPromptTemplate.from_messages(
-                [
-                    SystemMessage(content=system_prompt),
-                    HumanMessagePromptTemplate(prompt=prompt_template),
-                ]
-            )
-        else:
-            return HumanMessagePromptTemplate(prompt=prompt_template)
-    
-    def build_prompt(self, action, **user_input):
-        system_prompt = self.get_system_prompt(action)
-        retriever = self.prompt_configs[action].retriever
-        user_input = retriever.retrieve(**user_input)
-        return self._build_prompt(system_prompt, action, **user_input)
-    
-    def _build_prompt(self, system_prompt, action, **user_input):
-        user_prompt_template = load_prompt(
-            os.path.join(self.prompt_library, self.prompt_configs[action].user_prompt)
-        )
-        user_prompt = user_prompt_template.format(**user_input)
-        if system_prompt:
-            return f"{system_prompt}\n{user_prompt}"
-        else:
-            return user_prompt
-
-    def copy_prompt(self, action, **user_input):
-        prompt = self.build_prompt(action, **user_input)
+    def copy(self, template, **user_inputs):
+        prompt = self.build(template, **user_inputs)
         pyperclip.copy(prompt)

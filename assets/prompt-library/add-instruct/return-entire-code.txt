@@ -1,1 +1,0 @@
-Return the entirity of the given code at once, do not return chunks of code.

@@ -1,8 +1,8 @@
 context:
-  - context/modify-codebase
-  - context/{code}
+  - codebase_modification
+  - code_placeholder
 request:
-  - request/generate-docstrings
+  - generate_numpy_docstrings
 additional_instructions:
-  - add-instruct/return-code-only
-  - add-instruct/return-entire-code
+  - return_code_only
+  - return_entire_code

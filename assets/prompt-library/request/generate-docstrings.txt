@@ -1,1 +1,0 @@
-Generate docstrings for all functions using numpy style.

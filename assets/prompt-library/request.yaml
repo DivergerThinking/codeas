@@ -1,0 +1,5 @@
+prompt_placeholder: |
+  {prompt}
+
+generate_numpy_docstrings:
+  Generate numpy style docstrings for the code passed as context.
