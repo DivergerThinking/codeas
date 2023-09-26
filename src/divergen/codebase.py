@@ -48,6 +48,14 @@ class Entity(SearchMixin, arbitrary_types_allowed=True):
     node: ast.AST
     modified: bool = False
     
+    def modify_code(self, code: str):
+        ast_node = ast.parse(code)
+        if isinstance(self, Module):
+            self.node = ast_node
+        else:
+            self.node = ast_node.body[0] # ast_node is a Module node, so we get 
+        self.modified = True
+    
     def add_docstring(self, text: str):
         self.remove_docstring()
         docstring = ast.Expr(value=ast.Str(s=text))
@@ -76,6 +84,9 @@ class Class(Entity):
             if isinstance(node, ast.FunctionDef):
                 method = Entity(path=self.path, node=node)
                 self._methods.append(method)
+    
+    def get_method(self, name):
+        return self.search_by_name(name, self._methods)
 
 class Module(Entity):
     _classes: List[Class] = PrivateAttr(default_factory=list)
@@ -92,9 +103,8 @@ class Module(Entity):
                     class_.parse_methods()
                     self._classes.append(class_)
     
-    def get_class(self, name, path):
-        module = self.get_module(path)
-        return self._search_by_name(name, module._classes)
+    def get_class(self, name):
+        return self._search_by_name(name, self._classes)
     
     def get_function(self, name, path):
         module = self.get_module(path)
@@ -135,12 +145,34 @@ class Codebase(SearchMixin):
         return [
             module for module in self._modules if module.modified
         ]
-    
-    def get_modules(self):
-        return self._modules
+        
+    def get_entity(
+        self, 
+        module_path, 
+        class_name = None, 
+        method_name = None, 
+        function_name = None
+    ):
+        if method_name is not None:
+            return self.get_method(module_path, class_name, method_name)
+        elif class_name is not None:
+            return self.get_class(module_path, class_name)
+        elif function_name is not None:
+            return self.get_function(module_path, function_name)
+        else:
+            return self.get_module(module_path)
 
     def get_module(self, path):
         return self._search_by_path(path, self._modules)
+    
+    def get_method(self, module_path, class_name, method_name):
+        module = self.get_module(module_path)
+        class_ = module.get_class(class_name)
+        return class_.get_method(method_name)
+    
+    def get_class(self, module_path, class_name):
+        module = self.get_module(module_path)
+        return module.get_class(class_name)
     
     def get_elements(self, classes=True, functions=True, methods=True) -> List[Entity]:
         elements = []
@@ -170,3 +202,5 @@ class Codebase(SearchMixin):
         ]
         self._check_search(elements, name)
         return elements[0]
+        
+    

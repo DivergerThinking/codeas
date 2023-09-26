@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from divergen.codebase import Codebase
 from divergen.prompt_manager import PromptManager
 from divergen.file_handler import FileHandler
+from divergen.config import DEFAULT_CHAT_MODEL
 
 class CodebaseAssistant(BaseModel):
     codebase: Codebase
@@ -12,23 +13,50 @@ class CodebaseAssistant(BaseModel):
     
     def model_post_init(self, __context: Any) -> None:
         self.codebase.parse_modules()
+        
+    def modify_codebase(
+        self, 
+        template: str,
+        context_args: list,
+        update_method: str = "modify_code",
+        preview: bool = True,
+        **user_input
+    ):
+        entities = self.get_entities(context_args)
+        prompts = self.get_prompts(entities, template, **user_input)
+        update_args = self.run_llm(prompts, entities)
+        self.update_codebase(update_args, update_method)
+        self.file_handler.export_modules(self.codebase, preview)
     
-    def generate_docstrings(self, **user_input):
-        for element in self.codebase.get_elements(classes=False):
-            if not element.has_docstring():
-                code = element.get_code()
-                docstring = self._get_docstring(code, **user_input)
-                docstring = self._clean_docstring(docstring)
-                element.add_docstring(docstring)
-        self.file_handler.export_modules(self.codebase)
+    def generate_docs(self):
+        ...
     
-    def _get_docstring(self, code, **user_input):
-        return self.prompt_manager.execute_prompt(
-            "generate_docstring", code=code, **user_input
-        )
+    def get_entities(self, context_args):
+        _entities = []
+        for args in context_args:
+            _entities.append(self.codebase.get_entity(**args))
+        return _entities
     
-    def _clean_docstring(self, docstring):
-        return docstring.replace("'''", "").replace('"""', "")
+    def get_prompts(self, entities: list, template: str, **user_input):
+        _prompts = []
+        for entity in entities:
+            _prompts.append(
+                self.prompt_manager.build(
+                    template=template, code=entity.get_code(), **user_input
+                )
+            )
+        return _prompts
+    
+    def run_llm(self, prompts, entities):
+        _output = []
+        model = DEFAULT_CHAT_MODEL
+        for entity, prompt in zip(entities, prompts):
+            _output.append((entity, model.predict(prompt))) 
+        return _output
+
+    def update_codebase(self, update_args, update_method):
+        for entity, update_content in update_args:
+            getattr(entity, update_method)(update_content)
     
     def apply_changes(self, backup: bool = True):
         if backup:
