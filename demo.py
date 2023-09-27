@@ -16,6 +16,7 @@ class UI(BaseModel):
     _action: str = PrivateAttr(None)
     _template: str = PrivateAttr(None)
     _prompt: str = PrivateAttr(None)
+    _user_input: dict = PrivateAttr(default_factory=dict)
 
     def add_title(self):
         st.title("Divergen")
@@ -47,7 +48,7 @@ class UI(BaseModel):
             self.write_prompt()
 
     def select_source_dir(self):
-        self._source_dir = st.text_input("Source directory")
+        self._source_dir = st.text_input("Source directory", "src-test")
         if self._source_dir:
             st.text(f"{os.path.abspath(self._source_dir)}")
 
@@ -58,11 +59,12 @@ class UI(BaseModel):
         )
 
     def select_action(self):
-        self._action = st.selectbox(
-            "Choose an action to perform",
-            ["Modify codebase", "Generate markdown"],
-            index=None,
-        )
+        if self._source_dir:
+            self._action = st.selectbox(
+                "Choose an action to perform",
+                ["Modify codebase", "Generate markdown"],
+                index=None,
+            )
 
     def select_entities(self):
         if st.session_state["assistant"]:
@@ -84,6 +86,8 @@ class UI(BaseModel):
         self._prompt = st.text_input("Enter prompt")
         if self._prompt:
             st.session_state["has_prompt"] = True
+            self._template = "templates/generic_modifier"
+            self._user_input["prompt"] = self._prompt
 
     def print_prompts(self):
         for entity_name in self._entities:
@@ -93,16 +97,11 @@ class UI(BaseModel):
                     code=st.session_state["assistant"]
                     .codebase.get_entity(entity_name)
                     .get_code(),
+                    **self._user_input
                 )
             )
 
     def run_llm(self):
-        if self._prompt:
-            self._template = "templates/generic_modifier"
-            user_input = {"prompt": self._prompt}
-        else:
-            user_input = {}
-
         st.session_state["assistant"].run_action(
             action=self._action,
             template=self._template,
@@ -110,7 +109,7 @@ class UI(BaseModel):
             model=ChatOpenAI(
                 streaming=True, callbacks=[StreamlitCallbackHandler(st.container())]
             ),
-            **user_input,
+            **self._user_input,
         )
 
     def show_code_comparison(self):
