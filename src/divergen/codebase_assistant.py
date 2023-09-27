@@ -1,43 +1,64 @@
+import logging
 from typing import Any
+
+from langchain.callbacks import StreamingStdOutCallbackHandler
+from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel
 
 from divergen.codebase import Codebase
-from divergen.prompt_manager import PromptManager
 from divergen.file_handler import FileHandler
-from divergen.config import DEFAULT_CHAT_MODEL
+from divergen.prompt_manager import PromptManager
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
 
 class CodebaseAssistant(BaseModel):
     codebase: Codebase
     prompt_manager: PromptManager
     file_handler: FileHandler = FileHandler(backup_dir=".backup")
-    
+
     def model_post_init(self, __context: Any) -> None:
         self.codebase.parse_modules()
-        
+
+    def run_action(self, action, **kwargs):
+        if action == "Modify codebase":
+            self.modify_codebase(**kwargs)
+        elif action == "Generate docs":
+            self.generate_docs(**kwargs)
+
     def modify_codebase(
-        self, 
+        self,
         template: str,
-        context_args: list,
+        entity_names: list,
         update_method: str = "modify_code",
+        model: object = ChatOpenAI(
+            streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
+        ),
         preview: bool = True,
-        **user_input
+        **user_input,
     ):
-        entities = self.get_entities(context_args)
+        logging.info(f"Modifying codebase with template: {template}")
+        entities = self.get_entities(entity_names)
         prompts = self.get_prompts(entities, template, **user_input)
-        update_args = self.run_llm(prompts, entities)
+        update_args = self.run_llm(prompts, entities, model)
         self.update_codebase(update_args, update_method)
         self.file_handler.export_modules(self.codebase, preview)
-    
+        return update_args
+
     def generate_docs(self):
         ...
-    
-    def get_entities(self, context_args):
+
+    def get_entities(self, entity_names):
+        logging.info(f"Getting entities: {entity_names}")
         _entities = []
-        for args in context_args:
-            _entities.append(self.codebase.get_entity(**args))
+        for entity_name in entity_names:
+            _entities.append(self.codebase.get_entity(entity_name))
         return _entities
-    
+
     def get_prompts(self, entities: list, template: str, **user_input):
+        logging.info(f"Getting prompts")
         _prompts = []
         for entity in entities:
             _prompts.append(
@@ -46,29 +67,34 @@ class CodebaseAssistant(BaseModel):
                 )
             )
         return _prompts
-    
-    def run_llm(self, prompts, entities):
+
+    def run_llm(self, prompts, entities, model):
+        logging.info(f"Running LLM")
         _output = []
-        model = DEFAULT_CHAT_MODEL
         for entity, prompt in zip(entities, prompts):
-            _output.append((entity, model.predict(prompt))) 
+            logging.info(f"Prompt:\n {prompt}")
+            _output.append((entity, model.predict(prompt)))
         return _output
 
     def update_codebase(self, update_args, update_method):
+        logging.info(f"Updating codebase")
         for entity, update_content in update_args:
             getattr(entity, update_method)(update_content)
-    
+
     def apply_changes(self, backup: bool = True):
+        logging.info(f"Applying changes")
         if backup:
             self.file_handler.make_backup_dir()
             self.file_handler.move_target_files_to_backup()
-        
+
         self.file_handler.move_preview_files_to_target()
-    
+
     def revert_changes(self):
+        logging.info(f"Reverting changes")
         self.file_handler.move_target_files_to_preview()
         self.file_handler.move_backup_files_to_target()
         self.file_handler.reset_backup_files()
-    
+
     def reject_changes(self):
+        logging.info(f"Rejecting changes")
         self.file_handler.remove_preview_files()
