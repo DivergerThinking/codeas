@@ -51,7 +51,7 @@ This will open a window in your default browser at port 8501 with the streamlit 
 
 ```python
 
-from divergen import CodebaseAssistant
+from divergen.codebase_assistant import CodebaseAssistant
 
 assistant = CodebaseAssistant(codebase={"source_dir":...})
 assistant.modify_codebase(
