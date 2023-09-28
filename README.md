@@ -9,13 +9,13 @@ Improve your codebase with LLMs using the right context for the right prompts.
 #### Installing from github:
 
 ```bash
-pip install ...
+pip install git+ssh://git@github.com/DivergerThinking/divergen.git
 ```
 
 #### Installing from local repository (after cloning)
 
 ```bash
-git clone ...
+git clone git@github.com:DivergerThinking/divergen.git
 cd divergen
 pip install -e .
 ```
@@ -30,7 +30,7 @@ export OPENAI_API_KEY="..."
 
 OR
 
-Using .env file with `OPENAI_API_KEY="..."` defined inside.
+Using .env file at the root of repository with `OPENAI_API_KEY="..."`
 
 
 ## Usage
