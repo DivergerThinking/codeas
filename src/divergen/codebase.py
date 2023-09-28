@@ -1,21 +1,13 @@
-"""
-The below outlines the codebase hierarchy of attributes:
-
-Codebase:
-    Entities (Entity):
-    _modules (Module(Entity))
-        Elements:
-        _functions (Entity)
-        _classes (Class(Entity))
-            _methods (Function)
-"""
-import os
-import glob
 import ast
+import glob
+import os
 from typing import List
+
 from pydantic import PrivateAttr
+
 from divergen._search_mixin import SearchMixin
 from divergen.entities import Module
+
 
 class Codebase(SearchMixin):
     source_dir: str
@@ -84,18 +76,6 @@ class Codebase(SearchMixin):
     def get_entity(self, name):
         _entities = self.get_entities()
         return _entities[name]
-
-    # def get_entity(
-    #     self, module_path, class_name=None, method_name=None, function_name=None
-    # ):
-    #     if method_name is not None:
-    #         return self.get_method(module_path, class_name, method_name)
-    #     elif class_name is not None:
-    #         return self.get_class(module_path, class_name)
-    #     elif function_name is not None:
-    #         return self.get_function(module_path, function_name)
-    #     else:
-    #         return self.get_module(module_path)
 
     def get_module(self, path):
         return self._search_by_path(path, self._modules)

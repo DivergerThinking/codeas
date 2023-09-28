@@ -1,7 +1,7 @@
 import os
-import yaml
 
 import pyperclip
+import yaml
 from pydantic import BaseModel, PrivateAttr
 
 
@@ -58,5 +58,5 @@ class PromptManager(BaseModel):
         return [
             os.path.join("templates", file_name.replace(".yaml", ""))
             for file_name in os.listdir(os.path.join(self.prompt_library, "templates"))
-            if file_name.endswith(".yaml")
+            if file_name.endswith(".yaml") and "generic" not in file_name
         ]

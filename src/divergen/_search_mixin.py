@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class SearchMixin(BaseModel):
     def _search_by_path(self, path, entities):
         result = [entity for entity in entities if entity.path == path]

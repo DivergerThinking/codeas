@@ -16,7 +16,7 @@ logging.basicConfig(
 
 class CodebaseAssistant(BaseModel):
     codebase: Codebase
-    prompt_manager: PromptManager
+    prompt_manager: PromptManager = PromptManager(prompt_library="./assets/prompt-library")
     file_handler: FileHandler = FileHandler(backup_dir=".backup")
 
     def model_post_init(self, __context: Any) -> None:

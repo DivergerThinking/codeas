@@ -1,8 +1,10 @@
 import ast
 from typing import List
+
 from pydantic import PrivateAttr
 
 from divergen._search_mixin import SearchMixin
+
 
 class Entity(SearchMixin, arbitrary_types_allowed=True):
     path: str
