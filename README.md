@@ -1,14 +1,26 @@
 # DIVERGEN
 
-Set of tools to increase productivity of developers. 
+Improve your codebase with LLMs using the right context for the right prompts.
 
 ## Setup
 
-Installing via pip
+### Dependencies
+
+#### Installing from github:
 
 ```bash
 pip install ...
 ```
+
+#### Installing from local repository (after cloning)
+
+```bash
+git clone ...
+cd divergen
+pip install -e .
+```
+
+### OpenAI key
 
 Adding OPENAI_API_KEY environment variable via terminal:
 
@@ -16,9 +28,24 @@ Adding OPENAI_API_KEY environment variable via terminal:
 export OPENAI_API_KEY="..."
 ```
 
-In VSCode, it is easier to 
+OR
+
+Using .env file with `OPENAI_API_KEY="..."` defined inside.
+
 
 ## Usage
+
+### Using the Streamlit UI
+
+**NOTE**: this requires cloning the repository beforehand.
+
+After installing the dependencies and setting up the OpenAI API key, run the following from the root of the repository:
+
+```bash
+streamlit run ui.py
+```
+
+This will open a window in your default browser at port 8501 with the streamlit app.
 
 ### Using the python API
 
@@ -26,21 +53,10 @@ In VSCode, it is easier to
 
 from divergen import CodebaseAssistant
 
-code_assist = CodebaseAssistant(
-    codebase={"source_dir":...}
+assistant = CodebaseAssistant(codebase={"source_dir":...})
+assistant.modify_codebase(
+    template="...",
+    entity_names=[...]
+    **user_input
 )
-code_assist.generate_docstrings()
 ```
-
-### Using the WebUI
-
-[NOT YET IMPLEMENTED]
-
-## Limitations
-
-### General
-- currently only designed for src/ codebase, parsing .md (/docs) and other file types /assets is not yet included.
-
-### Docstring generation
-- all classes and functions are passed to the API to ask for docstrings, even if some of them already have docstrings
-- asking to generate docstring only for a specific method is currently still buggy
