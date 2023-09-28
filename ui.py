@@ -1,13 +1,15 @@
 import os
+
 import streamlit as st
 from dotenv import load_dotenv
 from pydantic import BaseModel, PrivateAttr
 
 load_dotenv("./.env")
 
-from divergen.codebase_assistant import CodebaseAssistant
 from langchain.callbacks import StreamlitCallbackHandler
 from langchain.chat_models import ChatOpenAI
+
+from divergen.codebase_assistant import CodebaseAssistant
 
 
 class UI(BaseModel):
@@ -48,15 +50,9 @@ class UI(BaseModel):
             self.write_prompt()
 
     def select_source_dir(self):
-        self._source_dir = st.text_input("Source directory", "src-test")
+        self._source_dir = st.text_input("Source directory", "dummy_repo")
         if self._source_dir:
             st.text(f"{os.path.abspath(self._source_dir)}")
-
-    def _set_assistant(self, source_dir):
-        st.session_state["assistant"] = CodebaseAssistant(
-            codebase={"source_dir": source_dir},
-            prompt_manager={"prompt_library": "./assets/prompt-library"},
-        )
 
     def select_action(self):
         if self._source_dir:
@@ -97,7 +93,7 @@ class UI(BaseModel):
                     code=st.session_state["assistant"]
                     .codebase.get_entity(entity_name)
                     .get_code(),
-                    **self._user_input
+                    **self._user_input,
                 )
             )
 
@@ -178,8 +174,7 @@ def configure_app():
 def instantiate_assistant(ui):
     if st.session_state["assistant"] is None and ui._source_dir is not None:
         st.session_state["assistant"] = CodebaseAssistant(
-            codebase={"source_dir": ui._source_dir},
-            prompt_manager={"prompt_library": "./assets/prompt-library"},
+            codebase={"source_dir": ui._source_dir}
         )
     elif (
         st.session_state["assistant"] is not None
@@ -187,8 +182,7 @@ def instantiate_assistant(ui):
         and ui._source_dir != st.session_state["assistant"].codebase.source_dir
     ):
         st.session_state["assistant"] = CodebaseAssistant(
-            codebase={"source_dir": ui._source_dir},
-            prompt_manager={"prompt_library": "./assets/prompt-library"},
+            codebase={"source_dir": ui._source_dir}
         )
         st.rerun()
 

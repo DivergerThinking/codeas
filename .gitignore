@@ -3,3 +3,4 @@
 debug/
 src-test/
 .backup/
+*egg-info/
