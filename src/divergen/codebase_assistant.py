@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -57,14 +58,14 @@ class CodebaseAssistant(BaseModel):
         model: object = ChatOpenAI(
             streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
         ),
-        folder: str = "docs",
+        folder: str = "../docs",
         **user_input,
     ):
         logging.info(f"Modifying codebase with template: {template}")
         entities = self.get_entities(entity_names)
         prompts = self.get_prompts(entities, template, **user_input)
         docs_args = self.run_llm(prompts, entities, model)
-        self.file_handler.export_markdown(docs_args, folder)
+        self.file_handler.export_markdown(docs_args, os.path.join(self.codebase.source_dir, folder))
         
     def generate_tests(
         self,
@@ -73,14 +74,14 @@ class CodebaseAssistant(BaseModel):
         model: object = ChatOpenAI(
             streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
         ),
-        folder: str = "tests",
+        folder: str = "../tests",
         **user_input,
     ):
         logging.info(f"Modifying codebase with template: {template}")
         entities = self.get_entities(entity_names)
         prompts = self.get_prompts(entities, template, **user_input)
         tests_args = self.run_llm(prompts, entities, model)
-        self.file_handler.export_tests(tests_args, folder)
+        self.file_handler.export_tests(tests_args, os.path.join(self.codebase.source_dir, folder))
     
     def ask_llm(self, template: str, entity_names: list, model: object, **user_input):
         logging.info(f"Modifying codebase with template: {template}")

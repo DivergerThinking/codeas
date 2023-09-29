@@ -53,7 +53,7 @@ class UI(BaseModel):
                 self.write_prompt()
 
     def select_source_dir(self):
-        self._source_dir = st.text_input("Source directory", "demo")
+        self._source_dir = st.text_input("Source directory", "demo/src")
         if self._source_dir:
             st.text(f"{os.path.abspath(self._source_dir)}")
 
@@ -67,9 +67,9 @@ class UI(BaseModel):
 
     def select_entities(self):
         if st.session_state["assistant"]:
-            if self._action == "Modify codebase":
-                _entities_list = st.session_state["assistant"].codebase.list_entities()
-                _entities_list = self._list_modules_only(_entities_list)
+            _entities_list = st.session_state["assistant"].codebase.list_entities()
+            # if self._action == "Modify codebase":
+            _entities_list = self._list_modules_only(_entities_list)
             
             self._entities = st.multiselect(
                 "Select entities to use as context",

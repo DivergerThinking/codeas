@@ -18,14 +18,20 @@ class FileHandler(BaseModel):
             self.write_to_pyfile(code, path, preview)
     
     def export_tests(self, test_args, folder):
+        self.create_folder_if_not_exists(folder)
         for entity, tests in test_args:
             path = os.path.join(folder, entity.path)
             self.write_to_pyfile(tests, path, preview=False)
     
     def export_markdown(self, markdown_args, folder):
+        self.create_folder_if_not_exists(folder)
         for entity, markdown in markdown_args:
             path = os.path.join(folder, entity.path)
             self.write_to_mdfile(markdown, path)
+    
+    def create_folder_if_not_exists(self, folder):
+        if not os.path.exists(folder):
+            os.mkdir(folder)
 
     def reset_codebase(self):
         self.remove_backup_files()
