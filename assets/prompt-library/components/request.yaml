@@ -1,0 +1,16 @@
+prompt_placeholder: |
+  {prompt}
+
+generate_numpy_docstrings:
+  Generate docstrings for the code passed as context. |
+  Use numpy style docstrings.
+
+generate_type_hints:
+  Generate type hints for the code passed as context.
+
+generate_pytest_tests: |
+  Generate tests for the code passed as context. 
+  Use pytest.
+
+generate_usage_docs: |
+  Generate usage docs for the code passed as context. 

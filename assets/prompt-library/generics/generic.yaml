@@ -1,0 +1,7 @@
+tone:
+  - senior_software_engineer
+context:
+  - given_following_code
+  - code_placeholder
+request:
+  - prompt_placeholder

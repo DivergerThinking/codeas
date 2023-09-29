@@ -37,20 +37,23 @@ class UI(BaseModel):
 
     def show_prompt_banner(self):
         st.subheader("PROMPT")
-        col1, col2, col3 = st.columns([0.45, 0.1, 0.45])
-        with col1:
-            self.select_template()
-
-        with col2:
-            st.markdown(
-                "<h3 style='text-align: center'>OR</h3>", unsafe_allow_html=True
-            )
-
-        with col3:
+        if self._action == "Ask LLM":
             self.write_prompt()
+        else:
+            col1, col2, col3 = st.columns([0.45, 0.1, 0.45])
+            with col1:
+                self.select_template()
+
+            with col2:
+                st.markdown(
+                    "<h3 style='text-align: center'>OR</h3>", unsafe_allow_html=True
+                )
+
+            with col3:
+                self.write_prompt()
 
     def select_source_dir(self):
-        self._source_dir = st.text_input("Source directory", "dummy_repo")
+        self._source_dir = st.text_input("Source directory", "demo")
         if self._source_dir:
             st.text(f"{os.path.abspath(self._source_dir)}")
 
@@ -58,21 +61,28 @@ class UI(BaseModel):
         if self._source_dir:
             self._action = st.selectbox(
                 "Choose an action to perform",
-                ["Modify codebase", "Generate markdown"],
+                ["Modify codebase", "Generate markdown", "Generate tests","Ask LLM"],
                 index=None,
             )
 
     def select_entities(self):
         if st.session_state["assistant"]:
+            if self._action == "Modify codebase":
+                _entities_list = st.session_state["assistant"].codebase.list_entities()
+                _entities_list = self._list_modules_only(_entities_list)
+            
             self._entities = st.multiselect(
                 "Select entities to use as context",
-                st.session_state["assistant"].codebase.list_entities(),
+                _entities_list
             )
+    
+    def _list_modules_only(self, entities_list):
+        return [entity for entity in entities_list if entity.endswith(".py")]
 
     def select_template(self):
         self._template = st.selectbox(
             "Select a template",
-            st.session_state["assistant"].prompt_manager.list_templates(),
+            st.session_state["assistant"].prompt_manager.list_templates(self._action),
             index=None,
         )
         if self._template:
@@ -82,8 +92,11 @@ class UI(BaseModel):
         self._prompt = st.text_input("Enter prompt")
         if self._prompt:
             st.session_state["has_prompt"] = True
-            self._template = "templates/generic_modifier"
             self._user_input["prompt"] = self._prompt
+            if self._action == "Modify codebase":
+                self._template = "generics/generic_modifier.yaml"
+            else:
+                self._template = "generics/generic.yaml"
 
     def print_prompts(self):
         for entity_name in self._entities:
@@ -174,7 +187,8 @@ def configure_app():
 def instantiate_assistant(ui):
     if st.session_state["assistant"] is None and ui._source_dir is not None:
         st.session_state["assistant"] = CodebaseAssistant(
-            codebase={"source_dir": ui._source_dir}
+            codebase={"source_dir": ui._source_dir},
+            prompt_manager={"prompt_library": "./assets/prompt-library", "add_titles": False},
         )
     elif (
         st.session_state["assistant"] is not None
@@ -182,7 +196,8 @@ def instantiate_assistant(ui):
         and ui._source_dir != st.session_state["assistant"].codebase.source_dir
     ):
         st.session_state["assistant"] = CodebaseAssistant(
-            codebase={"source_dir": ui._source_dir}
+            codebase={"source_dir": ui._source_dir},
+            prompt_manager={"prompt_library": "./assets/prompt-library", "add_titles": False},
         )
         st.rerun()
 
@@ -199,10 +214,13 @@ def main():
         if (
             st.session_state["has_template"] or st.session_state["has_prompt"]
         ) and st.session_state["has_run"] is False:
-            ui.print_prompts()
+            # ui.print_prompts()
             ui.run_llm()
             st.session_state["has_run"] = True
-            st.session_state["show_code"] = True
+            if ui._action == "Modify codebase":
+                st.session_state["show_code"] = True
+            else:
+                st.session_state["show_code"] = False
         if st.session_state["show_code"]:
             ui.show_code_comparison()
             ui.show_apply_reject()

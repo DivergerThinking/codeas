@@ -21,17 +21,17 @@ class TemplateBuilder(BaseModel):
     _prompt: str = PrivateAttr("")
 
     def build_template(self, add_titles: bool = True):
-        for sequence in self.order:
-            prompt_sequence = getattr(self, sequence)
-            if prompt_sequence is not None:
+        for component in self.order:
+            prompt_component = getattr(self, component)
+            if prompt_component is not None:
                 if add_titles:
-                    self._prompt += "\n" + sequence.upper() + ":\n"
+                    self._prompt += "\n" + component.upper() + ":\n"
 
                 prompt_chunks = read_yaml(
-                    os.path.join(self.prompt_library, sequence + ".yaml")
+                    os.path.join(self.prompt_library, "components", component + ".yaml")
                 )
 
-                for chunk_name in prompt_sequence:
+                for chunk_name in prompt_component:
                     self._prompt += prompt_chunks[chunk_name] + "\n"
 
         return self._prompt
@@ -42,21 +42,26 @@ class PromptManager(BaseModel):
     add_titles: bool = True
     copy_to_clipboard: bool = False
 
-    def build(self, template: str, **user_input):
-        template_path = os.path.join(self.prompt_library, template + ".yaml")
-        template_args = read_yaml(template_path)
-        template_builder = TemplateBuilder(
-            prompt_library=self.prompt_library, **template_args
-        )
+    def build(self, template_path: str, **user_input):
+        template_args = read_yaml(os.path.join(self.prompt_library, template_path))
+        template_builder = TemplateBuilder(prompt_library=self.prompt_library, **template_args)
         template = template_builder.build_template(self.add_titles)
         prompt = template.format(**user_input)
         if self.copy_to_clipboard:
             pyperclip.copy(prompt)
         return prompt
 
-    def list_templates(self):
+    def list_templates(self, _action: str = None):
+        if _action == "Modify codebase":
+            path = os.path.join(self.prompt_library, "prebuilt", "modify_codebase")
+        elif _action == "Generate markdown":
+            path = os.path.join(self.prompt_library, "prebuilt", "generate_markdown")
+        elif _action == "Generate tests":
+            path = os.path.join(self.prompt_library, "prebuilt", "generate_tests")
+        else:
+            raise ValueError(f"Action {_action} not recognized")
         return [
-            os.path.join("templates", file_name.replace(".yaml", ""))
-            for file_name in os.listdir(os.path.join(self.prompt_library, "templates"))
-            if file_name.endswith(".yaml") and "generic" not in file_name
+            os.path.relpath(os.path.join(path, file_name), self.prompt_library)
+            for file_name in os.listdir(path)
+            if file_name.endswith(".yaml")
         ]

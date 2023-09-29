@@ -1,6 +1,5 @@
 import logging
 from typing import Any
-
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel
@@ -25,8 +24,12 @@ class CodebaseAssistant(BaseModel):
     def run_action(self, action, **kwargs):
         if action == "Modify codebase":
             self.modify_codebase(**kwargs)
-        elif action == "Generate docs":
-            self.generate_docs(**kwargs)
+        elif action == "Generate markdown":
+            self.generate_markdown(**kwargs)
+        elif action == "Generate tests":
+            self.generate_tests(**kwargs)
+        elif action == "Ask LLM":
+            self.ask_llm(**kwargs)
 
     def modify_codebase(
         self,
@@ -44,11 +47,46 @@ class CodebaseAssistant(BaseModel):
         prompts = self.get_prompts(entities, template, **user_input)
         update_args = self.run_llm(prompts, entities, model)
         self.update_codebase(update_args, update_method)
-        self.file_handler.export_modules(self.codebase, preview)
+        self.file_handler.export_codebase(self.codebase, preview)
         return update_args
 
-    def generate_docs(self):
-        ...
+    def generate_markdown(
+        self,
+        template: str,
+        entity_names: list,
+        model: object = ChatOpenAI(
+            streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
+        ),
+        folder: str = "docs",
+        **user_input,
+    ):
+        logging.info(f"Modifying codebase with template: {template}")
+        entities = self.get_entities(entity_names)
+        prompts = self.get_prompts(entities, template, **user_input)
+        docs_args = self.run_llm(prompts, entities, model)
+        self.file_handler.export_markdown(docs_args, folder)
+        
+    def generate_tests(
+        self,
+        template: str,
+        entity_names: list,
+        model: object = ChatOpenAI(
+            streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
+        ),
+        folder: str = "tests",
+        **user_input,
+    ):
+        logging.info(f"Modifying codebase with template: {template}")
+        entities = self.get_entities(entity_names)
+        prompts = self.get_prompts(entities, template, **user_input)
+        tests_args = self.run_llm(prompts, entities, model)
+        self.file_handler.export_tests(tests_args, folder)
+    
+    def ask_llm(self, template: str, entity_names: list, model: object, **user_input):
+        logging.info(f"Modifying codebase with template: {template}")
+        entities = self.get_entities(entity_names)
+        prompts = self.get_prompts(entities, template, **user_input)
+        return self.run_llm(prompts, entities, model)
 
     def get_entities(self, entity_names):
         logging.info(f"Getting entities: {entity_names}")
@@ -61,9 +99,11 @@ class CodebaseAssistant(BaseModel):
         logging.info(f"Getting prompts")
         _prompts = []
         for entity in entities:
+            print("============")
+            print(template)
             _prompts.append(
                 self.prompt_manager.build(
-                    template=template, code=entity.get_code(), **user_input
+                    template_path=template, code=entity.get_code(), **user_input
                 )
             )
         return _prompts
