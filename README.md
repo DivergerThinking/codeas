@@ -42,7 +42,7 @@ Using .env file at the root of repository with `OPENAI_API_KEY="..."`
 After installing the dependencies and setting up the OpenAI API key, run the following from the root of the repository:
 
 ```bash
-streamlit run ui.py
+streamlit run demo/ui.py
 ```
 
 This will open a window in your default browser at port 8501 with the streamlit app.
