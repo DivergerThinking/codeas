@@ -11,5 +11,4 @@ def count_tokens(text):
 
 def read_yaml(path):
     with open(path, "r") as yaml_file:
-        data = yaml.safe_load(yaml_file)
-        return data
+        return yaml.safe_load(yaml_file)

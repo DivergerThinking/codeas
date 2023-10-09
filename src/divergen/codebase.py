@@ -18,10 +18,15 @@ class Codebase(BaseModel):
     tests_format: str = ".py"
     _modules: List[Module] = PrivateAttr(default_factory=list)
 
-    def get_path(self, module_name, attr):
-        attr_folder = getattr(self, f"{attr}_folder")
-        file_format = getattr(self, f"{attr}_format")
-        return os.path.join(self.root, attr_folder, module_name + file_format)
+    def get_path(self, module_name: str, target: str, preview: bool = False):
+        target_folder = getattr(self, f"{target}_folder")
+        target_format = getattr(self, f"{target}_format")
+        preview_str = "_preview" if preview else ""
+        return os.path.join(
+            self.root,
+            target_folder,
+            module_name.replace(".", "/") + preview_str + target_format,
+        )
 
     def get_modules(self, module_names: list = None) -> List[Module]:
         if module_names is None:
@@ -30,16 +35,10 @@ class Codebase(BaseModel):
             return [self.get_module(module_name) for module_name in module_names]
 
     def get_module(self, name):
-        return self.modules[name]
-
-    def get_method(self, module_name, class_name, method_name):
-        module = self.get_module(module_name)
-        class_ = module.get_class(class_name)
-        return class_.get_method(method_name)
-
-    def get_class(self, module_name, class_name):
-        module = self.get_module(module_name)
-        return module.get_class(class_name)
+        for module in self._modules:
+            if module.name == name:
+                return module
+        raise ValueError(f"Module {name} not found")
 
     def parse_modules(self):
         modules_paths = self._get_modules_paths(
@@ -52,27 +51,25 @@ class Codebase(BaseModel):
         with open(path) as source:
             module_content = source.read()
         node = ast.parse(module_content)
-        name = os.path.relpath(path, os.path.join(self.root, self.code_folder))
-        module = Module(module_name=name, node=node)
+        rel_path = os.path.relpath(path, os.path.join(self.root, self.code_folder))
+        name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
+        module = Module(name=name, node=node)
         module.parse_entities()
         self._modules.append(module)
 
-    def _get_modules_paths(self, dir_path):
+    def _get_modules_paths(self, path):
         return [
             file_path
-            for file_path in glob.glob(
-                f"{dir_path}/**/*{self.code_format}", recursive=True
-            )
+            for file_path in glob.glob(f"{path}/**/*{self.code_format}", recursive=True)
             if os.path.split(file_path)[-1]
             != "__init__.py"  # should be generatlized to other languages
         ]
 
     def get_modified_modules(self):
-        # TODO ADJUST TO NEW STRUCTURE WITH CODE, TESTS, DOCS
-        self._set_modified_modules()
+        self._set_module_modifications()
         return [module for module in self._modules if module.modified]
 
-    def _set_modified_modules(self):
+    def _set_module_modifications(self):
         for module in self._modules:
             for class_ in module._classes:
                 for method in class_._methods:
@@ -85,33 +82,26 @@ class Codebase(BaseModel):
                 if function.modified is True:
                     module.modified = True
 
-    def list_entities(self):
-        # TODO ADJUST TO NEW STRUCTURE WITH CODE, TESTS, DOCS
-        _entities = self.get_entities()
-        return list(_entities.keys())
+    # def list_entities(self):
+    #     _entities = self.get_entities()
+    #     return list(_entities.keys())
 
-    def get_entities(self):
-        # TODO ADJUST TO NEW STRUCTURE WITH CODE, TESTS, DOCS
-        _entities = {}
-        for module in self._modules:
-            key = module.path
-            _entities[key] = module
-            for class_ in module._classes:
-                key = f"{self._remove_extension(module.path)}.{class_.node.name}()"
-                _entities[key] = class_
-                for method in class_._methods:
-                    key = f"{self._remove_extension(module.path)}.{class_.node.name}.{method.node.name}()"
-                    _entities[key] = method
-            for function in module._functions:
-                key = f"{self._remove_extension(module.path)}.{function.node.name}()"
-                _entities[key] = function
-        return _entities
+    # def get_entities(self):
+    #     _entities = {}
+    #     for module in self._modules:
+    #         key = module.path
+    #         _entities[key] = module
+    #         for class_ in module._classes:
+    #             key = f"{module.name}.{class_.node.name}()"
+    #             _entities[key] = class_
+    #             for method in class_._methods:
+    #                 key = f"{module.name}.{class_.node.name}.{method.node.name}()"
+    #                 _entities[key] = method
+    #         for function in module._functions:
+    #             key = f"{module.name}.{function.node.name}()"
+    #             _entities[key] = function
+    #     return _entities
 
-    def _remove_extension(self, path):
-        # TODO ADJUST TO NEW STRUCTURE WITH CODE, TESTS, DOCS
-        return path.replace(".py", "")
-
-    def get_entity(self, name):
-        _entities = self.get_entities()
-        # TODO ADJUST TO NEW STRUCTURE WITH CODE, TESTS, DOCS
-        return _entities[name]
+    # def get_entity(self, name):
+    #     _entities = self.get_entities()
+    #     return _entities[name]

@@ -24,19 +24,17 @@ class Entity(_SearchMixin, arbitrary_types_allowed=True):
     code: str = ""
     docs: str = ""
     tests: str = ""
-    code_modified: bool = False
-    docs_modified: bool = False
-    tests_modified: bool = False
+    modified: bool = False
 
     def model_post_init(self, __context: Any) -> None:
-        self.code = self.get_code()
+        self.set_code()
 
     def get(self, attr):
         return getattr(self, attr)
 
     def modify(self, attr, value):
         setattr(self, attr, value)
-        setattr(self, f"{attr}_modified", True)
+        self.modified = True
         if attr == "code":
             self.update_node(value)
 
@@ -48,17 +46,20 @@ class Entity(_SearchMixin, arbitrary_types_allowed=True):
             self.node = ast_node.body[0]
         # ast_node is ast.Module, so we get body[0] to get the ClassDef or FunctionDef
 
-    def get_code(self):
-        return ast.unparse(self.node)
+    def set_code(self):
+        self.code = ast.unparse(self.node)
 
 
 class Class(Entity):
     _methods: List[Entity] = PrivateAttr(default_factory=list)
 
+    def model_post_init(self, __context: Any) -> None:
+        self.set_code()
+
     def parse_methods(self):
         for node in self.node.body:
             if isinstance(node, ast.FunctionDef):
-                method = Entity(path=self.path, node=node)
+                method = Entity(node=node)
                 self._methods.append(method)
 
     def get_method(self, name):
@@ -66,9 +67,12 @@ class Class(Entity):
 
 
 class Module(Entity):
-    module_name: str
+    name: str
     _classes: List[Class] = PrivateAttr(default_factory=list)
     _functions: List[Entity] = PrivateAttr(default_factory=list)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.set_code()
 
     def get_entities(self) -> List[Entity]:
         return self._classes + self._functions

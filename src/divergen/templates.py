@@ -6,13 +6,13 @@ You will be given a request, some context to use for the request, and some guide
 
 FOOTER = """
 CONTEXT:
-{CONTEXT}
+{}
 
 REQUEST:
-{USER_PROMPT}
+{}
 
 GUIDELINES:
-{GUIDELINES}
+{}
 """
 
 CODE_TEMPLATE = (

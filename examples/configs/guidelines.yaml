@@ -1,0 +1,3 @@
+code: |
+  Classes and methods should do one thing and one thing only.
+  Naming should be consistent and descriptive.

@@ -6,38 +6,30 @@ from divergen.codebase import Codebase
 
 
 class FileHandler(BaseModel):
-    backup_dir: str
+    backup_dir: str = ".backup"
     preview: bool = True
+    auto_format: bool = True
+    format_command: str = "black"
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
 
-    def export_modifications(self, codebase: Codebase, attr: str):
-        for module in codebase.get_modified_modules(attr):
-            path = codebase.get_path(module, attr)
-            self._write_file(path, module.get(attr))
+    def export_modifications(self, codebase: Codebase, target: str):
+        for module in codebase.get_modified_modules():
+            path = codebase.get_path(module.name, target, self.preview)
+            self._write_file(path, module.get(target))
 
     def _write_file(self, file_path: str, content: str):
-        pass
-
-    def _write_to_pyfile(self, content: str, file_path: str):
-        self._target_files.append(file_path)
-
         if self.preview:
-            file_path = file_path.replace(".py", "_preview.py")
             self._preview_files.append(file_path)
 
-        with open(file_path, "w") as f:
-            f.write(content)
-
-        subprocess.run(f"black {file_path}", shell=True, check=True)
-
-    def _write_to_mdfile(self, content: str, file_path: str):
-        file_path = file_path.replace(".py", ".md")
         self._target_files.append(file_path)
 
         with open(file_path, "w") as f:
             f.write(content)
+
+        if self.auto_format:
+            subprocess.run(f"{self.format_command} {file_path}", shell=True, check=True)
 
     def reset_target_files(self):
         self._target_files = []
