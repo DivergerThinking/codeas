@@ -1,13 +1,14 @@
 import logging
-import os
-from typing import Any
+from typing import Any, Union, List
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from divergen.codebase import Codebase
+from divergen.entities import Module
 from divergen.file_handler import FileHandler
-from divergen.prompt_manager import PromptManager
+from divergen.utils import count_token, read_yaml
+from divergen.request import Request
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -15,119 +16,66 @@ logging.basicConfig(
 
 
 class CodebaseAssistant(BaseModel):
-    codebase: Codebase
-    prompt_manager: PromptManager = PromptManager(prompt_library="./assets/prompt-library")
+    codebase: Codebase = Codebase()
+    preprompts_path: str = "./configs/preprompts.yaml"
+    preprompts: dict = Field(default_factory=dict)
+    guidelines_path: str = "./configs/guidelines.yaml"
+    guidelines: dict = Field(default_factory=dict)
+    max_tokens_per_module = 2000
+    model: ChatOpenAI = ChatOpenAI(callbacks=[StreamingStdOutCallbackHandler()])
     file_handler: FileHandler = FileHandler(backup_dir=".backup")
 
     def model_post_init(self, __context: Any) -> None:
         self.codebase.parse_modules()
+        self._read_config_files()
 
-    def run_action(self, action, **kwargs):
-        if action == "Modify codebase":
-            self.modify_codebase(**kwargs)
-        elif action == "Generate markdown":
-            self.generate_markdown(**kwargs)
-        elif action == "Generate tests":
-            self.generate_tests(**kwargs)
-        elif action == "Ask LLM":
-            self.ask_llm(**kwargs)
+    def _read_config_files(self):
+        if isinstance(self.preprompts, str):
+            self.preprompts = read_yaml(self.preprompts)
+        if isinstance(self.guidelines, str):
+            self.guidelines = read_yaml(self.guidelines)
 
-    def modify_codebase(
+    def execute_preprompt(self, name: str, module_names: list = None):
+        prompt = self.preprompts[name].get("prompt")
+        context = self.preprompts[name].get("context")
+        target = self.preprompts[name].get("target")
+        guidelines = self.preprompts[name].get("guidelines")
+        self.execute_prompt(prompt, context, target, guidelines, module_names)
+
+    def execute_prompt(
         self,
-        template: str,
-        entity_names: list,
-        update_method: str = "modify_code",
-        model: object = ChatOpenAI(
-            streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
-        ),
-        preview: bool = True,
-        **user_input,
+        user_prompt: str,
+        context: str = "code",
+        target: str = "code",
+        guidelines: list = None,
+        module_names: list = None,
     ):
-        logging.info(f"Modifying codebase with template: {template}")
-        entities = self.get_entities(entity_names)
-        prompts = self.get_prompts(entities, template, **user_input)
-        update_args = self.run_llm(prompts, entities, model)
-        self.update_codebase(update_args, update_method)
-        self.file_handler.export_codebase(self.codebase, preview)
-        return update_args
+        guideline_prompt = self._read_guidelines(guidelines)
+        request = Request(
+            user_prompt=user_prompt,
+            context=context,
+            target=target,
+            guideline_prompt=guideline_prompt,
+            model=self.model,
+        )
+        modules = self.codebase.get_modules(module_names)
+        for module in modules:
+            if count_token(module.get_context(context)) > self.max_tokens_per_module:
+                entities = module.get_entities()
+                for entity in entities:
+                    request.execute(entity)
+                module.merge_entities(target)
+            else:
+                request.execute(module)
+        self.file_handler.export_modifications(target, self.codebase)
 
-    def generate_markdown(
-        self,
-        template: str,
-        entity_names: list,
-        model: object = ChatOpenAI(
-            streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
-        ),
-        folder: str = "../docs",
-        **user_input,
-    ):
-        logging.info(f"Modifying codebase with template: {template}")
-        entities = self.get_entities(entity_names)
-        prompts = self.get_prompts(entities, template, **user_input)
-        docs_args = self.run_llm(prompts, entities, model)
-        self.file_handler.export_markdown(docs_args, os.path.join(self.codebase.source_dir, folder))
-        
-    def generate_tests(
-        self,
-        template: str,
-        entity_names: list,
-        model: object = ChatOpenAI(
-            streaming=True, callbacks=[StreamingStdOutCallbackHandler()]
-        ),
-        folder: str = "../tests",
-        **user_input,
-    ):
-        logging.info(f"Modifying codebase with template: {template}")
-        entities = self.get_entities(entity_names)
-        prompts = self.get_prompts(entities, template, **user_input)
-        tests_args = self.run_llm(prompts, entities, model)
-        self.file_handler.export_tests(tests_args, os.path.join(self.codebase.source_dir, folder))
-    
-    def ask_llm(self, template: str, entity_names: list, model: object, **user_input):
-        logging.info(f"Modifying codebase with template: {template}")
-        entities = self.get_entities(entity_names)
-        prompts = self.get_prompts(entities, template, **user_input)
-        return self.run_llm(prompts, entities, model)
+    def _read_guidelines(self, guidelines: list):
+        ...
 
-    def get_entities(self, entity_names):
-        logging.info(f"Getting entities: {entity_names}")
-        _entities = []
-        for entity_name in entity_names:
-            _entities.append(self.codebase.get_entity(entity_name))
-        return _entities
-
-    def get_prompts(self, entities: list, template: str, **user_input):
-        logging.info(f"Getting prompts")
-        _prompts = []
-        for entity in entities:
-            print("============")
-            print(template)
-            _prompts.append(
-                self.prompt_manager.build(
-                    template_path=template, code=entity.get_code(), **user_input
-                )
-            )
-        return _prompts
-
-    def run_llm(self, prompts, entities, model):
-        logging.info(f"Running LLM")
-        _output = []
-        for entity, prompt in zip(entities, prompts):
-            logging.info(f"Prompt:\n {prompt}")
-            _output.append((entity, model.predict(prompt)))
-        return _output
-
-    def update_codebase(self, update_args, update_method):
-        logging.info(f"Updating codebase")
-        for entity, update_content in update_args:
-            getattr(entity, update_method)(update_content)
-
-    def apply_changes(self, backup: bool = True):
+    def apply_changes(self):
         logging.info(f"Applying changes")
-        if backup:
-            self.file_handler.make_backup_dir()
-            self.file_handler.move_target_files_to_backup()
-
+        self.file_handler.make_backup_dir()
+        self.file_handler.move_target_files_to_backup()
         self.file_handler.move_preview_files_to_target()
 
     def revert_changes(self):

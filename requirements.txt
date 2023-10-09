@@ -5,3 +5,4 @@ pyyaml>=6.0.1
 streamlit>=1.27.0
 python-dotenv>=1.0.0
 pyperclip>=1.8.2
+tiktoken>=0.5.1

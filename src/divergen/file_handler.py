@@ -7,36 +7,37 @@ from divergen.codebase import Codebase
 
 class FileHandler(BaseModel):
     backup_dir: str
+    preview: bool = True
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
 
-    def export_codebase(self, codebase: Codebase, preview=True):
-        for module in codebase.get_modified_modules():
-            code = module.get_code()
-            path = os.path.join(codebase.source_dir, module.path)
-            self.write_to_pyfile(code, path, preview)
-    
-    def export_tests(self, test_args, folder):
-        self.create_folder_if_not_exists(folder)
-        for entity, tests in test_args:
-            path = os.path.join(folder, entity.path)
-            self.write_to_pyfile(tests, path, preview=False)
-    
-    def export_markdown(self, markdown_args, folder):
-        self.create_folder_if_not_exists(folder)
-        for entity, markdown in markdown_args:
-            path = os.path.join(folder, entity.path)
-            self.write_to_mdfile(markdown, path)
-    
-    def create_folder_if_not_exists(self, folder):
-        if not os.path.exists(folder):
-            os.mkdir(folder)
+    def export_modifications(self, codebase: Codebase, attr: str):
+        for module in codebase.get_modified_modules(attr):
+            path = codebase.get_path(module, attr)
+            self._write_file(path, module.get(attr))
 
-    def reset_codebase(self):
-        self.remove_backup_files()
-        self.remove_preview_files()
-        self.reset_target_files()
+    def _write_file(self, file_path: str, content: str):
+        pass
+
+    def _write_to_pyfile(self, content: str, file_path: str):
+        self._target_files.append(file_path)
+
+        if self.preview:
+            file_path = file_path.replace(".py", "_preview.py")
+            self._preview_files.append(file_path)
+
+        with open(file_path, "w") as f:
+            f.write(content)
+
+        subprocess.run(f"black {file_path}", shell=True, check=True)
+
+    def _write_to_mdfile(self, content: str, file_path: str):
+        file_path = file_path.replace(".py", ".md")
+        self._target_files.append(file_path)
+
+        with open(file_path, "w") as f:
+            f.write(content)
 
     def reset_target_files(self):
         self._target_files = []
@@ -54,28 +55,6 @@ class FileHandler(BaseModel):
             os.remove(file_path)
         self._preview_files = []
 
-    def parse_model_output(self, model_output: str):
-        return model_output.replace("```python", "").replace("```", "")
-
-    def write_to_pyfile(self, content: str, file_path: str, preview: bool = True):
-        self._target_files.append(file_path)
-
-        if preview:
-            file_path = file_path.replace(".py", "_preview.py")
-            self._preview_files.append(file_path)
-
-        with open(file_path, "w") as f:
-            f.write(content)
-            
-        subprocess.run(f"black {file_path}", shell=True, check=True)
-
-    def write_to_mdfile(self, content: str, file_path: str):
-        file_path = file_path.replace(".py", ".md")
-        self._target_files.append(file_path)
-
-        with open(file_path, "w") as f:
-            f.write(content)
-    
     def move_target_files_to_preview(self):
         for target_path, preview_path in zip(self._target_files, self._preview_files):
             os.rename(target_path, preview_path)
