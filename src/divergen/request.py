@@ -1,8 +1,10 @@
-from pydantic import BaseModel
-from typing import Optional
-from divergen.templates import TEMPLATES
-from divergen.entities import Entity
 import logging
+from typing import Optional
+
+from pydantic import BaseModel
+
+from divergen.entities import Entity
+from divergen.templates import TEMPLATES
 
 
 class Request(BaseModel):
@@ -13,7 +15,7 @@ class Request(BaseModel):
     target: str
 
     def execute(self, entity: Entity):
-        logging.info(f"Executing prompt {self.user_prompt}")
+        logging.info(f"Executing request for {entity.node.name}")
         entity_context = entity.get(self.context)
         prompt = TEMPLATES[self.target].format(
             self.user_prompt, entity_context, self.guideline_prompt

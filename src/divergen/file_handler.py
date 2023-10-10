@@ -1,7 +1,8 @@
 import os
+import subprocess
 
 from pydantic import BaseModel, PrivateAttr
-import subprocess
+
 from divergen.codebase import Codebase
 
 
