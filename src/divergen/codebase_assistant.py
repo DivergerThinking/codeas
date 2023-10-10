@@ -1,13 +1,14 @@
 import logging
 from typing import Any
+
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from divergen.codebase import Codebase
 from divergen.file_handler import FileHandler
-from divergen.utils import count_tokens, read_yaml
 from divergen.request import Request
+from divergen.utils import count_tokens, read_yaml
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -38,7 +39,7 @@ class CodebaseAssistant(BaseModel):
         self.codebase.parse_modules()
 
     def _set_configs(self):
-        # TODO: implement this method
+        # TODO: overwrite self with config
         # TODO: add possibility to configure model from .yaml file
         # TODO: add model callbacks after model is initialized
         ...
@@ -59,6 +60,7 @@ class CodebaseAssistant(BaseModel):
         guidelines: list = None,
         module_names: list = None,
     ):
+        logging.info(f"Executing prompt {user_prompt}")
         guideline_prompt = self._read_guidelines(guidelines)
         request = Request(
             user_prompt=user_prompt,
@@ -70,8 +72,7 @@ class CodebaseAssistant(BaseModel):
         modules = self.codebase.get_modules(module_names)
         for module in modules:
             if count_tokens(module.get(context)) > self.max_tokens_per_module:
-                entities = module.get_entities()
-                for entity in entities:
+                for entity in module.get_entities():
                     request.execute(entity)
                 module.merge_entities(target)
             else:
