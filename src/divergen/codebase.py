@@ -3,7 +3,7 @@ import glob
 import os
 from typing import List
 
-from pydantic import PrivateAttr, BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 from divergen.entities import Module
 
@@ -62,7 +62,7 @@ class Codebase(BaseModel):
             file_path
             for file_path in glob.glob(f"{path}/**/*{self.code_format}", recursive=True)
             if os.path.split(file_path)[-1]
-            != "__init__.py"  # should be generatlized to other languages
+            != "__init__.py"  # TODO: should be generalized to other languages
         ]
 
     def get_modified_modules(self):
@@ -71,37 +71,6 @@ class Codebase(BaseModel):
 
     def _set_module_modifications(self):
         for module in self._modules:
-            for class_ in module._classes:
-                for method in class_._methods:
-                    if method.modified is True:
-                        class_.modified = True
-                if class_.modified is True:
+            for entity in module._entities:
+                if entity.modified is True:
                     module.modified = True
-
-            for function in module._functions:
-                if function.modified is True:
-                    module.modified = True
-
-    # def list_entities(self):
-    #     _entities = self.get_entities()
-    #     return list(_entities.keys())
-
-    # def get_entities(self):
-    #     _entities = {}
-    #     for module in self._modules:
-    #         key = module.path
-    #         _entities[key] = module
-    #         for class_ in module._classes:
-    #             key = f"{module.name}.{class_.node.name}()"
-    #             _entities[key] = class_
-    #             for method in class_._methods:
-    #                 key = f"{module.name}.{class_.node.name}.{method.node.name}()"
-    #                 _entities[key] = method
-    #         for function in module._functions:
-    #             key = f"{module.name}.{function.node.name}()"
-    #             _entities[key] = function
-    #     return _entities
-
-    # def get_entity(self, name):
-    #     _entities = self.get_entities()
-    #     return _entities[name]
