@@ -1,9 +1,9 @@
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
 
-from divergen.entities import Entity
+from divergen.entities import Entity, Module
 from divergen.templates import TEMPLATES
 
 
@@ -14,8 +14,11 @@ class Request(BaseModel):
     model: object
     target: str
 
-    def execute(self, entity: Entity):
-        logging.info(f"Executing request for {entity.node.name}")
+    def execute(self, entity: Union[Entity, Module]):
+        if isinstance(entity, Entity):
+            logging.info(f"Executing request for {entity.node.name}")
+        elif isinstance(entity, Module):
+            logging.info(f"Executing request for {entity.name}")
         entity_context = entity.get(self.context)
         prompt = TEMPLATES[self.target].format(
             self.user_prompt, entity_context, self.guideline_prompt

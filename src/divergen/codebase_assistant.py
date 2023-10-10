@@ -1,9 +1,9 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, PrivateAttr
 
 from divergen.codebase import Codebase
 from divergen.file_handler import FileHandler
@@ -23,17 +23,16 @@ class CodebaseAssistant(BaseModel):
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 2000
     model: object = ChatOpenAI(callbacks=[StreamingStdOutCallbackHandler()])
-    preprompts: dict = Field(default_factory=dict)
-    guidelines: dict = Field(default_factory=dict)
-    # TODO: make preprompts and guidelines private attributes
+    _preprompts: dict = PrivateAttr(default_factory=dict)
+    _guidelines: dict = PrivateAttr(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
         if self.config_path:
             self._set_configs()
         if self.preprompts_path:
-            self.preprompts = read_yaml(self.preprompts_path)
+            self._preprompts = read_yaml(self.preprompts_path)
         if self.guidelines_path:
-            self.guidelines = read_yaml(self.guidelines_path)
+            self._guidelines = read_yaml(self.guidelines_path)
 
         # TODO: add error handler for when repository is not found
         self.codebase.parse_modules()
@@ -46,10 +45,10 @@ class CodebaseAssistant(BaseModel):
 
     def execute_preprompt(self, name: str, module_names: list = None):
         logging.info(f"Executing preprompt {name}")
-        user_prompt = self.preprompts[name].get("user_prompt")
-        context = self.preprompts[name].get("context")
-        target = self.preprompts[name].get("target")
-        guidelines = self.preprompts[name].get("guidelines")
+        user_prompt = self._preprompts[name].get("user_prompt")
+        context = self._preprompts[name].get("context")
+        target = self._preprompts[name].get("target")
+        guidelines = self._preprompts[name].get("guidelines")
         self.execute_prompt(user_prompt, context, target, guidelines, module_names)
 
     def execute_prompt(
@@ -80,8 +79,17 @@ class CodebaseAssistant(BaseModel):
         self.file_handler.export_modifications(self.codebase, target)
 
     def _read_guidelines(self, guidelines: list):
-        return None
-
+        guideline_prompt = ""
+        if guidelines is not None:
+            for guideline in guidelines:
+                if guideline in self._guidelines.keys():
+                    guideline_prompt += (self._guidelines[guideline] + "\n")
+                else:
+                    logging.warning(f"Guideline {guideline} not found")
+            return guideline_prompt
+        else:
+            return None
+        
     def apply_changes(self):
         logging.info(f"Applying changes")
         self.file_handler.make_backup_dir()
