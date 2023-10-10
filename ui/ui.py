@@ -61,7 +61,7 @@ class UI(BaseModel):
         if self._source_dir:
             self._action = st.selectbox(
                 "Choose an action to perform",
-                ["Modify codebase", "Generate markdown", "Generate tests","Ask LLM"],
+                ["Modify codebase", "Generate markdown", "Generate tests", "Ask LLM"],
                 index=None,
             )
 
@@ -70,12 +70,11 @@ class UI(BaseModel):
             _entities_list = st.session_state["assistant"].codebase.list_entities()
             # if self._action == "Modify codebase":
             _entities_list = self._list_modules_only(_entities_list)
-            
+
             self._entities = st.multiselect(
-                "Select entities to use as context",
-                _entities_list
+                "Select entities to use as context", _entities_list
             )
-    
+
     def _list_modules_only(self, entities_list):
         return [entity for entity in entities_list if entity.endswith(".py")]
 
@@ -188,7 +187,10 @@ def instantiate_assistant(ui):
     if st.session_state["assistant"] is None and ui._source_dir is not None:
         st.session_state["assistant"] = CodebaseAssistant(
             codebase={"source_dir": ui._source_dir},
-            prompt_manager={"prompt_library": "./assets/prompt-library", "add_titles": False},
+            prompt_manager={
+                "prompt_library": "./assets/prompt-library",
+                "add_titles": False,
+            },
         )
     elif (
         st.session_state["assistant"] is not None
@@ -197,7 +199,10 @@ def instantiate_assistant(ui):
     ):
         st.session_state["assistant"] = CodebaseAssistant(
             codebase={"source_dir": ui._source_dir},
-            prompt_manager={"prompt_library": "./assets/prompt-library", "add_titles": False},
+            prompt_manager={
+                "prompt_library": "./assets/prompt-library",
+                "add_titles": False,
+            },
         )
         st.rerun()
 

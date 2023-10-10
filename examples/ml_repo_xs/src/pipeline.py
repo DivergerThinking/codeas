@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-class Pipeline:
+class ProcessingPipeline:
     def __init__(self):
         self.data = None
 
@@ -56,12 +56,10 @@ class Pipeline:
 
 
 if __name__ == "__main__":
-    # Example usage of the Pipeline class
-    pipeline = Pipeline()
+    pipeline = ProcessingPipeline()
     pipeline.load_data("sample_data.csv")
     pipeline.explore_data()
     pipeline.clean_data()
-    pipeline.transform_data()
     pipeline.filter_data(condition=(pipeline.data["column_name"] > 10))
     pipeline.aggregate_data(
         group_by="group_column", aggregations={"value_column": "mean"}

@@ -1,76 +1,89 @@
 import ast
-from typing import List
+from typing import Any, List, Optional
 
-from pydantic import PrivateAttr
-
-from divergen._search_mixin import SearchMixin
+from pydantic import BaseModel, PrivateAttr
 
 
-class Entity(SearchMixin, arbitrary_types_allowed=True):
-    path: str
-    node: ast.AST
+class BaseEntity(BaseModel):
+    node: object
+    code: str = ""
+    docs: str = ""
+    tests: str = ""
     modified: bool = False
 
-    def modify_code(self, code: str):
+    def get(self, attr):
+        return getattr(self, attr)
+
+    def modify(self, attr, value):
+        setattr(self, attr, value)
+        self.modified = True
+        if attr == "code":
+            self.update_node(value)
+
+    def update_node(self, code: str):
         ast_node = ast.parse(code)
         if isinstance(self, Module):
             self.node = ast_node
+        elif isinstance(self, Entity):
+            # ast_node is ast.Module, so we get body[0] to get the ClassDef/FunctionDef
+            self.node = ast_node.body[0]
+            self.update_module_node()
+
+    def set_code(self):
+        self.code = ast.unparse(self.node)
+
+
+class Entity(BaseEntity, arbitrary_types_allowed=True):
+    module: object
+    body_idx: int
+
+    def model_post_init(self, __context: Any) -> None:
+        self.set_code()
+
+    def update_module_node(self):
+        self.module.node.body[self.body_idx] = self.node
+
+
+class Module(BaseEntity):
+    name: str
+    _entities: List[Entity] = PrivateAttr(default_factory=list)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.set_code()
+
+    def get_entities(self, entity_names: Optional[list] = None) -> List[Entity]:
+        if entity_names is None:
+            return self._entities
         else:
-            self.node = ast_node.body[0]  # ast_node is a Module node, so we get
-        self.modified = True
+            return [self.get_entity(entity_name) for entity_name in entity_names]
 
-    def add_docstring(self, text: str):
-        self.remove_docstring()
-        docstring = ast.Expr(value=ast.Str(s=text))
-        self.node.body = [docstring] + self.node.body
-        self.modified = True
+    def get_entity(self, name: str):
+        results = [entity for entity in self.entities if entity.node.name == name]
+        self._check_search(results, name)
+        return results[0]
 
-    def remove_docstring(self):
-        if self.has_docstring():
-            self.node.body.pop(0)
-            self.modified = True
+    def _check_search(self, result, value):
+        if len(result) == 0:
+            raise ValueError(f"{value} not found")
+        elif len(result) > 1:
+            raise ValueError(f"Multiple {value} found: {result}")
+        else:
+            return result
 
-    def has_docstring(self):
-        return self.get_docstring() is not None
+    def parse_entities(self):
+        for idx, node in enumerate(self.node.body):
+            if node.col_offset == 0 and isinstance(
+                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ):
+                self._entities.append(Entity(node=node, module=self, body_idx=idx))
 
-    def get_docstring(self):
-        return ast.get_docstring(self.node)
-
-    def get_code(self):
-        return ast.unparse(self.node)
-
-
-class Class(Entity):
-    _methods: List[Entity] = PrivateAttr(default_factory=list)
-
-    def parse_methods(self):
-        for node in self.node.body:
-            if isinstance(node, ast.FunctionDef):
-                method = Entity(path=self.path, node=node)
-                self._methods.append(method)
-
-    def get_method(self, name):
-        return self.search_by_name(name, self._methods)
-
-
-class Module(Entity):
-    _classes: List[Class] = PrivateAttr(default_factory=list)
-    _functions: List[Entity] = PrivateAttr(default_factory=list)
-
-    def parse_elements(self):
-        for node in self.node.body:
-            if node.col_offset == 0:
-                if isinstance(node, ast.FunctionDef):
-                    function = Entity(path=self.path, node=node)
-                    self._functions.append(function)
-                elif isinstance(node, ast.ClassDef):
-                    class_ = Class(path=self.path, node=node)
-                    class_.parse_methods()
-                    self._classes.append(class_)
-
-    def get_class(self, name):
-        return self._search_by_name(name, self._classes)
-
-    def get_function(self, name, path):
-        module = self.get_module(path)
-        return self._search_by_name(name, module._functions)
+    def merge_entities(self, attr: str):
+        if attr == "code":
+            # since nodes are updated, we reset the code
+            self.set_code()
+        else:
+            # reset the attribute to empty string and then add the attribute of each entity
+            self.modify(attr, "")
+            for entity in self.get_entities():
+                module_attr = self.get(attr)
+                module_attr += entity.get(attr)
