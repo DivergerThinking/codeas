@@ -82,13 +82,13 @@ class CodebaseAssistant(BaseModel):
         if guidelines is not None:
             for guideline in guidelines:
                 if guideline in self._guidelines.keys():
-                    guideline_prompt += (self._guidelines[guideline] + "\n")
+                    guideline_prompt += self._guidelines[guideline] + "\n"
                 else:
                     logging.warning(f"Guideline {guideline} not found")
             return guideline_prompt
         else:
             return None
-        
+
     def apply_changes(self):
         logging.info(f"Applying changes")
         self.file_handler.make_backup_dir()
