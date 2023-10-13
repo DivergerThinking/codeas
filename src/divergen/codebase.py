@@ -34,6 +34,9 @@ class Codebase(BaseModel):
         else:
             return [self.get_module(module_name) for module_name in module_names]
 
+    def get_module_names(self):
+        return [module.name for module in self._modules]
+
     def get_module(self, name):
         for module in self._modules:
             if module.name == name:

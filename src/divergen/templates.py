@@ -5,10 +5,10 @@ You will be given a request, some context to use for the request, and some guide
 """
 
 FOOTER = """
-CONTEXT:
+REQUEST:
 {}
 
-REQUEST:
+CONTEXT:
 {}
 
 GUIDELINES:

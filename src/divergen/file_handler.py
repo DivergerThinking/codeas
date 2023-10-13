@@ -17,15 +17,16 @@ class FileHandler(BaseModel):
 
     def export_modifications(self, codebase: Codebase, target: str):
         for module in codebase.get_modified_modules():
-            path = codebase.get_path(module.name, target, self.preview)
+            path = codebase.get_path(module.name, target)
+            self._target_files.append(path)
+
+            if self.preview:
+                path = codebase.get_path(module.name, target, self.preview)
+                self._preview_files.append(path)
+
             self._write_file(path, module.get(target))
 
     def _write_file(self, file_path: str, content: str):
-        if self.preview:
-            self._preview_files.append(file_path)
-
-        self._target_files.append(file_path)
-
         with open(file_path, "w") as f:
             f.write(content)
 

@@ -11,6 +11,9 @@ description = "Improve your codebase with LLMs using the right context for the r
 requires-python = ">=3.9"
 dynamic = ["version", "readme", "dependencies"]
 
+[project.scripts]
+divergen = 'divergen.cli:app'
+
 [tool.setuptools.dynamic]
 version = {attr = "divergen.__version__"}
 readme = {file=["README.md"], content-type="text/markdown"}
