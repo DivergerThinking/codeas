@@ -17,14 +17,14 @@ DEFAULT = {
 
 def input_prompt():
     return input(
-        colored("\nEnter instructions for the model to perform: \n input: ", "red")
+        colored("\nEnter instructions for the model to perform: \n input: ", "blue")
     )
 
 
 def input_preprompt(assistant: CodebaseAssistant):
     options = list(assistant._preprompts.keys())
     selected_option = input(
-        colored("\nSelect the preprompt you want to use. \n", "red")
+        colored("\nSelect the preprompt you want to use. \n", "blue")
         + _display_options(options, multi=False)
     )
     return options[int(selected_option)]
@@ -36,7 +36,7 @@ def input_modules(assistant: CodebaseAssistant, use_default: bool):
     else:
         options = assistant.codebase.get_module_names()
         selected_options = input(
-            colored("\nSelect the modules you want to use. \n", "red")
+            colored("\nSelect the modules you want to use. \n", "blue")
             + _display_options(options, multi=True, default=DEFAULT["modules"])
         )
 
@@ -51,7 +51,7 @@ def input_guidelines(assistant: CodebaseAssistant, use_default: bool):
     else:
         options = assistant._guidelines.keys()
         selected_options = input(
-            colored("\nSelect the guidelines you want to use. \n", "red")
+            colored("\nSelect the guidelines you want to use. \n", "blue")
             + _display_options(options, multi=True, default=DEFAULT["guidelines"])
         )
 
@@ -66,7 +66,7 @@ def input_context(use_default: bool):
     else:
         options = ["code", "docs", "tests"]
         selected_option = input(
-            colored("\nSelect the context to use for these modules. \n", "red")
+            colored("\nSelect the context to use for these modules. \n", "blue")
             + _display_options(options, multi=False, default=DEFAULT["context"])
         )
     if selected_option == "":
@@ -81,7 +81,7 @@ def input_target(use_default: bool):
     else:
         options = ["code", "docs", "tests"]
         selected_option = input(
-            colored("\nSelect the target to use for these the modules. \n", "red")
+            colored("\nSelect the target to use for these the modules. \n", "blue")
             + _display_options(options, multi=False, default=DEFAULT["context"])
         )
     if selected_option == "":
@@ -92,7 +92,7 @@ def input_target(use_default: bool):
 
 def input_apply_changes():
     selected_option = input(
-        colored("\nDo you want to apply the changes? [yes/no]\ninput: [yes]", "red")
+        colored("\nDo you want to apply the changes? [yes/no]\ninput: [yes]", "blue")
     )
     return (selected_option == "yes" or selected_option == "y" or selected_option == "")
 
@@ -103,7 +103,7 @@ def _display_options(options: list, multi: bool = False, default: str = None):
         options_display += f"{str(idx)} = {option}\n"
     options_display += "Enter the option number. "
     if multi:
-        options_display += "To select multiple options, use csv format. Ex.: 1,2,3\n"
+        options_display += "To select multiple options, use csv format. Ex.: 0,1\n"
         options_display += "To select all options, type 'all' \n"
-    options_display += f"\ninput: {f'[{default}] ' if default else ''}"
+    options_display += colored(f"\ninput: {f'[{default}] ' if default else ''}", "blue")
     return options_display
