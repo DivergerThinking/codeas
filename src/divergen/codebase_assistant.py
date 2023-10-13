@@ -22,7 +22,7 @@ class CodebaseAssistant(BaseModel):
     codebase: Codebase = Codebase()
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 2000
-    model: object = ChatOpenAI(callbacks=[StreamingStdOutCallbackHandler()])
+    model: object = ChatOpenAI(callbacks=[StreamingStdOutCallbackHandler()], streaming=True)
     _preprompts: dict = PrivateAttr(default_factory=dict)
     _guidelines: dict = PrivateAttr(default_factory=dict)
 
