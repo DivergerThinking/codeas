@@ -14,18 +14,25 @@ class Request(BaseModel):
     model: object
     target: str
 
-    def execute(self, entity: Union[Entity, Module]):
+    def execute(self, entity: Union[Entity, Module], verbose: bool=True):
         if isinstance(entity, Entity):
             logging.info(f"Executing request for {entity.node.name}")
         elif isinstance(entity, Module):
             logging.info(f"Executing request for {entity.name}")
+        
         entity_context = entity.get(self.context)
         prompt = TEMPLATES[self.target].format(
             self.user_prompt, entity_context, self.guideline_prompt
         )
+        if verbose:
+            logging.info(f"Prompt:\n {prompt}")
+        
+        logging.info("Model output: \n")
         output = self.model.predict(prompt)
+        
         if self.target in ["code", "tests"]:
             output = self._parse_output(output)
+        
         entity.modify(self.target, output)
 
     def _parse_output(self, output: str):
