@@ -1,5 +1,6 @@
 import logging
-from typing import Any, List
+import os
+from typing import Any, List, Optional
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -15,33 +16,45 @@ logging.basicConfig(
 )
 
 
-class CodebaseAssistant(BaseModel):
-    config_path: str = None
-    preprompts_path: str = None
-    guidelines_path: str = None
+class CodebaseAssistant(BaseModel, validate_assignment=True):
+    config_path: Optional[str] = None
+    preprompts_path: Optional[str] = None
+    guidelines_path: Optional[str] = None
     codebase: Codebase = Codebase()
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 2000
-    model: object = ChatOpenAI(callbacks=[StreamingStdOutCallbackHandler()], streaming=True)
+    model: str = "gpt-3.5-turbo"
     _preprompts: dict = PrivateAttr(default_factory=dict)
     _guidelines: dict = PrivateAttr(default_factory=dict)
+    _openai_model: object = PrivateAttr(None)
 
     def model_post_init(self, __context: Any) -> None:
+        self._overwrite_configs()
+        self._set_prompt_files()
+        self._set_openai_model()
+        self._parse_codebase()
+
+    def _overwrite_configs(self):
         if self.config_path:
-            self._set_configs()
+            _configs = read_yaml(self.config_path)
+            for attr, value in _configs.items():
+                if getattr(self, attr) != value:
+                    setattr(self, attr, value)
+
+    def _set_prompt_files(self):
         if self.preprompts_path:
             self._preprompts = read_yaml(self.preprompts_path)
         if self.guidelines_path:
             self._guidelines = read_yaml(self.guidelines_path)
 
-        # TODO: add error handler for when repository is not found
+    def _set_openai_model(self):
+        self._openai_model = ChatOpenAI(
+            model=self.model, callbacks=[StreamingStdOutCallbackHandler()]
+        )
+    
+    def _parse_codebase(self):
+        # TODO: add error handler for when repository is not found or is empty
         self.codebase.parse_modules()
-
-    def _set_configs(self):
-        # TODO: overwrite self with config
-        # TODO: add possibility to configure model from .yaml file
-        # TODO: add model callbacks after model is initialized
-        ...
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
@@ -66,7 +79,7 @@ class CodebaseAssistant(BaseModel):
             context=context,
             target=target,
             guideline_prompt=guideline_prompt,
-            model=self.model,
+            model=self._openai_model,
         )
         for module in self.codebase.get_modules(modules):
             if count_tokens(module.get(context)) > self.max_tokens_per_module:
