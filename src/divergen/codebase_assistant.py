@@ -20,7 +20,6 @@ logging.basicConfig(
 class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     codebase: Codebase = Codebase()
     file_handler: FileHandler = FileHandler()
-    initializer: Initializer = Initializer()
     max_tokens_per_module: int = 2000
     model: str = "gpt-3.5-turbo"
     _preprompts: dict = PrivateAttr(default_factory=dict)
@@ -46,7 +45,9 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def _set_openai_model(self):
         self._openai_model = ChatOpenAI(
-            model=self.model, callbacks=[StreamingStdOutCallbackHandler()]
+            model=self.model,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            streaming=True,
         )
 
     def _parse_codebase(self):
@@ -54,7 +55,8 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         self.codebase.parse_modules()
 
     def init_configs(self, source_path: str = None):
-        self.initializer.init_configs(self, source_path)
+        initializer = Initializer()
+        initializer.init_configs(self, source_path)
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
