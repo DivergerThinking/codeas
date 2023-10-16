@@ -1,4 +1,5 @@
 import typer
+import os
 from dotenv import load_dotenv
 from typing import Optional
 from typing_extensions import Annotated
@@ -28,6 +29,9 @@ assistant = CodebaseAssistant(
     # model=dummy_model,
 )
 
+def validate_run():
+    if not os.path.exists(".divergen"):
+        raise typer.Exit("'.divergen' directory not found. Please run `divergen init` first.")
 
 @app.command()
 def init(
@@ -63,6 +67,7 @@ def run(
     ] = False,
     use_default: Annotated[Optional[bool], typer.Option("-d")] = False,
 ):
+    validate_run()
     if use_inputs:
         prompt = input_prompt()
         modules = input_modules(assistant, use_default)
@@ -77,6 +82,8 @@ def run(
     apply = input_apply_changes()
     if apply:
         assistant.apply_changes()
+    else:
+        assistant.reject_changes()
 
 
 if __name__ == "__main__":
