@@ -45,6 +45,7 @@ def input_modules(assistant: CodebaseAssistant, use_default: bool):
     else:
         return [options[int(idx)] for idx in selected_options.split(",")]
 
+
 def input_guidelines(assistant: CodebaseAssistant, use_default: bool):
     if use_default:
         selected_options = DEFAULT["guidelines"]
@@ -59,6 +60,7 @@ def input_guidelines(assistant: CodebaseAssistant, use_default: bool):
         return DEFAULT["guidelines"]
     else:
         return [options[int(idx)] for idx in selected_options.split(",")]
+
 
 def input_context(use_default: bool):
     if use_default:
@@ -94,7 +96,7 @@ def input_apply_changes():
     selected_option = input(
         colored("\nDo you want to apply the changes? [yes/no]\ninput: [yes]", "blue")
     )
-    return (selected_option == "yes" or selected_option == "y" or selected_option == "")
+    return selected_option == "yes" or selected_option == "y" or selected_option == ""
 
 
 def _display_options(options: list, multi: bool = False, default: str = None):
