@@ -1,4 +1,5 @@
 import typer
+import os
 from dotenv import load_dotenv
 from typing import Optional
 from typing_extensions import Annotated
@@ -13,7 +14,7 @@ from divergen.cli_inputs import (
     input_apply_changes,
     input_context,
     input_target,
-    input_guidelines
+    input_guidelines,
 )
 
 dummy_func = """
@@ -25,17 +26,23 @@ dummy_model = FakeMessagesListChatModel(responses=[msg])
 
 app = typer.Typer()
 assistant = CodebaseAssistant(
-    codebase={"root": "./ml_repo_xs"},
-    preprompts_path="./configs/preprompts.yaml",
-    guidelines_path="./configs/guidelines.yaml",
     # model=dummy_model,
-    max_tokens_per_module=2000
 )
 
+def validate_run():
+    if not os.path.exists(".divergen"):
+        raise typer.Exit("'.divergen' directory not found. Please run `divergen init` first.")
 
 @app.command()
-def set_config():
-    raise NotImplementedError
+def init(
+    path: Annotated[
+        Optional[str],
+        typer.Option(
+            "-p", help="The path containing config files to use for initialization"
+        ),
+    ] = None,
+):
+    assistant.init_configs(path)
 
 
 @app.command()
@@ -45,13 +52,14 @@ def undo():
 
 @app.command()
 def redo():
-    raise
+    raise NotImplementedError
 
 
 @app.command()
 def run(
     prompt_name: Annotated[
-        Optional[str], typer.Argument(help="The name of the prompt found in prompts.yaml")
+        Optional[str],
+        typer.Argument(help="The name of the prompt found in prompts.yaml"),
     ] = None,
     use_inputs: Annotated[
         Optional[bool],
@@ -59,6 +67,7 @@ def run(
     ] = False,
     use_default: Annotated[Optional[bool], typer.Option("-d")] = False,
 ):
+    validate_run()
     if use_inputs:
         prompt = input_prompt()
         modules = input_modules(assistant, use_default)
@@ -69,10 +78,12 @@ def run(
     else:
         modules = input_modules(assistant, use_default)
         assistant.execute_preprompt(prompt_name, modules)
-    
+
     apply = input_apply_changes()
     if apply:
         assistant.apply_changes()
+    else:
+        assistant.reject_changes()
 
 
 if __name__ == "__main__":

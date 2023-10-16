@@ -7,7 +7,7 @@ from divergen.codebase import Codebase
 
 
 class FileHandler(BaseModel):
-    backup_dir: str = ".backup"
+    backup_dir: str = ".divergen/backup"
     preview: bool = True
     auto_format: bool = True
     format_command: str = "black"

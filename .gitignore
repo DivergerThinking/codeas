@@ -4,3 +4,4 @@ debug/
 src-test/
 .backup/
 *egg-info/
+.divergen

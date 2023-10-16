@@ -10,16 +10,14 @@ from divergen.codebase import Codebase
 from divergen.file_handler import FileHandler
 from divergen.request import Request
 from divergen.utils import count_tokens, read_yaml
+from divergen.initializer import Initializer
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
-class CodebaseAssistant(BaseModel, validate_assignment=True):
-    config_path: Optional[str] = None
-    preprompts_path: Optional[str] = None
-    guidelines_path: Optional[str] = None
+class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     codebase: Codebase = Codebase()
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 2000
@@ -29,32 +27,36 @@ class CodebaseAssistant(BaseModel, validate_assignment=True):
     _openai_model: object = PrivateAttr(None)
 
     def model_post_init(self, __context: Any) -> None:
-        self._overwrite_configs()
-        self._set_prompt_files()
-        self._set_openai_model()
-        self._parse_codebase()
+        if os.path.exists(".divergen"):
+            self._overwrite_configs()
+            self._set_prompt_files()
+            self._set_openai_model()
+            self._parse_codebase()
 
     def _overwrite_configs(self):
-        if self.config_path:
-            _configs = read_yaml(self.config_path)
-            for attr, value in _configs.items():
-                if getattr(self, attr) != value:
-                    setattr(self, attr, value)
+        _configs = read_yaml(".divergen/config.yaml")
+        for attr, value in _configs.items():
+            if getattr(self, attr) != value:
+                setattr(self, attr, value)
 
     def _set_prompt_files(self):
-        if self.preprompts_path:
-            self._preprompts = read_yaml(self.preprompts_path)
-        if self.guidelines_path:
-            self._guidelines = read_yaml(self.guidelines_path)
+        self._preprompts = read_yaml(".divergen/prompts.yaml")
+        self._guidelines = read_yaml(".divergen/guidelines.yaml")
 
     def _set_openai_model(self):
         self._openai_model = ChatOpenAI(
-            model=self.model, callbacks=[StreamingStdOutCallbackHandler()]
+            model=self.model,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            streaming=True,
         )
-    
+
     def _parse_codebase(self):
         # TODO: add error handler for when repository is not found or is empty
         self.codebase.parse_modules()
+
+    def init_configs(self, source_path: str = None):
+        initializer = Initializer()
+        initializer.init_configs(self, source_path)
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
