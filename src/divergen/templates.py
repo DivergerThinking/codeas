@@ -1,42 +1,13 @@
-HEADER = """
-You are a senior software engineer
-You will be given a request, some context to use for the request, and some guidelines to follow.
+TEMPLATE = """
+You are a senior software developer.
+You will be given some {context} and instructions to perform on that {context}. 
 
+{CONTEXT}:
+{entity_context}
+
+INSTRUCTIONS:
+{user_prompt}
+{guideline_prompt}
+
+IMPORTANT: only return the {target}. Do not include explanations outside of the {target}.
 """
-
-FOOTER = """
-REQUEST:
-{}
-
-CONTEXT:
-{}
-
-GUIDELINES:
-{}
-"""
-
-CODE_TEMPLATE = (
-    HEADER
-    + """
-Only return code. Do not include explanations outside of the code.
-
-"""
-    + FOOTER
-)
-
-TESTS_TEMPLATE = CODE_TEMPLATE
-
-DOCS_TEMPLATE = (
-    HEADER
-    + """
-Only return the documentation. Do not include explanations outside of the documentation.
-
-"""
-    + FOOTER
-)
-
-TEMPLATES = {
-    "code": CODE_TEMPLATE,
-    "tests": TESTS_TEMPLATE,
-    "docs": DOCS_TEMPLATE,
-}

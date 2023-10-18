@@ -4,7 +4,7 @@ from typing import Optional, Union
 from pydantic import BaseModel
 
 from divergen.entities import Entity, Module
-from divergen.templates import TEMPLATES
+from divergen.templates import TEMPLATE
 
 
 class Request(BaseModel):
@@ -21,8 +21,13 @@ class Request(BaseModel):
             logging.info(f"Executing request for {entity.name}")
 
         entity_context = entity.get(self.context)
-        prompt = TEMPLATES[self.target].format(
-            self.user_prompt, entity_context, self.guideline_prompt
+        prompt = TEMPLATE.format(
+            context=self.context,
+            CONTEXT=self.context.upper(),
+            entity_context=entity_context,
+            user_prompt=self.user_prompt,
+            guideline_prompt=self.guideline_prompt,
+            target=self.target
         )
         if verbose:
             logging.info(f"Prompt:\n {prompt}")
