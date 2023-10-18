@@ -7,7 +7,6 @@ from pydantic import BaseModel
 
 from divergen.utils import write_yaml, copy_files
 from divergen.initializer._default_prompts import DEFAULT_PROMPTS
-from divergen.initializer._default_guidelines import DEFAULT_GUIDELINES
 
 if TYPE_CHECKING:
     from divergen.codebase_assistant import CodebaseAssistant
@@ -21,7 +20,6 @@ class Initializer(BaseModel):
         else:
             write_yaml(".divergen/config.yaml", assistant.model_dump())
             write_yaml(".divergen/prompts.yaml", DEFAULT_PROMPTS)
-            write_yaml(".divergen/guidelines.yaml", DEFAULT_GUIDELINES)
 
     def _create_divergen_dir(self):
         if not os.path.exists(".divergen"):
