@@ -65,7 +65,7 @@ def input_action(use_default: bool):
     if use_default:
         selected_option = DEFAULT["action"]
     else:
-        options = ["modify_code", "generate_docs", "generate_tests"]
+        options = ["modify_code", "modify_docs", "modify_tests"]
         selected_option = input(
             colored("\nSelect the action to use for these the modules. \n", "blue")
             + _display_options(options, multi=False, default=DEFAULT["action"])
