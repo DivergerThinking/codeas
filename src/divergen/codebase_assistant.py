@@ -20,8 +20,8 @@ logging.basicConfig(
 
 ACTION_MAPPING = {
     "modify_code": {
-        "context": "code", 
-        "target": "code"
+        "context": "code",
+        "target": "code",
     },
     "modify_docs": {
         "context": "code",
@@ -58,7 +58,7 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     def _set_prompts(self):
         self._prompts = read_yaml(".divergen/prompts.yaml")
         self._add_guideline_prompts(self._prompts)
-    
+
     def _add_guideline_prompts(self, prompts: dict):
         guidelines = prompts.get("guidelines")
         for prompt in prompts.values():
@@ -67,7 +67,9 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
                 prompt["guideline_prompt"] = ""
                 for prompt_guideline in prompt_guidelines:
                     if prompt_guideline in guidelines.keys():
-                        prompt["guideline_prompt"] += guidelines[prompt_guideline] + "\n"
+                        prompt["guideline_prompt"] += (
+                            guidelines[prompt_guideline] + "\n"
+                        )
                     else:
                         err_msg = f"Guideline {prompt_guideline} not found"
                         logging.error(err_msg)
