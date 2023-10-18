@@ -1,7 +1,6 @@
 .env
 *__pycache__/
 debug/
-src-test/
 .backup/
 *egg-info/
 .divergen
