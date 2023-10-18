@@ -1,7 +1,9 @@
 import logging
 import os
-from typing import Any, List, Optional
+from typing import Any, List
 
+from langchain.chat_models.fake import FakeMessagesListChatModel
+from langchain.schema import AIMessage
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel, PrivateAttr
@@ -15,6 +17,21 @@ from divergen.initializer import Initializer
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
+ACTION_MAPPING = {
+    "modify_code": {
+        "context": "code", 
+        "target": "code"
+    },
+    "modify_docs": {
+        "context": "code",
+        "target": "docs",
+    },
+    "modify_tests": {
+        "context": "code",
+        "target": "tests",
+    },
+}
 
 
 class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
@@ -44,11 +61,19 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         self._guidelines = read_yaml(".divergen/guidelines.yaml")
 
     def _set_openai_model(self):
-        self._openai_model = ChatOpenAI(
-            model=self.model,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            streaming=True,
-        )
+        if self.model == "fake":
+            dummy_func = """
+            def dummy_func():
+                pass
+            """
+            msg = AIMessage(content=dummy_func)
+            self._openai_model = FakeMessagesListChatModel(responses=[msg])
+        else:
+            self._openai_model = ChatOpenAI(
+                model=self.model,
+                callbacks=[StreamingStdOutCallbackHandler()],
+                streaming=True,
+            )
 
     def _parse_codebase(self):
         # TODO: add error handler for when repository is not found or is empty
@@ -60,22 +85,22 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
-        user_prompt = self._preprompts[name].get("user_prompt")
-        context = self._preprompts[name].get("context")
-        target = self._preprompts[name].get("target")
+        user_prompt = self._preprompts[name]["user_prompt"]
+        action = self._preprompts[name]["action"]
         guidelines = self._preprompts[name].get("guidelines")
-        self.execute_prompt(user_prompt, context, target, guidelines, modules)
+        self.execute_prompt(user_prompt, action, guidelines, modules)
 
     def execute_prompt(
         self,
         user_prompt: str,
-        context: str = "code",
-        target: str = "code",
+        action: str = "modify_code",
         guidelines: List[str] = None,
         modules: List[str] = None,
     ):
         logging.info(f"Executing prompt {user_prompt}")
         guideline_prompt = self._read_guidelines(guidelines)
+        context = self._get_context(action)
+        target = self._get_target(action)
         request = Request(
             user_prompt=user_prompt,
             context=context,
@@ -91,6 +116,12 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
             else:
                 request.execute(module)
         self.file_handler.export_modifications(self.codebase, target)
+
+    def _get_context(self, action: str):
+        return ACTION_MAPPING[action]["context"]
+
+    def _get_target(self, action: str):
+        return ACTION_MAPPING[action]["target"]
 
     def _read_guidelines(self, guidelines: list):
         guideline_prompt = ""
