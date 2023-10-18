@@ -39,14 +39,13 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 2000
     model: str = "gpt-3.5-turbo"
-    _preprompts: dict = PrivateAttr(default_factory=dict)
-    _guidelines: dict = PrivateAttr(default_factory=dict)
+    _prompts: dict = PrivateAttr(default_factory=dict)
     _openai_model: object = PrivateAttr(None)
 
     def model_post_init(self, __context: Any) -> None:
         if os.path.exists(".divergen"):
             self._overwrite_configs()
-            self._set_prompt_files()
+            self._set_prompts()
             self._set_openai_model()
             self._parse_codebase()
 
@@ -56,16 +55,27 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
             if getattr(self, attr) != value:
                 setattr(self, attr, value)
 
-    def _set_prompt_files(self):
-        self._preprompts = read_yaml(".divergen/prompts.yaml")
-        self._guidelines = read_yaml(".divergen/guidelines.yaml")
+    def _set_prompts(self):
+        self._prompts = read_yaml(".divergen/prompts.yaml")
+        self._add_guideline_prompts(self._prompts)
+    
+    def _add_guideline_prompts(self, prompts: dict):
+        guidelines = prompts.get("guidelines")
+        for prompt in prompts.values():
+            prompt_guidelines = prompt.get("guidelines")
+            if prompt_guidelines is not None:
+                prompt["guideline_prompt"] = ""
+                for prompt_guideline in prompt_guidelines:
+                    if prompt_guideline in guidelines.keys():
+                        prompt["guideline_prompt"] += guidelines[prompt_guideline] + "\n"
+                    else:
+                        err_msg = f"Guideline {prompt_guideline} not found"
+                        logging.error(err_msg)
+                        raise ValueError(err_msg)
 
     def _set_openai_model(self):
         if self.model == "fake":
-            dummy_func = """
-            def dummy_func():
-                pass
-            """
+            dummy_func = """def dummy_func():\n    pass"""
             msg = AIMessage(content=dummy_func)
             self._openai_model = FakeMessagesListChatModel(responses=[msg])
         else:
@@ -85,20 +95,19 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
-        user_prompt = self._preprompts[name]["user_prompt"]
-        action = self._preprompts[name]["action"]
-        guidelines = self._preprompts[name].get("guidelines")
-        self.execute_prompt(user_prompt, action, guidelines, modules)
+        user_prompt = self._prompts[name]["user_prompt"]
+        action = self._prompts[name]["action"]
+        guideline_prompt = self._prompts[name].get("guideline_prompt")
+        self.execute_prompt(user_prompt, action, guideline_prompt, modules)
 
     def execute_prompt(
         self,
         user_prompt: str,
         action: str = "modify_code",
-        guidelines: List[str] = None,
+        guideline_prompt: List[str] = None,
         modules: List[str] = None,
     ):
         logging.info(f"Executing prompt {user_prompt}")
-        guideline_prompt = self._read_guidelines(guidelines)
         context = self._get_context(action)
         target = self._get_target(action)
         request = Request(
@@ -122,18 +131,6 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def _get_target(self, action: str):
         return ACTION_MAPPING[action]["target"]
-
-    def _read_guidelines(self, guidelines: list):
-        guideline_prompt = ""
-        if guidelines is not None:
-            for guideline in guidelines:
-                if guideline in self._guidelines.keys():
-                    guideline_prompt += self._guidelines[guideline] + "\n"
-                else:
-                    logging.warning(f"Guideline {guideline} not found")
-            return guideline_prompt
-        else:
-            return None
 
     def apply_changes(self):
         logging.info(f"Applying changes")
