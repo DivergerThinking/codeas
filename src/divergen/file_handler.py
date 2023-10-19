@@ -18,14 +18,12 @@ class FileHandler(BaseModel):
 
     def export_modifications(self, codebase: Codebase, target: str):
         # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
-        if target != "tests":
-            self.add_test_prefix = False
-                
+        prefix = "test_" if (self.add_test_prefix and target == "tests") else ""
         for module in codebase.get_modified_modules():
-            path = codebase.get_path(module.name, target)
+            path = codebase.get_path(module.name, target, prefix)
             self._target_files.append(path)
-            path = codebase.get_path(module.name, target, self.preview, self.add_test_prefix)
             if self.preview:
+                path = codebase.get_path(module.name, target, prefix, "_preview")
                 self._preview_files.append(path)
 
             self._write_file(path, module.get(target))

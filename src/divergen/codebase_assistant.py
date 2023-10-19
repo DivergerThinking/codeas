@@ -116,10 +116,16 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     def apply_changes(self):
         logging.info(f"Applying changes")
         self.file_handler.make_backup_dir()
-        self.file_handler.move_target_files_to_backup()
+        # handling the case when we generate files for the first time
+        # TODO: need to think about how to better handle this in general
+        try:
+            self.file_handler.move_target_files_to_backup()
+        except FileNotFoundError:
+            pass
         self.file_handler.move_preview_files_to_target()
 
     def revert_changes(self):
+        # this mechanism for undoing is not valid under the new CLI logic and should be reviewed
         logging.info(f"Reverting changes")
         self.file_handler.move_target_files_to_preview()
         self.file_handler.move_backup_files_to_target()
