@@ -82,23 +82,23 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
-        user_prompt = self._prompts[name]["user_prompt"]
+        instructions = self._prompts[name]["instructions"]
         target = self._prompts[name]["target"]
         context = self._prompts[name].get("context", "code")
         guideline_prompt = self._prompts[name].get("guideline_prompt")
-        self.execute_prompt(user_prompt, target, context, guideline_prompt, modules)
+        self.execute_prompt(instructions, target, context, guideline_prompt, modules)
 
     def execute_prompt(
         self,
-        user_prompt: str,
+        instructions: str,
         target: str,
         context: str = "code",
         guideline_prompt: List[str] = None,
         modules: List[str] = None,
     ):
-        logging.info(f"Executing prompt {user_prompt}")
+        logging.info(f"Executing prompt {instructions}")
         request = Request(
-            user_prompt=user_prompt,
+            instructions=instructions,
             context=context,
             target=target,
             guideline_prompt=guideline_prompt,

@@ -1,5 +1,5 @@
 generate_docstrings:
-  user_prompt: Generate docstrings using numpy style.
+  instructions: Generate docstrings using numpy style.
   context: code
   target: code
   guidelines:

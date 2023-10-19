@@ -8,7 +8,7 @@ from divergen.templates import TEMPLATE
 
 
 class Request(BaseModel):
-    user_prompt: str
+    instructions: str
     context: str
     guideline_prompt: Optional[str]
     model: object
@@ -25,7 +25,7 @@ class Request(BaseModel):
             context=self.context,
             CONTEXT=self.context.upper(),
             entity_context=entity_context,
-            user_prompt=self.user_prompt,
+            instructions=self.instructions,
             guideline_prompt=self.guideline_prompt,
             target=self.target,
         )

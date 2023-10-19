@@ -54,12 +54,10 @@ Before running the tool, it is important to first understand its main components
 - `prompts.yaml`: contains the prompts to run through the CLI. See next point for more information.
 
 `Prompt`: entry inside the prompts.yaml containing the following
-- `user_prompt`: the instructions for the LLM to perform
-- `action`: the action to perform on the codebase. Each action is mapped to a context (given as input to the LLM) and a target (gets modified by the LLM output). Currently the following three actions are available:
-  - `modify_code`: modify the modules' source code. Both the context and target are the source code files.
-  - `modify_tests`: modify the modules' tests. The context is the source code files, the target is the test files.
-  - `modify_docs`: modify the modules' documentation. The context is the source code files, the target is the documentation files.
-- `guidelines` [optional]: some additional guidelines the LLM should follow when performing the request
+- `instructions`: the instructions for the LLM to perform
+- `context`: the context we pass to the LLM from the module. By default this is the module's code. Options are "code", "tests" or "docs".
+- `target`: the target we want to modify from the module. By default this is the module's code. Options are "code", "tests" or "docs".
+- `guidelines` [optional]: some additional guidelines the LLM should follow when performing the instructions
 
 `Modules`: we refer to modules as units of code stored inside a file. The particularity of our definition is that a single module can refer to three files: source code, tests and documentation files. This makes it easier for us to retrieve or modify source code, tests and documentation of a given module:
 
@@ -120,18 +118,16 @@ Inside the `.divergen/prompts.yaml` are the prompts and their attributes.
 
 ```yaml
 generate_docstrings:
-    action: modify_code
-    user_prompt: Generate docstrings using numpy style.
+    instructions: Generate docstrings using numpy style.
+    target: code
 
 generate_tests:
-    action: modify_test
-    user_prompt: Generate tests using pytest.
+    instructions: Generate tests using pytest.
+    target: tests
 
 generate_docs:
-    action: modify_docs
-    user_prompt: Generate usage documentation.
-    guidelines:
-        - documentation_guideline
+    instructions: Generate usage documentation.
+    target: docs
 ```
 
 The above prompts are examples provided when you initialize the configs for the first time in order to get you started quickly.
@@ -143,12 +139,15 @@ Use `divergen run` followed by the prompt name you want to execute:
 ```bash
 divergen run generate_docstrings
 ```
-
 ```bash
 divergen run generate_tests
 ```
+```
+...
+```
 
-If you don't don't want to use the yaml file, you can enter the action, user prompts and guidelines via the CLI using the `-i` option:
+
+If you don't don't want to use the yaml file, you can enter the instructions and guidelines via the CLI using the `-i` option:
 
 ```bash
 divergen run -i
@@ -159,5 +158,5 @@ divergen run -i
 Future efforts will be focused on
 - generalizing to other languages
 - tracking execution flow and costs
-- automatically retrieving modules based on user prompt
-- automatically identifying action based on user prompt
+- automatically retrieving modules based on instructions
+- automatically identifying target based on instructions

@@ -1,7 +1,7 @@
 DEFAULT_PROMPTS = {
     "generate_docstrings": {
-        "action": "modify_code",
-        "user_prompt": "Generate docstrings using numpy style.",
+        "instructions": "Generate docstrings using numpy style.",
+        "target": "code",
         "guidelines": ["clean_code"],
     },
     "guidelines": {
