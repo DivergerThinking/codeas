@@ -35,7 +35,7 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
             self._parse_codebase()
 
     def _overwrite_configs(self):
-        _configs = read_yaml(".divergen/config.yaml")
+        _configs = read_yaml(".divergen/assistant.yaml")
         for attr, value in _configs.items():
             if getattr(self, attr) != value:
                 setattr(self, attr, value)

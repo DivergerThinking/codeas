@@ -18,7 +18,7 @@ class Initializer(BaseModel):
         if source_path:
             copy_files(source_path, ".divergen")
         else:
-            write_yaml(".divergen/config.yaml", assistant.model_dump())
+            write_yaml(".divergen/assistant.yaml", assistant.model_dump())
             write_yaml(".divergen/prompts.yaml", DEFAULT_PROMPTS)
 
     def _create_divergen_dir(self):
