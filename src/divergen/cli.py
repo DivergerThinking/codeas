@@ -6,7 +6,7 @@ from typing_extensions import Annotated
 
 load_dotenv()
 
-from divergen.codebase_assistant import CodebaseAssistant
+from divergen.assistant import CodebaseAssistant
 from divergen.cli_inputs import (
     input_modules,
     input_prompt,

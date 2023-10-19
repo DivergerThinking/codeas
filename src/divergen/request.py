@@ -4,7 +4,7 @@ from typing import Optional, Union
 from pydantic import BaseModel
 
 from divergen.entities import Entity, Module
-from divergen.templates import TEMPLATE
+from divergen._templates import TEMPLATE
 
 
 class Request(BaseModel):

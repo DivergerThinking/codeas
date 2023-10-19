@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from termcolor import colored
 
 if TYPE_CHECKING:
-    from divergen.codebase_assistant import CodebaseAssistant
+    from divergen.assistant import CodebaseAssistant
 
 
 DEFAULT = {

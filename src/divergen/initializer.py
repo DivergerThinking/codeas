@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 
 from divergen.utils import write_yaml, copy_files
-from divergen.initializer._default_prompts import DEFAULT_PROMPTS
+from divergen._prompts import DEFAULT_PROMPTS
 
 if TYPE_CHECKING:
-    from divergen.codebase_assistant import CodebaseAssistant
+    from divergen.assistant import CodebaseAssistant
 
 
 class Initializer(BaseModel):
