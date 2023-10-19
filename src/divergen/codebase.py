@@ -17,13 +17,16 @@ class Codebase(BaseModel):
     tests_format: str = ".py"
     _modules: List[Module] = PrivateAttr(default_factory=list)
 
-    def get_path(self, module_name: str, target: str, preview: bool = False):
+    def get_path(self, module_name: str, target: str, preview: bool = False, add_test_prefix: bool = False):
         target_folder = getattr(self, f"{target}_folder")
         target_format = getattr(self, f"{target}_format")
-        preview_str = "_preview" if preview else ""
+        prefix = "test_" if add_test_prefix else ""
+        suffix = "_preview" if preview else ""
+        module_path = module_name.replace(".", "/")
+        module_head, module_tail = os.path.split(module_path)
         return os.path.join(
             target_folder,
-            module_name.replace(".", "/") + preview_str + target_format,
+            module_head, prefix + module_tail + suffix + target_format,
         )
 
     def get_modules(self, module_names: list = None) -> List[Module]:

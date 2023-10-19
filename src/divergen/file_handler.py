@@ -9,6 +9,7 @@ from divergen.codebase import Codebase
 class FileHandler(BaseModel):
     backup_dir: str = ".divergen/backup"
     preview: bool = True
+    add_test_prefix: bool = True
     auto_format: bool = True
     format_command: str = "black"
     _target_files: list = PrivateAttr(default_factory=list)
@@ -16,12 +17,15 @@ class FileHandler(BaseModel):
     _backup_files: list = PrivateAttr(default_factory=list)
 
     def export_modifications(self, codebase: Codebase, target: str):
+        # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
+        if target != "tests":
+            self.add_test_prefix = False
+                
         for module in codebase.get_modified_modules():
             path = codebase.get_path(module.name, target)
             self._target_files.append(path)
-
+            path = codebase.get_path(module.name, target, self.preview, self.add_test_prefix)
             if self.preview:
-                path = codebase.get_path(module.name, target, self.preview)
                 self._preview_files.append(path)
 
             self._write_file(path, module.get(target))
