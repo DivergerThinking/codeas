@@ -19,5 +19,8 @@ version = {attr = "divergen.__version__"}
 readme = {file=["README.md"], content-type="text/markdown"}
 dependencies = {file = ["requirements.txt"]}
 
-[tool.black]
-line-length = 88
+[tool.isort]
+profile = "black"
+
+[tool.ruff.per-file-ignores]
+"src/divergen/cli.py" = ["E402"]
