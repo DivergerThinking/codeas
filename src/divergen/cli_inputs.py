@@ -50,7 +50,7 @@ def input_guidelines(assistant: CodebaseAssistant, use_default: bool):
     if use_default:
         selected_options = DEFAULT["guidelines"]
     else:
-        options = assistant._guidelines.keys()
+        options = assistant._prompts.get("guidelines", {}).keys()
         selected_options = input(
             colored("\nSelect the guidelines you want to use. \n", "blue")
             + _display_options(options, multi=True, default=DEFAULT["guidelines"])
