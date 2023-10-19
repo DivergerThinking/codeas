@@ -2,17 +2,17 @@ import logging
 import os
 from typing import Any, List
 
-from langchain.chat_models.fake import FakeMessagesListChatModel
-from langchain.schema import AIMessage
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
+from langchain.chat_models.fake import FakeMessagesListChatModel
+from langchain.schema import AIMessage
 from pydantic import BaseModel, PrivateAttr
 
 from divergen.codebase import Codebase
 from divergen.file_handler import FileHandler
+from divergen.initializer import Initializer
 from divergen.request import Request
 from divergen.utils import count_tokens, read_yaml
-from divergen.initializer import Initializer
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -114,7 +114,7 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         self.file_handler.export_modifications(self.codebase, target)
 
     def apply_changes(self):
-        logging.info(f"Applying changes")
+        logging.info("Applying changes")
         self.file_handler.make_backup_dir()
         # handling the case when we generate files for the first time
         # TODO: need to think about how to better handle this in general
@@ -126,11 +126,11 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def revert_changes(self):
         # this mechanism for undoing is not valid under the new CLI logic and should be reviewed
-        logging.info(f"Reverting changes")
+        logging.info("Reverting changes")
         self.file_handler.move_target_files_to_preview()
         self.file_handler.move_backup_files_to_target()
         self.file_handler.reset_backup_files()
 
     def reject_changes(self):
-        logging.info(f"Rejecting changes")
+        logging.info("Rejecting changes")
         self.file_handler.remove_preview_files()

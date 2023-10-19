@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-
 from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
-from divergen.utils import write_yaml, copy_files
 from divergen._prompts import DEFAULT_PROMPTS
+from divergen.utils import copy_files, write_yaml
 
 if TYPE_CHECKING:
     from divergen.assistant import CodebaseAssistant

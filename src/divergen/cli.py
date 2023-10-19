@@ -1,19 +1,20 @@
-import typer
 import os
-from dotenv import load_dotenv
 from typing import Optional
+
+import typer
+from dotenv import load_dotenv
 from typing_extensions import Annotated
 
 load_dotenv()
 
 from divergen.assistant import CodebaseAssistant
 from divergen.cli_inputs import (
-    input_modules,
-    input_prompt,
     input_apply_changes,
     input_context,
-    input_target,
     input_guidelines,
+    input_modules,
+    input_prompt,
+    input_target,
 )
 
 app = typer.Typer()
