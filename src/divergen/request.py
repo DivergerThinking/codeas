@@ -27,7 +27,7 @@ class Request(BaseModel):
             entity_context=entity_context,
             user_prompt=self.user_prompt,
             guideline_prompt=self.guideline_prompt,
-            target=self.target
+            target=self.target,
         )
         if verbose:
             logging.info(f"Prompt:\n {prompt}")

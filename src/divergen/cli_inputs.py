@@ -9,7 +9,8 @@ if TYPE_CHECKING:
 
 DEFAULT = {
     "modules": "all",
-    "action": "0",
+    "context": "0",
+    "target": "0",
     "guidelines": "None",
 }
 
@@ -61,17 +62,32 @@ def input_guidelines(assistant: CodebaseAssistant, use_default: bool):
         return [options[int(idx)] for idx in selected_options.split(",")]
 
 
-def input_action(use_default: bool):
+def input_context(use_default: bool):
     if use_default:
-        selected_option = DEFAULT["action"]
+        selected_option = DEFAULT["context"]
     else:
-        options = ["modify_code", "modify_docs", "modify_tests"]
+        options = ["code", "docs", "tests"]
         selected_option = input(
-            colored("\nSelect the action to use for these the modules. \n", "blue")
-            + _display_options(options, multi=False, default=DEFAULT["action"])
+            colored("\nSelect the context to use for these modules. \n", "blue")
+            + _display_options(options, multi=False, default=DEFAULT["context"])
         )
     if selected_option == "":
-        return options[int(DEFAULT["action"])]
+        return options[int(DEFAULT["context"])]
+    else:
+        return options[int(selected_option)]
+
+
+def input_target(use_default: bool):
+    if use_default:
+        selected_option = DEFAULT["target"]
+    else:
+        options = ["code", "docs", "tests"]
+        selected_option = input(
+            colored("\nSelect the target to use for these the modules. \n", "blue")
+            + _display_options(options, multi=False, default=DEFAULT["context"])
+        )
+    if selected_option == "":
+        return options[int(DEFAULT["target"])]
     else:
         return options[int(selected_option)]
 

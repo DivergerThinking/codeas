@@ -18,21 +18,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-ACTION_MAPPING = {
-    "modify_code": {
-        "context": "code",
-        "target": "code",
-    },
-    "modify_docs": {
-        "context": "code",
-        "target": "docs",
-    },
-    "modify_tests": {
-        "context": "code",
-        "target": "tests",
-    },
-}
-
 
 class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     codebase: Codebase = Codebase()
@@ -98,20 +83,20 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
         user_prompt = self._prompts[name]["user_prompt"]
-        action = self._prompts[name]["action"]
+        target = self._prompts[name]["target"]
+        context = self._prompts[name].get("context", "code")
         guideline_prompt = self._prompts[name].get("guideline_prompt")
-        self.execute_prompt(user_prompt, action, guideline_prompt, modules)
+        self.execute_prompt(user_prompt, target, context, guideline_prompt, modules)
 
     def execute_prompt(
         self,
         user_prompt: str,
-        action: str = "modify_code",
+        target: str,
+        context: str = "code",
         guideline_prompt: List[str] = None,
         modules: List[str] = None,
     ):
         logging.info(f"Executing prompt {user_prompt}")
-        context = self._get_context(action)
-        target = self._get_target(action)
         request = Request(
             user_prompt=user_prompt,
             context=context,
@@ -127,12 +112,6 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
             else:
                 request.execute(module)
         self.file_handler.export_modifications(self.codebase, target)
-
-    def _get_context(self, action: str):
-        return ACTION_MAPPING[action]["context"]
-
-    def _get_target(self, action: str):
-        return ACTION_MAPPING[action]["target"]
 
     def apply_changes(self):
         logging.info(f"Applying changes")

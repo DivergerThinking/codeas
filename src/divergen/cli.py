@@ -11,7 +11,8 @@ from divergen.cli_inputs import (
     input_modules,
     input_prompt,
     input_apply_changes,
-    input_action,
+    input_context,
+    input_target,
     input_guidelines,
 )
 
@@ -64,9 +65,10 @@ def run(
     if use_inputs:
         prompt = input_prompt()
         modules = input_modules(assistant, use_default)
-        action = input_action(use_default)
+        context = input_context(use_default)
+        target = input_target(use_default)
         guidelines = input_guidelines(assistant, use_default)
-        assistant.execute_prompt(prompt, action, guidelines, modules)
+        assistant.execute_prompt(prompt, context, target, guidelines, modules)
     else:
         modules = input_modules(assistant, use_default)
         assistant.execute_preprompt(prompt_name, modules)
