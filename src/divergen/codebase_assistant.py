@@ -83,7 +83,7 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     def execute_preprompt(self, name: str, modules: List[str] = None):
         logging.info(f"Executing preprompt {name}")
         instructions = self._prompts[name]["instructions"]
-        target = self._prompts[name]["target"]
+        target = self._prompts[name].get("target", "code")
         context = self._prompts[name].get("context", "code")
         guideline_prompt = self._prompts[name].get("guideline_prompt")
         self.execute_prompt(instructions, target, context, guideline_prompt, modules)
@@ -91,7 +91,7 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     def execute_prompt(
         self,
         instructions: str,
-        target: str,
+        target: str = "code",
         context: str = "code",
         guideline_prompt: List[str] = None,
         modules: List[str] = None,
