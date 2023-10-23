@@ -5,6 +5,25 @@ from pydantic import BaseModel, PrivateAttr
 
 
 class BaseEntity(BaseModel):
+    """Base class for all entities, such as modules, classes, and functions.
+    Each base entity is attached not only to its source code (self.code) but also to its
+    documentation (self.docs) and tests (self.tests). This makes it easy to modify the
+    source code, documentation, and tests of an entity at the same time.
+
+    Attributes
+    ----------
+    node : object
+        the ast node
+    code : str, optional
+        the code, by default ""
+    docs : str, optional
+        the docs, by default ""
+    tests : str, optional
+        the tests, by default ""
+    modified : bool, optional
+        flag to indicate if the entity has been modified, by default False
+    """
+
     node: object
     code: str = ""
     docs: str = ""
@@ -15,12 +34,29 @@ class BaseEntity(BaseModel):
         return getattr(self, attr)
 
     def modify(self, attr, value):
+        """Modify the attribute and update the node.
+
+        Parameters
+        ----------
+        attr : str
+            the attribute to modify
+        value : str
+            the value to set
+        """
         setattr(self, attr, value)
         self.modified = True
         if attr == "code":
             self.update_node(value)
 
     def update_node(self, code: str):
+        """Update the ast node with the new code.
+        If the entity is not a module, we also update the module node.
+
+        Parameters
+        ----------
+        code : str
+            the new code
+        """
         ast_node = ast.parse(code)
         if isinstance(self, Module):
             self.node = ast_node
@@ -34,6 +70,16 @@ class BaseEntity(BaseModel):
 
 
 class Entity(BaseEntity, arbitrary_types_allowed=True):
+    """Entity class for classes and functions.
+
+    Attributes
+    ----------
+    module : object
+        the parent module
+    body_idx : int
+        the index of the node in the parent module's body
+    """
+
     module: object
     body_idx: int
 
@@ -45,6 +91,8 @@ class Entity(BaseEntity, arbitrary_types_allowed=True):
 
 
 class Module(BaseEntity):
+    """Module class containing a list of entities."""
+
     name: str
     _entities: List[Entity] = PrivateAttr(default_factory=list)
 
@@ -52,12 +100,20 @@ class Module(BaseEntity):
         self.set_code()
 
     def get_entities(self, entity_names: Optional[list] = None) -> List[Entity]:
+        """Return a list of entities. If entity_names is None, return all entities."""
         if entity_names is None:
             return self._entities
         else:
             return [self.get_entity(entity_name) for entity_name in entity_names]
 
     def get_entity(self, name: str):
+        """Return an entity by name.
+
+        Parameters
+        ----------
+        name : str
+            the name of the entity
+        """
         results = [entity for entity in self.entities if entity.node.name == name]
         self._check_search(results, name)
         return results[0]
@@ -71,6 +127,7 @@ class Module(BaseEntity):
             return result
 
     def parse_entities(self):
+        """Parse the entities in the module."""
         for idx, node in enumerate(self.node.body):
             if node.col_offset == 0 and isinstance(
                 node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
@@ -78,6 +135,13 @@ class Module(BaseEntity):
                 self._entities.append(Entity(node=node, module=self, body_idx=idx))
 
     def merge_entities(self, attr: str):
+        """Merge the attribute of all entities into the module.
+
+        Parameters
+        ----------
+        attr : str
+            the attribute to merge
+        """
         if attr == "code":
             # since nodes are updated, we reset the code
             self.set_code()

@@ -7,6 +7,25 @@ from divergen.codebase import Codebase
 
 
 class FileHandler(BaseModel):
+    """Class for handling files. It is used to export modifications to the codebase,
+    and to apply or reject changes.
+
+    Attributes
+    ----------
+    codebase : Codebase
+        the codebase of the assistant
+    backup_dir : str, optional
+        the directory where the backup files are saved, by default ".divergen/backup"
+    preview : bool, optional
+        whether to make a preview of the changes, by default True
+    add_test_prefix : bool, optional
+        whether to add "test_" prefix to test files, by default True
+    auto_format : bool, optional
+        whether to auto format the files after exporting them, by default True
+    format_command : str, optional
+        the command used to auto format the files, by default "black"
+    """
+
     backup_dir: str = ".divergen/backup"
     preview: bool = True
     add_test_prefix: bool = True
@@ -17,6 +36,15 @@ class FileHandler(BaseModel):
     _backup_files: list = PrivateAttr(default_factory=list)
 
     def export_modifications(self, codebase: Codebase, target: str):
+        """Export the modified modules to the target files.
+
+        Parameters
+        ----------
+        codebase : Codebase
+            the codebase of the assistant
+        target : str
+            the target of the modifications. It can be "code", "docs", or "tests".
+        """
         # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
         prefix = "test_" if (self.add_test_prefix and target == "tests") else ""
         for module in codebase.get_modified_modules():

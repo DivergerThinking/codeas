@@ -8,6 +8,22 @@ from divergen.entities import Entity, Module
 
 
 class Request(BaseModel):
+    """Class for executing LLM requests on entities and modules.
+
+    Attributes
+    ----------
+    instructions : str
+        the instructions for the request
+    context : str
+        the context of the request. It can be "code", "docs", or "tests".
+    guideline_prompt : Optional[str]
+        the prompt to be used as a guideline for the model, by default None
+    model : object
+        the model to use for executing the request
+    target : str
+        the target of the request. It can be "code", "docs", or "tests".
+    """
+
     instructions: str
     context: str
     guideline_prompt: Optional[str]

@@ -20,6 +20,21 @@ logging.basicConfig(
 
 
 class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
+    """CodebaseAssistant is the main class of the divergen package. It is used to
+    initialize the configs, execute prompts, and apply or reject changes.
+
+    Attributes
+    ----------
+    codebase : Codebase
+        Description
+    file_handler : FileHandler
+        Description
+    max_tokens_per_module : int, optional
+        Description, by default 2000
+    model : str, optional
+        Description, by default "gpt-3.5-turbo"
+    """
+
     codebase: Codebase = Codebase()
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 2000
@@ -28,6 +43,9 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     _openai_model: object = PrivateAttr(None)
 
     def model_post_init(self, __context: Any) -> None:
+        """When the model is instantiated, this method is called to set the assistant
+        attributes based on the configurations (if initialized).
+        """
         if os.path.exists(".divergen"):
             self._overwrite_configs()
             self._set_prompts()
@@ -76,10 +94,23 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         self.codebase.parse_modules()
 
     def init_configs(self, source_path: str = None):
+        """Initialize the assistant configurations. If source_path is None, default
+        configurations are used. Otherwise, the configurations in the source_path
+        directory are used.
+        """
         initializer = Initializer()
         initializer.init_configs(self, source_path)
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
+        """Execute a preprompt from prompts.yaml file
+
+        Parameters
+        ----------
+        name : str
+            The name of the preprompt
+        modules : List[str], optional
+            The list of modules to execute the preprompt on, by default None
+        """
         self._check_prompt_name(name)
         logging.info(f"Executing preprompt {name}")
         instructions = self._prompts[name]["instructions"]
@@ -99,9 +130,24 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         instructions: str,
         target: str = "code",
         context: str = "code",
-        guideline_prompt: List[str] = None,
+        guideline_prompt: str = "",
         modules: List[str] = None,
     ):
+        """Execute a prompt on the codebase
+
+        Parameters
+        ----------
+        instructions : str
+            The instructions for the model to perform
+        target : str, optional
+            The target to modify in the codebase, by default "code"
+        context : str, optional
+            The context to get from the codebase, by default "code"
+        guideline_prompt : List[str], optional
+            The list of guidelines to be used in the prompt, by default None
+        modules : List[str], optional
+            The list of modules to execute the prompt on, by default None
+        """
         logging.info(f"Executing prompt {instructions}")
         request = Request(
             instructions=instructions,
