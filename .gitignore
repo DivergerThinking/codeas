@@ -4,3 +4,4 @@ debug/
 .backup/
 *egg-info/
 .divergen
+.ruff_cache
