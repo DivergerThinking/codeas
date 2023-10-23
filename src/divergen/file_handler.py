@@ -32,7 +32,7 @@ class FileHandler(BaseModel):
         with open(file_path, "w") as f:
             f.write(content)
 
-        if self.auto_format:
+        if self.auto_format and file_path.endswith(".py"):
             subprocess.run(f"{self.format_command} {file_path}", shell=True, check=True)
 
     def reset_target_files(self):
