@@ -73,7 +73,6 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
             )
 
     def _parse_codebase(self):
-        # TODO: add error handler for when repository is not found or is empty
         self.codebase.parse_modules()
 
     def init_configs(self, source_path: str = None):
@@ -81,12 +80,19 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         initializer.init_configs(self, source_path)
 
     def execute_preprompt(self, name: str, modules: List[str] = None):
+        self._check_prompt_name(name)
         logging.info(f"Executing preprompt {name}")
         instructions = self._prompts[name]["instructions"]
         target = self._prompts[name].get("target", "code")
         context = self._prompts[name].get("context", "code")
         guideline_prompt = self._prompts[name].get("guideline_prompt", "")
         self.execute_prompt(instructions, target, context, guideline_prompt, modules)
+
+    def _check_prompt_name(self, name: str):
+        if name not in self._prompts.keys():
+            err_msg = f"Prompt {name} not found in prompts.yaml"
+            logging.error(err_msg)
+            raise ValueError(err_msg)
 
     def execute_prompt(
         self,
