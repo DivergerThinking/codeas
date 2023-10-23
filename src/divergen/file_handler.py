@@ -25,14 +25,18 @@ class FileHandler(BaseModel):
             if self.preview:
                 path = codebase.get_path(module.name, target, prefix, "_preview")
                 self._preview_files.append(path)
-
+            if not os.path.exists(os.path.dirname(path)):
+                os.makedirs(os.path.dirname(path))
             self._write_file(path, module.get(target))
+            if self.auto_format:
+                self._format_file(path)
 
     def _write_file(self, file_path: str, content: str):
         with open(file_path, "w") as f:
             f.write(content)
 
-        if self.auto_format and file_path.endswith(".py"):
+    def _format_file(self, file_path: str):
+        if file_path.endswith(".py"):
             subprocess.run(f"{self.format_command} {file_path}", shell=True, check=True)
 
     def reset_target_files(self):
