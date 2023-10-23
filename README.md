@@ -96,7 +96,7 @@ If your repository follows a different structure, you must adjust the ``assistan
 
 ### CLI app
 
-The application always uses your current directory as codebase. Make sure you first `cd` to the root of the repository you want to work with.
+**The application uses your current directory as codebase** to work with. Make sure you first `cd` to the root of the repository you want to work with.
 
 If you run the tool for the first time on the repository, you must first inititalize the configuration files.
 
