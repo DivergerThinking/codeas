@@ -41,4 +41,4 @@ class Request(BaseModel):
         entity.modify(self.target, output)
 
     def _parse_output(self, output: str):
-        return output.replace("```python", "").replace("```", "")
+        return output.replace("```python", "").replace("```", "").replace("CODE:", "")
