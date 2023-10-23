@@ -85,7 +85,7 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         instructions = self._prompts[name]["instructions"]
         target = self._prompts[name].get("target", "code")
         context = self._prompts[name].get("context", "code")
-        guideline_prompt = self._prompts[name].get("guideline_prompt")
+        guideline_prompt = self._prompts[name].get("guideline_prompt", "")
         self.execute_prompt(instructions, target, context, guideline_prompt, modules)
 
     def execute_prompt(
