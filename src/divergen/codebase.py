@@ -46,9 +46,16 @@ class Codebase(BaseModel):
         raise ValueError(f"Module {name} not found")
 
     def parse_modules(self):
+        self._check_code_folder()
         modules_paths = self._get_modules_paths(self.code_folder)
         for module_path in modules_paths:
             self.parse_module(module_path)
+
+    def _check_code_folder(self):
+        if not os.path.exists(self.code_folder):
+            raise ValueError(
+                f"Source code folder {self.code_folder} not found. Check your configurations in the assistant.yaml file."
+            )
 
     def parse_module(self, path):
         with open(path) as source:
