@@ -51,7 +51,7 @@ Before running the tool, it is important to first understand its main components
 
 #### `Configs`: 
 the application configurations are stored inside .yaml files generated which are generated when running `divergen init`
-- `assistant.yaml`: contains the configurations for the CodebaseAssistant class (see divergen.assistant.py)
+- `assistant.yaml`: contains the configurations for the Assistant class (see divergen.assistant.py)
 - `prompts.yaml`: contains the prompts to run through the CLI. See next point for more information.
 
 #### `Prompt`: 
