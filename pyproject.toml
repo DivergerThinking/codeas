@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "divergen"
+name = "codeas"
 authors = [
     {name = "Manuel Renner", email = "manuel.renner@diverger.ai"},
 ]
@@ -12,10 +12,10 @@ requires-python = ">=3.9"
 dynamic = ["version", "readme", "dependencies"]
 
 [project.scripts]
-divergen = 'divergen.cli:app'
+codeas = 'codeas.cli:app'
 
 [tool.setuptools.dynamic]
-version = {attr = "divergen.__version__"}
+version = {attr = "codeas.__version__"}
 readme = {file=["README.md"], content-type="text/markdown"}
 dependencies = {file = ["requirements.txt"]}
 
@@ -23,4 +23,4 @@ dependencies = {file = ["requirements.txt"]}
 profile = "black"
 
 [tool.ruff.per-file-ignores]
-"src/divergen/cli.py" = ["E402"]
+"src/codeas/cli.py" = ["E402"]

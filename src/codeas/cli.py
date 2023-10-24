@@ -7,8 +7,8 @@ from typing_extensions import Annotated
 
 load_dotenv()
 
-from divergen.assistant import Assistant
-from divergen.cli_inputs import (
+from codeas.assistant import Assistant
+from codeas.cli_inputs import (
     input_apply_changes,
     input_context,
     input_guidelines,
@@ -22,9 +22,9 @@ assistant = Assistant()
 
 
 def validate_run():
-    if not os.path.exists(".divergen"):
+    if not os.path.exists(".codeas"):
         raise typer.Exit(
-            "'.divergen' directory not found. Please run `divergen init` first."
+            "'.codeas' directory not found. Please run `codeas init` first."
         )
 
 

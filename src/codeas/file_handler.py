@@ -3,7 +3,7 @@ import subprocess
 
 from pydantic import BaseModel, PrivateAttr
 
-from divergen.codebase import Codebase
+from codeas.codebase import Codebase
 
 
 class FileHandler(BaseModel):
@@ -15,7 +15,7 @@ class FileHandler(BaseModel):
     codebase : Codebase
         the codebase of the assistant
     backup_dir : str, optional
-        the directory where the backup files are saved, by default ".divergen/backup"
+        the directory where the backup files are saved, by default ".codeas/backup"
     preview : bool, optional
         whether to make a preview of the changes, by default True
     add_test_prefix : bool, optional
@@ -26,7 +26,7 @@ class FileHandler(BaseModel):
         the command used to auto format the files, by default "black"
     """
 
-    backup_dir: str = ".divergen/backup"
+    backup_dir: str = ".codeas/backup"
     preview: bool = True
     add_test_prefix: bool = True
     auto_format: bool = True

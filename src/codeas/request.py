@@ -3,8 +3,8 @@ from typing import Optional, Union
 
 from pydantic import BaseModel
 
-from divergen._templates import TEMPLATE
-from divergen.entities import Entity, Module
+from codeas._templates import TEMPLATE
+from codeas.entities import Entity, Module
 
 
 class Request(BaseModel):

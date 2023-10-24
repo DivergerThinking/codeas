@@ -1,4 +1,0 @@
-DEFAULT_PROMPTS = {
-    "PROMPT_NAME": {"instructions": "YOUR INSTRUCTIONS HERE"},
-    "guidelines": {"GUIDELINE_NAME": "YOUR GUIDELINE HERE"},
-}

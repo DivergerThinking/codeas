@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from termcolor import colored
 
 if TYPE_CHECKING:
-    from divergen.assistant import Assistant
+    from codeas.assistant import Assistant
 
 
 DEFAULT = {

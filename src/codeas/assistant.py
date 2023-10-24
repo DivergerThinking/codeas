@@ -8,11 +8,11 @@ from langchain.chat_models.fake import FakeMessagesListChatModel
 from langchain.schema import AIMessage
 from pydantic import BaseModel, PrivateAttr
 
-from divergen.codebase import Codebase
-from divergen.file_handler import FileHandler
-from divergen.initializer import Initializer
-from divergen.request import Request
-from divergen.utils import count_tokens, read_yaml
+from codeas.codebase import Codebase
+from codeas.file_handler import FileHandler
+from codeas.initializer import Initializer
+from codeas.request import Request
+from codeas.utils import count_tokens, read_yaml
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -20,7 +20,7 @@ logging.basicConfig(
 
 
 class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
-    """Assistant is the main class of the divergen package. It is used to
+    """Assistant is the main class of the codeas package. It is used to
     initialize the configs, execute prompts, and apply or reject changes.
 
     Attributes
@@ -46,20 +46,20 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         """When the model is instantiated, this method is called to set the assistant
         attributes based on the configurations (if initialized).
         """
-        if os.path.exists(".divergen"):
+        if os.path.exists(".codeas"):
             self._overwrite_configs()
             self._set_prompts()
             self._set_openai_model()
             self._parse_codebase()
 
     def _overwrite_configs(self):
-        _configs = read_yaml(".divergen/assistant.yaml")
+        _configs = read_yaml(".codeas/assistant.yaml")
         for attr, value in _configs.items():
             if getattr(self, attr) != value:
                 setattr(self, attr, value)
 
     def _set_prompts(self):
-        self._prompts = read_yaml(".divergen/prompts.yaml")
+        self._prompts = read_yaml(".codeas/prompts.yaml")
         self._add_guideline_prompts(self._prompts)
 
     def _add_guideline_prompts(self, prompts: dict):

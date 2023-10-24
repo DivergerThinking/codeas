@@ -5,7 +5,7 @@ from typing import List
 
 from pydantic import BaseModel, PrivateAttr
 
-from divergen.entities import Module
+from codeas.entities import Module
 
 
 class Codebase(BaseModel):

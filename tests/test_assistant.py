@@ -4,7 +4,7 @@ import shutil
 import pytest
 from dotenv import load_dotenv
 
-from divergen.assistant import Assistant
+from codeas.assistant import Assistant
 
 load_dotenv()
 
@@ -34,12 +34,12 @@ def _create_dummy_files():
 
 
 def test_init_configs(assistant):
-    if os.path.exists(".divergen"):
-        shutil.rmtree("./.divergen")
+    if os.path.exists(".codeas"):
+        shutil.rmtree("./.codeas")
     assistant.init_configs()
-    assert os.path.exists(".divergen")
-    assert os.path.exists(".divergen/assistant.yaml")
-    assert os.path.exists(".divergen/prompts.yaml")
+    assert os.path.exists(".codeas")
+    assert os.path.exists(".codeas/assistant.yaml")
+    assert os.path.exists(".codeas/prompts.yaml")
 
 
 def test_execute_preprompt(assistant):
@@ -92,20 +92,20 @@ def test_apply_changes(assistant):
     assistant.execute_prompt("instructions")
     assistant.apply_changes()
     assert not os.path.exists("./src/dummy_module_preview.py")
-    assert os.path.exists("./.divergen/backup/dummy_module.py")
+    assert os.path.exists("./.codeas/backup/dummy_module.py")
 
 
 def test_reject_changes(assistant):
-    if os.path.exists("./.divergen/backup/"):
-        shutil.rmtree("./.divergen/backup/")
+    if os.path.exists("./.codeas/backup/"):
+        shutil.rmtree("./.codeas/backup/")
     _monkeypatch_model(assistant)
     assistant.execute_prompt("instructions")
     assistant.reject_changes()
     assert not os.path.exists("./src/dummy_module_preview.py")
-    assert not os.path.exists("./.divergen/backup/dummy_module.py")
+    assert not os.path.exists("./.codeas/backup/dummy_module.py")
 
 
 def test_cleanup():
     _clean_dummy_files()
-    if os.path.exists(".divergen"):
-        shutil.rmtree("./.divergen")
+    if os.path.exists(".codeas"):
+        shutil.rmtree("./.codeas")

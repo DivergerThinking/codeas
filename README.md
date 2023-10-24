@@ -1,6 +1,6 @@
-# Cobaa
+# CODEAS
 
-Cobaa stands for COdeBAse Assistant.
+CODEAS stands for CODEbase ASsistant.
 It uses your codebase as context and helps you to automate the generation of code, documentation, and tests by leveraging the power of LLMs.
 
 Key features include:
@@ -17,14 +17,14 @@ Key features include:
 The tool is not yet deployed on pypi, but you can install it using ssh for now:
 
 ```bash
-pip install git+ssh://git@github.com/DivergerThinking/divergen.git
+pip install git+ssh://git@github.com/DivergerThinking/codeas.git
 ```
 
 #### Development
 
 ```
-git clone git@github.com:DivergerThinking/divergen.git
-cd divergen
+git clone git@github.com:DivergerThinking/codeas.git
+cd codeas
 pip install -e .
 ```
 
@@ -50,8 +50,8 @@ Before running the tool, it is important to first understand its main components
 `CLI App`: This is your entry point to the tool. We use it to initialize our config files and run the prompts we configure.
 
 #### `Configs`: 
-the application configurations are stored inside .yaml files generated which are generated when running `divergen init`
-- `assistant.yaml`: contains the configurations for the Assistant class (see divergen.assistant.py)
+the application configurations are stored inside .yaml files generated which are generated when running `codeas init`
+- `assistant.yaml`: contains the configurations for the Assistant class (see codeas.assistant.py)
 - `prompts.yaml`: contains the prompts to run through the CLI. See next point for more information.
 
 #### `Prompt`: 
@@ -63,7 +63,7 @@ we refer to prompt as single entry inside the prompts.yaml containing the follow
 
 Prompt example:
 ```yaml
-# .divergen/prompts.yaml
+# .codeas/prompts.yaml
 generate_docs:
   instructions: Generate usage documentation in markdown format.
   context: code
@@ -87,7 +87,7 @@ we refer to a codebase as a collection of modules and their corresponding source
 In the above example, the ``/src`` folder contains the source_code in python files, the ``docs/`` folder the documentation files in markdown format, and the ``tests/`` folder the test files in python format. This structure is reflected in the `assistant.yaml` file 
 
 ```yaml
-# .divergen/assistant.yaml
+# .codeas/assistant.yaml
 codebase:
   code_folder: ./src/
   code_format: .py
@@ -110,13 +110,13 @@ If you run the tool for the first time on the repository, you must first initita
 Run the following command at the root of the repository you want to work with.
 
 ```bash
-divergen init
+codeas init
 ```
 
 This will generate the following config files
 
 ```
-├── .divergen
+├── .codeas
 │   ├── assistant.yaml
 │   ├── prompts.yaml
 ```
@@ -124,12 +124,12 @@ This will generate the following config files
 If you wan to re-use the same configs you have from another project, you can add the `-p` or `--path` with the path to the project.
 
 ```bash
-divergen init -p ../another-project/.divergen
+codeas init -p ../another-project/.codeas
 ```
 
 #### Configuring prompts
 
-Inside the `.divergen/prompts.yaml` are the prompts and their attributes.
+Inside the `.codeas/prompts.yaml` are the prompts and their attributes.
 
 ```yaml
 generate_docstrings:
@@ -149,23 +149,23 @@ The above prompts are examples provided when you initialize the configs for the 
 
 #### Executing prompts
 
-Use `divergen run` followed by the prompt name you want to execute:
+Use `codeas run` followed by the prompt name you want to execute:
 
 ```bash
-divergen run generate_docstrings
+codeas run generate_docstrings
 ```
 ```bash
-divergen run generate_tests
+codeas run generate_tests
 ```
 ```bash
-divergen run generate_docs
+codeas run generate_docs
 ```
 
 
 If you don't don't want to use the yaml file, you can enter the instructions and guidelines via the CLI using the `-i` option:
 
 ```bash
-divergen run -i
+codeas run -i
 ```
 
 ### Additional features
@@ -182,7 +182,16 @@ divergen run -i
 ## Roadmap
 
 Future efforts will be focused on
-- generalizing to other languages
-- tracking execution flow and costs
-- automatically retrieving modules based on instructions (currently given as input by user)
-- automatically identifying context and target based on instructions (currently configured inside prompts.yaml)
+
+#### Multi language support:
+run tool on any codebase you want
+
+#### Tracking execution flow and costs:
+give better transparency of LLM usage
+
+#### Smart context retrieval & codebase modification:
+use LLM to identify what to retrieve and modify in the codebase
+
+#### VS Code extension:
+integrate the tool inside IDE for easier usage
+

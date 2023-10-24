@@ -6,24 +6,24 @@ from typing import TYPE_CHECKING
 import yaml
 from pydantic import BaseModel
 
-from divergen.utils import copy_files, write_yaml
+from codeas.utils import copy_files, write_yaml
 
 if TYPE_CHECKING:
-    from divergen.assistant import Assistant
+    from codeas.assistant import Assistant
 
 
 class Initializer(BaseModel):
     def init_configs(self, assistant: Assistant, source_path: str = None):
-        self._create_divergen_dir()
+        self._create_codeas_dir()
         if source_path:
-            copy_files(source_path, ".divergen")
+            copy_files(source_path, ".codeas")
         else:
-            write_yaml(".divergen/assistant.yaml", assistant.model_dump())
-            self._write_default_prompts(".divergen/prompts.yaml")
+            write_yaml(".codeas/assistant.yaml", assistant.model_dump())
+            self._write_default_prompts(".codeas/prompts.yaml")
 
-    def _create_divergen_dir(self):
-        if not os.path.exists(".divergen"):
-            os.mkdir(".divergen")
+    def _create_codeas_dir(self):
+        if not os.path.exists(".codeas"):
+            os.mkdir(".codeas")
 
     def _write_default_prompts(self, file_path: str):
         with open(file_path, "w") as yaml_file:
