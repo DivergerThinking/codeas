@@ -3,21 +3,22 @@
 CODEAS stands for CODEbase ASsistant.
 It uses your codebase as context and helps you to automate the generation of code, documentation, and tests by leveraging the power of LLMs.
 
-Key features include:
+**Key features include**:
 - **Flexible**: configure the tool your way, adapting it to your codebase and setting the tone on how you want code to be generated.
 - **Easy to use**: execute your prompts easily from the CLI application
 - **Reusable**: configure your prompts once and reuse them without having to rewrite them each time
 - **Collaborative**: share your prompts with your colleagues and the wider community
 - **Transparent**: track the execution flow and cost for each prompt you execute [in progress]
 
+#### ⚠️ **DISCLAIMER**: 24.10.2023. (v0.1.0) 
+We have chosen to release this application early in order to share our work with those interested in LLM application for software development. However, this early release means the application is not yet stable nor fully documented. However, we are eager to get some feedback on any issues you might face or functionalities you would like to see. Happy coding!
+
 ## Installation
 
 #### Stable release
 
-The tool is not yet deployed on pypi, but you can install it using ssh for now:
-
 ```bash
-pip install git+ssh://git@github.com/DivergerThinking/codeas.git
+pip install codeas
 ```
 
 #### Development
@@ -132,35 +133,18 @@ codeas init -p ../another-project/.codeas
 Inside the `.codeas/prompts.yaml` are the prompts and their attributes.
 
 ```yaml
-generate_docstrings:
-    instructions: Generate docstrings using numpy style.
-    target: code
-
 generate_tests:
     instructions: Generate tests using pytest.
     target: tests
-
-generate_docs:
-    instructions: Generate usage documentation.
-    target: docs
 ```
-
-The above prompts are examples provided when you initialize the configs for the first time in order to get you started quickly.
 
 #### Executing prompts
 
 Use `codeas run` followed by the prompt name you want to execute:
 
 ```bash
-codeas run generate_docstrings
-```
-```bash
 codeas run generate_tests
 ```
-```bash
-codeas run generate_docs
-```
-
 
 If you don't don't want to use the yaml file, you can enter the instructions and guidelines via the CLI using the `-i` option:
 
@@ -168,30 +152,29 @@ If you don't don't want to use the yaml file, you can enter the instructions and
 codeas run -i
 ```
 
-### Additional features
+## Additional features
 
-#### Chunking large context
-[ADD INFO]
+### Chunking large context
 
-#### Formatting generated files
-[ADD INFO]
+Due to the **limitation of the context size** of LLMs, we have implemented a feature to chunk the size of context given from the codebase to the LLM for each request. 
 
-#### Applying changes automatically
-[ADD INFO]
+This is **handled by the parameter "max_tokens_per_module" found in the `assistant.yaml`** config file. By default it is 8000 tokens, meaning any modules that amounts to more tokens than that will by chunked into entities (classes and functions) and each entity will be given as request to the LLM. All responses from the LLM are then merged back together.
+
+**IMPORTANT NOTE**: this feature has not been tested much so it is likely not to work well in some cases, but we are working on it and are open to suggestions for improvements.
+
+### Formatting generated files (auto_format)
+
+Often more than not, LLMs output code in a format which is doesn't follow your programming language conventions. As our tool is focused on python right now, we have implemented a feature to automatically format code when a file is written/modified. Right now we are using black to achieve this. This is configurable via the `assistant.yaml` file under `file_handler: auto_format` and `file_handler: format_command`. By default `auto_format = True` and `format_command = black`. By setting `auto_format = False` no formatting will take place, or a different formatter can be run via the ``format_command``.
+
+### Previewing changes
+
+By default, any changes made to the codebase is first written to files with the suffix "_preview". This allows to easily view and accept/reject changes made to the codebase. This is configurable via the `assistant.yaml` file under `file_handler: preview`. By default, it is set to True. Setting it to False means directly overwritting the original files with the changes.
 
 ## Roadmap
 
-Future efforts will be focused on
-
-#### Multi language support:
-run tool on any codebase you want
-
-#### Tracking execution flow and costs:
-give better transparency of LLM usage
-
-#### Smart context retrieval & codebase modification:
-use LLM to identify what to retrieve and modify in the codebase
-
-#### VS Code extension:
-integrate the tool inside IDE for easier usage
+Future efforts will be focused on the following:
+- **Multi language support**: run tool on any codebase you want
+- **Tracking execution flow and costs**: give better transparency of LLM usage
+- **Smart context retrieval & codebase modification**: use LLM to identify what to retrieve and modify in the codebase
+- **VS Code extension**: integrate the tool inside IDE for easier usage
 
