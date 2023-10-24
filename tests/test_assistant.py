@@ -8,6 +8,8 @@ from divergen.assistant import Assistant
 
 load_dotenv()
 
+os.chdir("./tests")
+
 
 @pytest.fixture
 def assistant():
