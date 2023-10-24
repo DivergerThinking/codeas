@@ -19,7 +19,8 @@ logging.basicConfig(
 
 class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     codebase: ClassVar = ts_Codebase()
-    file_handler: FileHandler = FileHandler(auto_format=False)
+    # TODO: Pydantic fields doesn't seems to accept defaults with inputs. Review.
+    file_handler: FileHandler = FileHandler
     max_tokens_per_module: int = 2000
     model: str = "gpt-3.5-turbo"
     _preprompts: dict = PrivateAttr(default_factory=dict)
