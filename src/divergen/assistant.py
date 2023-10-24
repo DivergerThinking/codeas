@@ -19,8 +19,8 @@ logging.basicConfig(
 )
 
 
-class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
-    """CodebaseAssistant is the main class of the divergen package. It is used to
+class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
+    """Assistant is the main class of the divergen package. It is used to
     initialize the configs, execute prompts, and apply or reject changes.
 
     Attributes

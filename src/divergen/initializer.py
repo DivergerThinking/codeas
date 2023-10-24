@@ -9,11 +9,11 @@ from pydantic import BaseModel
 from divergen.utils import copy_files, write_yaml
 
 if TYPE_CHECKING:
-    from divergen.assistant import CodebaseAssistant
+    from divergen.assistant import Assistant
 
 
 class Initializer(BaseModel):
-    def init_configs(self, assistant: CodebaseAssistant, source_path: str = None):
+    def init_configs(self, assistant: Assistant, source_path: str = None):
         self._create_divergen_dir()
         if source_path:
             copy_files(source_path, ".divergen")

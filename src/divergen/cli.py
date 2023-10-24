@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 load_dotenv()
 
-from divergen.assistant import CodebaseAssistant
+from divergen.assistant import Assistant
 from divergen.cli_inputs import (
     input_apply_changes,
     input_context,
@@ -18,7 +18,7 @@ from divergen.cli_inputs import (
 )
 
 app = typer.Typer()
-assistant = CodebaseAssistant()
+assistant = Assistant()
 
 
 def validate_run():
