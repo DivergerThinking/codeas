@@ -37,8 +37,8 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     codebase: Codebase = Codebase()
     file_handler: FileHandler = FileHandler()
-    max_tokens_per_module: int = 2000
-    model: str = "gpt-3.5-turbo"
+    max_tokens_per_module: int = 8000
+    model: str = "gpt-3.5-turbo-16k"
     _prompts: dict = PrivateAttr(default_factory=dict)
     _openai_model: object = PrivateAttr(None)
 
