@@ -5,3 +5,4 @@ debug/
 *egg-info/
 .codeas
 .ruff_cache
+dist/
