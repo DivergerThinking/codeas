@@ -7,9 +7,14 @@ name = "codeas"
 authors = [
     {name = "Manuel Renner", email = "manuel.renner@diverger.ai"},
 ]
+license = {text = "MIT License"}
 description = "Improve your codebase with LLMs using the right context for the right prompts."
 requires-python = ">=3.9"
 dynamic = ["version", "readme", "dependencies"]
+
+[project.urls]
+Source = 'https://github.com/DivergerThinking/codeas'
+Homepage = 'https://diverger.ai'
 
 [project.scripts]
 codeas = 'codeas.cli:app'
