@@ -1,6 +1,6 @@
 import os
 from tree_sitter import Language, Parser
-from divergen.ts_entities import ts_Module
+from codeas.ts_entities import ts_Module
 
 JAVA_LANGUAGE = Language("build/my-languages.so", "java")
 
@@ -60,11 +60,33 @@ class ts_Codebase:
                 if entity.modified is True:
                     module.modified = True
 
-    def get_path(self, module_name: str, target: str, preview: bool = False):
+    def get_path(
+        self, module_name: str, target: str, prefix: str = "", suffix: str = ""
+    ):
+        """Return the path for a target file of a module.
+
+        Parameters
+        ----------
+        module_name : str
+            The name of the module
+        target : str
+            The target of the file. Options: "code", "docs", "tests"
+        prefix : str, optional
+            The prefix to add to the module name, by default ""
+        suffix : str, optional
+            The suffix to add to the module name, by default ""
+
+        Returns
+        -------
+        str
+            The path of the target file
+        """
         target_folder = getattr(self, f"{target}_folder")
         target_format = getattr(self, f"{target}_format")
-        preview_str = "_preview" if preview else ""
+        module_path = module_name.replace(".", "/")
+        module_head, module_tail = os.path.split(module_path)
         return os.path.join(
             target_folder,
-            module_name.replace(".", "/") + preview_str + target_format,
+            module_head,
+            prefix + module_tail + suffix + target_format,
         )
