@@ -1,8 +1,0 @@
-context:
-  - codebase_modification
-  - code_placeholder
-request:
-  - generate_numpy_docstrings
-additional_instructions:
-  - return_code_only
-  - return_entire_code

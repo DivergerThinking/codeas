@@ -1,6 +1,8 @@
 .env
 *__pycache__/
 debug/
-src-test/
 .backup/
 *egg-info/
+.codeas
+.ruff_cache
+dist/
