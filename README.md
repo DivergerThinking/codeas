@@ -15,7 +15,7 @@ We have chosen to release this application early in order to share our work with
 
 ## Installation
 
-#### Stable release
+#### Pypi
 
 ```bash
 pip install codeas
