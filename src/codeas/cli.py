@@ -1,28 +1,30 @@
-import typer
 import os
-from dotenv import load_dotenv
 from typing import Optional
+
+import typer
+from dotenv import load_dotenv
 from typing_extensions import Annotated
 
 load_dotenv()
 
-from divergen.codebase_assistant import CodebaseAssistant
-from divergen.cli_inputs import (
+from codeas.assistant import Assistant
+from codeas.cli_inputs import (
+    input_apply_changes,
+    input_context,
+    input_guidelines,
     input_modules,
     input_prompt,
-    input_apply_changes,
-    input_action,
-    input_guidelines,
+    input_target,
 )
 
 app = typer.Typer()
-assistant = CodebaseAssistant()
+assistant = Assistant()
 
 
 def validate_run():
-    if not os.path.exists(".divergen"):
+    if not os.path.exists(".codeas"):
         raise typer.Exit(
-            "'.divergen' directory not found. Please run `divergen init` first."
+            "'.codeas' directory not found. Please run `codeas init` first."
         )
 
 
@@ -64,9 +66,10 @@ def run(
     if use_inputs:
         prompt = input_prompt()
         modules = input_modules(assistant, use_default)
-        action = input_action(use_default)
+        context = input_context(use_default)
+        target = input_target(use_default)
         guidelines = input_guidelines(assistant, use_default)
-        assistant.execute_prompt(prompt, action, guidelines, modules)
+        assistant.execute_prompt(prompt, context, target, guidelines, modules)
     else:
         modules = input_modules(assistant, use_default)
         assistant.execute_preprompt(prompt_name, modules)

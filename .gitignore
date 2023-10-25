@@ -3,4 +3,6 @@
 debug/
 .backup/
 *egg-info/
-.divergen
+.codeas
+.ruff_cache
+dist/
