@@ -20,7 +20,7 @@ logging.basicConfig(
 class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     codebase: ClassVar = ts_Codebase()
     # TODO: Pydantic fields doesn't seems to accept defaults with inputs. Review.
-    file_handler: FileHandler = FileHandler
+    file_handler: FileHandler = FileHandler(auto_format=False)
     max_tokens_per_module: int = 2000
     model: str = "gpt-3.5-turbo"
     _preprompts: dict = PrivateAttr(default_factory=dict)
@@ -28,11 +28,13 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
     _openai_model: object = PrivateAttr(None)
 
     def model_post_init(self, __context: Any) -> None:
-        if os.path.exists(".divergen"):
-            self._overwrite_configs()
-            self._set_prompt_files()
-            self._set_openai_model()
-            self._parse_codebase()
+        if not os.path.exists(".divergen"):
+            self.init_configs()
+        self._overwrite_configs()
+        self._set_prompt_files()
+        self._set_openai_model()
+        self._parse_codebase()
+
 
     def _overwrite_configs(self):
         _configs = read_yaml(".divergen/config.yaml")
