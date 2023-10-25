@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from termcolor import colored
 
 if TYPE_CHECKING:
-    from divergen.codebase_assistant import CodebaseAssistant
+    from codeas.assistant import Assistant
 
 
 DEFAULT = {
@@ -21,7 +22,7 @@ def input_prompt():
     )
 
 
-def input_preprompt(assistant: CodebaseAssistant):
+def input_preprompt(assistant: Assistant):
     options = list(assistant._preprompts.keys())
     selected_option = input(
         colored("\nSelect the preprompt you want to use. \n", "blue")
@@ -30,7 +31,7 @@ def input_preprompt(assistant: CodebaseAssistant):
     return options[int(selected_option)]
 
 
-def input_modules(assistant: CodebaseAssistant, use_default: bool):
+def input_modules(assistant: Assistant, use_default: bool):
     if use_default:
         selected_options = DEFAULT["modules"]
     else:
@@ -46,11 +47,11 @@ def input_modules(assistant: CodebaseAssistant, use_default: bool):
         return [options[int(idx)] for idx in selected_options.split(",")]
 
 
-def input_guidelines(assistant: CodebaseAssistant, use_default: bool):
+def input_guidelines(assistant: Assistant, use_default: bool):
     if use_default:
         selected_options = DEFAULT["guidelines"]
     else:
-        options = assistant._guidelines.keys()
+        options = assistant._prompts.get("guidelines", {}).keys()
         selected_options = input(
             colored("\nSelect the guidelines you want to use. \n", "blue")
             + _display_options(options, multi=True, default=DEFAULT["guidelines"])

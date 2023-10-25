@@ -1,37 +1,32 @@
-import typer
 import os
-from dotenv import load_dotenv
 from typing import Optional
+
+import typer
+from dotenv import load_dotenv
 from typing_extensions import Annotated
 
 load_dotenv()
-from langchain.chat_models.fake import FakeMessagesListChatModel
-from langchain.schema import AIMessage
-from divergen.codebase_assistant import CodebaseAssistant
-from divergen.cli_inputs import (
-    input_modules,
-    input_prompt,
+
+from codeas.assistant import Assistant
+from codeas.cli_inputs import (
     input_apply_changes,
     input_context,
-    input_target,
     input_guidelines,
+    input_modules,
+    input_prompt,
+    input_target,
 )
-
-dummy_func = """
-def dummy_func():
-    pass
-"""
-msg = AIMessage(content=dummy_func)
-dummy_model = FakeMessagesListChatModel(responses=[msg])
 
 app = typer.Typer()
-assistant = CodebaseAssistant(
-    # model=dummy_model,
-)
+assistant = Assistant()
+
 
 def validate_run():
-    if not os.path.exists(".divergen"):
-        raise typer.Exit("'.divergen' directory not found. Please run `divergen init` first.")
+    if not os.path.exists(".codeas"):
+        raise typer.Exit(
+            "'.codeas' directory not found. Please run `codeas init` first."
+        )
+
 
 @app.command()
 def init(
