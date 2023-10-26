@@ -19,7 +19,7 @@ logging.basicConfig(
 )
 
 
-class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
+class ts_Assistant(BaseModel, validate_assignment=True, extra="forbid"):
     """Assistant is the main class of the codeas package. It is used to
     initialize the configs, execute prompts, and apply or reject changes.
 
@@ -35,7 +35,8 @@ class CodebaseAssistant(BaseModel, validate_assignment=True, extra="forbid"):
         Description, by default "gpt-3.5-turbo"
     """
 
-    codebase: ClassVar = ts_Codebase()
+    # TODO: Pydantinc does not allow to pass language as input by any means. Find a solution.
+    codebase: ClassVar = ts_Codebase(language="javascript")
     file_handler: FileHandler = FileHandler(auto_format=False)
     max_tokens_per_module: int = 8000
     model: str = "gpt-3.5-turbo-16k"

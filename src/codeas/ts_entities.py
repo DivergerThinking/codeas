@@ -62,6 +62,7 @@ class ts_Module(ts_BaseEntity):
     #     self.set_code()
 
     def parse_entities(self):
+        # TODO: Right now this is useless, but should be adapted to each language.
         for idx, node in enumerate(self.body):
             if node.type in [
                 "package_declaration",
