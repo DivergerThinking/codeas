@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List
+from typing import Any, List, ClassVar
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -35,7 +35,8 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         Description, by default "gpt-3.5-turbo"
     """
 
-    codebase: Codebase = Codebase()
+    # TODO: Language hardcoded due to pydantic issue. WIP @manu
+    codebase: ClassVar = Codebase(language="javascript")
     file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 8000
     model: str = "gpt-3.5-turbo-16k"
@@ -46,6 +47,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         """When the model is instantiated, this method is called to set the assistant
         attributes based on the configurations (if initialized).
         """
+        # TODO: Config will be moved out of this class in the future.
         if os.path.exists(".codeas"):
             self._overwrite_configs()
             self._set_prompts()

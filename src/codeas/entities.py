@@ -1,4 +1,3 @@
-import ast
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
@@ -25,10 +24,12 @@ class BaseEntity(BaseModel):
     """
 
     node: object
+    parser: object
     code: str = ""
     docs: str = ""
     tests: str = ""
     modified: bool = False
+    body: list = []
 
     def get(self, attr):
         return getattr(self, attr)
@@ -57,16 +58,20 @@ class BaseEntity(BaseModel):
         code : str
             the new code
         """
-        ast_node = ast.parse(code)
         if isinstance(self, Module):
-            self.node = ast_node
+            node = self.parser.parse(bytes(code, "utf8")).root_node
+            self.node = node
+            self.set_code()
         elif isinstance(self, Entity):
-            # ast_node is ast.Module, so we get body[0] to get the ClassDef/FunctionDef
-            self.node = ast_node.body[0]
+            # TODO: With this node update, all start/end bytes references breaks. To review.
+            self.node = self.parser.parse(bytes(code, "utf8")).root_node
             self.update_module_node()
 
     def set_code(self):
-        self.code = ast.unparse(self.node)
+        self.code = self.node.text.decode()
+
+    def set_body(self):
+        self.body = [child for child in self.node.children]
 
 
 class Entity(BaseEntity, arbitrary_types_allowed=True):
@@ -87,7 +92,9 @@ class Entity(BaseEntity, arbitrary_types_allowed=True):
         self.set_code()
 
     def update_module_node(self):
-        self.module.node.body[self.body_idx] = self.node
+        self.module.body[self.body_idx] = self.node
+        # TODO: Due to recursive call at modify an entity we're updating module code. To review.
+        self.module.merge_entities()
 
 
 class Module(BaseEntity):
@@ -98,6 +105,7 @@ class Module(BaseEntity):
 
     def model_post_init(self, __context: Any) -> None:
         self.set_code()
+        self.set_body()
 
     def get_entities(self, entity_names: Optional[list] = None) -> List[Entity]:
         """Return a list of entities. If entity_names is None, return all entities."""
@@ -128,11 +136,18 @@ class Module(BaseEntity):
 
     def parse_entities(self):
         """Parse the entities in the module."""
-        for idx, node in enumerate(self.node.body):
-            if node.col_offset == 0 and isinstance(
-                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-            ):
-                self._entities.append(Entity(node=node, module=self, body_idx=idx))
+        # TODO: Right now this is useless, but should be adapted to each language.
+        for idx, node in enumerate(self.body):
+            if node.type in [
+                "package_declaration",
+                "line_comment",
+                "class_declaration",
+                "block_comment",
+                "class_declaration",
+            ]:
+                self._entities.append(
+                    Entity(node=node, parser=self.parser, module=self, body_idx=idx)
+                )
 
     def merge_entities(self, attr: str):
         """Merge the attribute of all entities into the module.
@@ -143,11 +158,11 @@ class Module(BaseEntity):
             the attribute to merge
         """
         if attr == "code":
-            # since nodes are updated, we reset the code
-            self.set_code()
-        else:
-            # reset the attribute to empty string and then add the attribute of each entity
-            self.modify(attr, "")
-            for entity in self.get_entities():
-                module_attr = self.get(attr)
-                module_attr += entity.get(attr)
+            self.code = "\n".join([child.text.decode() for child in self.body])
+        # useless at the moment
+        # else:
+        #     # reset the attribute to empty string and then add the attribute of each entity
+        #     self.modify(attr, "")
+        #     for entity in self.get_entities():
+        #         module_attr = self.get(attr)
+        #         module_attr += entity.get(attr)

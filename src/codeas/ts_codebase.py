@@ -19,6 +19,10 @@ class ts_Codebase:
         self._modules: list[ts_Module] = []
         self.code_format: str = LANG_EXTENSION_MAP[language]
         self.code_folder: str = "./src/"
+        self.docs_folder: str = "./docs/"
+        self.tests_folder: str = "./tests/"
+        self.tests_format: str = LANG_EXTENSION_MAP[language]
+        self.docs_format: str = ".md"
 
     def parse_modules(self):
         """Parse all the modules in the code folder and save them in the modules list."""
