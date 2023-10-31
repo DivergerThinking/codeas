@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List, ClassVar
+from typing import Any, ClassVar, List
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -37,7 +37,8 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     # TODO: Language hardcoded due to pydantic issue. WIP @manu
     codebase: ClassVar = Codebase(language="javascript")
-    file_handler: FileHandler = FileHandler()
+    # TODO: Look for a formatter available for different languages or enable just for python.
+    file_handler: FileHandler = FileHandler(auto_format=False)
     max_tokens_per_module: int = 8000
     model: str = "gpt-3.5-turbo-16k"
     _prompts: dict = PrivateAttr(default_factory=dict)
