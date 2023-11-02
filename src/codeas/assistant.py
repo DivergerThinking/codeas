@@ -35,8 +35,9 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         Description, by default "gpt-3.5-turbo"
     """
 
-    codebase: Codebase = Codebase()
-    file_handler: FileHandler = FileHandler()
+    codebase: Codebase = Codebase(language="python")
+    # TODO: Look for a formatter available for different languages or enable just for python.
+    file_handler: FileHandler = FileHandler(auto_format=False)
     max_tokens_per_module: int = 8000
     model: str = "gpt-3.5-turbo-16k"
     _prompts: dict = PrivateAttr(default_factory=dict)
@@ -46,6 +47,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         """When the model is instantiated, this method is called to set the assistant
         attributes based on the configurations (if initialized).
         """
+        # TODO: Config will be moved out of this class in the future.
         if os.path.exists(".codeas"):
             self._overwrite_configs()
             self._set_prompts()

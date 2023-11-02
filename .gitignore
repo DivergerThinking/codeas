@@ -6,3 +6,4 @@ debug/
 .codeas
 .ruff_cache
 dist/
+*.DS_Store
