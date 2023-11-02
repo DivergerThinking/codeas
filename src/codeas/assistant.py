@@ -35,7 +35,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         Description, by default "gpt-3.5-turbo"
     """
 
-    codebase: Codebase = Codebase(language="javascript")
+    codebase: Codebase = Codebase(language="python")
     # TODO: Look for a formatter available for different languages or enable just for python.
     file_handler: FileHandler = FileHandler(auto_format=False)
     max_tokens_per_module: int = 8000
