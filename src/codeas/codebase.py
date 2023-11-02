@@ -2,7 +2,7 @@ import glob
 import os
 from typing import Any, List
 
-from pydantic import BaseModel, PrivateAttr, SkipValidation
+from pydantic import BaseModel, PrivateAttr
 from tree_sitter import Language, Parser
 
 from codeas.entities import Module
@@ -34,7 +34,6 @@ class Codebase(BaseModel):
     """
 
     language: str
-    parser: SkipValidation = None
     code_folder: str = "./src/"
     docs_folder: str = "./docs/"
     tests_folder: str = "./tests/"
@@ -42,11 +41,19 @@ class Codebase(BaseModel):
     docs_format: str = ".md"
     tests_format: str = ""
     _modules: List[Module] = PrivateAttr(default_factory=list)
+    _parser: Parser = PrivateAttr(None)
 
     def model_post_init(self, __context: Any) -> None:
         self.code_format = LANG_EXTENSION_MAP[self.language]
         self.tests_format = LANG_EXTENSION_MAP[self.language]
-        self.parser = self._create_parser(self.language)
+
+    def parse_modules(self):
+        """Parse all the modules in the code folder and save them in the modules list."""
+        self._parser = self._create_parser(self.language)
+        self._check_code_folder()
+        modules_paths = self._get_modules_paths(self.code_folder)
+        for module_path in modules_paths:
+            self.parse_module(module_path)
 
     def _create_parser(self, language) -> object:
         """Reads the tree sitter grammar file and sets the selected language.
@@ -56,13 +63,6 @@ class Codebase(BaseModel):
         parser = Parser()
         parser.set_language(language_grammar)
         return parser
-
-    def parse_modules(self):
-        """Parse all the modules in the code folder and save them in the modules list."""
-        self._check_code_folder()
-        modules_paths = self._get_modules_paths(self.code_folder)
-        for module_path in modules_paths:
-            self.parse_module(module_path)
 
     def _check_code_folder(self):
         if not os.path.exists(self.code_folder):
@@ -88,14 +88,14 @@ class Codebase(BaseModel):
         """
         with open(path) as source:
             module_content = source.read()
-        node = self.parser.parse(bytes(module_content, "utf8")).root_node
+        node = self._parser.parse(bytes(module_content, "utf8")).root_node
         rel_path = os.path.relpath(path, self.code_folder)
         name = (
             os.path.splitext(rel_path)[0]
             .replace(os.path.sep, ".")
             .strip(self.code_format)
         )
-        module = Module(name=name, node=node, parser=self.parser)
+        module = Module(name=name, node=node, parser=self._parser)
         module.parse_entities()
         self._modules.append(module)
 
