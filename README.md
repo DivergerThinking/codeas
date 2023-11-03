@@ -11,7 +11,7 @@ codeas stands for CODEbase ASsistant. It boosts your software development proces
 ## ❓ Why this tool?
 There already exists many tools that use LLM for working with code (Copilot, Codeium, Cody, Bloop, just to name a few), so why bother with another you may ask? 
 
-That's a fair question. The best answer I can give is "because each tool has its own strenghts and limitations":
+That's a fair question. The best answer I can give is "because each tool has its own strengths and weaknesses":
 - Copilot and Codeium can suggest useful code snippets on the fly without even being prompted, yet they are limited by the context they use from the codebase. 
 - Cody and Bloop will use the entire codebase as context, fulfilling requests that Copilot & Codeium can’t do. However, they have their own way of processing your codebase, working well for some requests while failing for others.
 
