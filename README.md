@@ -24,7 +24,7 @@ Are we there yet? No, but we intend on getting there soon. So follow us while we
 We have chosen to release this application early in order to share our work with those interested in LLM application for software development. This early release means the application is not fully stable. However, we are eager to get some feedback on any issues you might face or new functionalities you would like to see. Happy coding!
 
 ### v0.1.1 (03.11.2023)
-Quick patch release to add support for other languages by switching from [AST](https://docs.python.org/3/library/ast.html) to [Tree-Sitter](https://tree-sitter.github.io/tree-sitter/).
+Small patch release to add support for other languages by switching from [AST](https://docs.python.org/3/library/ast.html) to [Tree-Sitter](https://tree-sitter.github.io/tree-sitter/).
 
 **Release Notes**:
 - Add support for javascript and java codebases.
