@@ -1,17 +1,40 @@
-# CODEAS
+# codeas
 
-CODEAS stands for CODEbase ASsistant.
-It uses your codebase as context and helps you to automate the generation of code, documentation, and tests by leveraging the power of LLMs.
+codeas stands for CODEbase ASsistant. It boosts your software development processes by leveraging LLMs using your full codebase as context.
 
 **Key features include**:
-- **Flexible**: configure the tool your way, adapting it to your codebase and setting the tone on how you want code to be generated.
-- **Easy to use**: execute your prompts easily from the CLI application
-- **Reusable**: configure your prompts once and reuse them without having to rewrite them each time
-- **Collaborative**: share your prompts with your colleagues and the wider community
-- **Transparent**: track the execution flow and cost for each prompt you execute [in progress]
+- ✅ **Flexibility**: configure the tool your way, adapting it to your codebase and setting the tone on how you want the LLM to write code for you.
+- ✅ **Reusability**: configure your prompts once and reuse them without having to rewrite them each time
+- ✅ **Collaboration**: share your prompts with your colleagues and the wider community
+- ✅ **Transparency**: track the execution flow and cost for each prompt you execute [in progress]
 
-#### ⚠️ **DISCLAIMER**: 24.10.2023. (v0.1.0) 
-We have chosen to release this application early in order to share our work with those interested in LLM application for software development. However, this early release means the application is not yet stable nor fully documented. However, we are eager to get some feedback on any issues you might face or functionalities you would like to see. Happy coding!
+## ❓ Why this tool?
+There already exists many tools that use LLM for working with code (Copilot, Codeium, Cody, Bloop, just to name a few), so why bother with another you may ask? 
+
+That's a fair question. The best answer I can give is "because each tool has its own strengths and weaknesses":
+- Copilot and Codeium can suggest useful code snippets on the fly without even being prompted, yet they are limited by the context they use from the codebase. 
+- Cody and Bloop will use the entire codebase as context, fulfilling requests that Copilot & Codeium can’t do. However, they have their own way of processing your codebase, working well for some requests while failing for others.
+
+Codeas also has its limitations of course (especially in these early releases), but the idea behind the tool is to let the user configure the context to use for a given request, add some guidelines to it and easily reuse these configurations whenever needed. By making the tool customisable to specific requests, tasks which couldn't be performed by other tools can now be fulfiled.
+
+Are we there yet? No, but we intend on getting there soon. So follow us while we publish new releases that will make codeas you next go-to programming assistant.
+
+## Releases
+⚠️ **DISCLAIMER:**
+We have chosen to release this application early in order to share our work with those interested in LLM application for software development. This early release means the application is not fully stable. However, we are eager to get some feedback on any issues you might face or new functionalities you would like to see. Happy coding!
+
+### v0.1.1 (03.11.2023)
+Small patch release to add support for other languages by switching from [AST](https://docs.python.org/3/library/ast.html) to [Tree-Sitter](https://tree-sitter.github.io/tree-sitter/).
+
+**Release Notes**:
+- Add support for javascript and java codebases.
+
+### v0.1.0 (24.10.2023)
+Original release that supports simple use cases.
+
+**Release Notes**:
+- Focused on simple use cases such as adding docstrings to your code, generating tests and creating markdown documentations (feel free to try more complex use cases)
+- Only supports python codebases
 
 ## Installation
 
@@ -164,17 +187,28 @@ This is **handled by the parameter "max_tokens_per_module" found in the `assista
 
 ### Formatting generated files (auto_format)
 
-Often more than not, LLMs output code in a format which is doesn't follow your programming language conventions. As our tool is focused on python right now, we have implemented a feature to automatically format code when a file is written/modified. Right now we are using black to achieve this. This is configurable via the `assistant.yaml` file under `file_handler: auto_format` and `file_handler: format_command`. By default `auto_format = True` and `format_command = black`. By setting `auto_format = False` no formatting will take place, or a different formatter can be run via the ``format_command``.
+Often more than not, LLMs output code in a format which is doesn't follow your programming language conventions. We have implemented a feature to automatically format code when a file is created/modified.
+
+Right now we have only implemented the black formatter (python): 
+- configurable via the `assistant.yaml` file via `file_handler: auto_format` and `file_handler: format_command`
+- by default `auto_format = False`. 
+- setting `auto_format = True` and `format_command = black` every generated file will be formated by black.
 
 ### Previewing changes
 
-By default, any changes made to the codebase is first written to files with the suffix "_preview". This allows to easily view and accept/reject changes made to the codebase. This is configurable via the `assistant.yaml` file under `file_handler: preview`. By default, it is set to True. Setting it to False means directly overwritting the original files with the changes.
+By default, any changes made to the codebase is first written to files with the suffix "_preview". This allows to easily view and accept/reject changes made to the codebase:
+- configurable via the `assistant.yaml` file under `file_handler: preview`. 
+- by default, it is set to True.
+- setting it to False means directly overwritting the original files with the changes.
 
 ## Roadmap
 
 Future efforts will be focused on the following:
-- **Multi language support**: run tool on any codebase you want
-- **Tracking execution flow and costs**: give better transparency of LLM usage
-- **Smart context retrieval & codebase modification**: use LLM to identify what to retrieve and modify in the codebase
+- **Multi language support**: generalize tool to parse codebase with multiple languages
+- **Context retrieval configuration**: allow user to configure which context to use for a given request via prompts.yaml
+- **Dynamic context retrieval**: tell LLM the context to use via prompt
+- **Dynamic output generation**: tell LLM the files to create/modify via prompt
+- **Smart context retrieval**: let LLM decide which context to use for the request
+- **Tracking execution flow and costs**: give better transparency of LLM usage and costs
 - **VS Code extension**: integrate the tool inside IDE for easier usage
 
