@@ -1,11 +1,13 @@
-import ast
 import glob
 import os
-from typing import List
+from typing import Any, List
 
 from pydantic import BaseModel, PrivateAttr
+from tree_sitter import Language, Parser
 
 from codeas.entities import Module
+
+LANG_EXTENSION_MAP = {"python": ".py", "java": ".java", "javascript": ".js"}
 
 
 class Codebase(BaseModel):
@@ -15,6 +17,8 @@ class Codebase(BaseModel):
 
     Attributes
     ----------
+    language : str
+        code language name
     code_folder : str, optional
         folder where the source code is found, by default "./src/"
     docs_folder : str, optional
@@ -29,20 +33,36 @@ class Codebase(BaseModel):
         the tests format, by default ".py"
     """
 
+    language: str
     code_folder: str = "./src/"
     docs_folder: str = "./docs/"
     tests_folder: str = "./tests/"
-    code_format: str = ".py"
+    code_format: str = ""
     docs_format: str = ".md"
-    tests_format: str = ".py"
+    tests_format: str = ""
     _modules: List[Module] = PrivateAttr(default_factory=list)
+    _parser: Parser = PrivateAttr(None)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.code_format = LANG_EXTENSION_MAP[self.language]
+        self.tests_format = LANG_EXTENSION_MAP[self.language]
 
     def parse_modules(self):
         """Parse all the modules in the code folder and save them in the modules list."""
+        self._parser = self._create_parser(self.language)
         self._check_code_folder()
         modules_paths = self._get_modules_paths(self.code_folder)
         for module_path in modules_paths:
             self.parse_module(module_path)
+
+    def _create_parser(self, language) -> object:
+        """Reads the tree sitter grammar file and sets the selected language.
+        The grammar file is hardcoded by now. Pending test on different OS."""
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        language_grammar = Language(f"{current_dir}/tree-sitter-grammars.so", language)
+        parser = Parser()
+        parser.set_language(language_grammar)
+        return parser
 
     def _check_code_folder(self):
         if not os.path.exists(self.code_folder):
@@ -58,7 +78,7 @@ class Codebase(BaseModel):
             != "__init__.py"  # TODO: should be generalized to other languages
         ]
 
-    def parse_module(self, path):
+    def parse_module(self, path: str):
         """Parse a module from a source code file.
 
         Parameters
@@ -68,10 +88,14 @@ class Codebase(BaseModel):
         """
         with open(path) as source:
             module_content = source.read()
-        node = ast.parse(module_content)
+        node = self._parser.parse(bytes(module_content, "utf8")).root_node
         rel_path = os.path.relpath(path, self.code_folder)
-        name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
-        module = Module(name=name, node=node)
+        name = (
+            os.path.splitext(rel_path)[0]
+            .replace(os.path.sep, ".")
+            .strip(self.code_format)
+        )
+        module = Module(name=name, node=node, parser=self._parser)
         module.parse_entities()
         self._modules.append(module)
 
