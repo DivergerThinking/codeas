@@ -48,17 +48,10 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         attributes based on the configurations (if initialized).
         """
         # TODO: Config will be moved out of this class in the future.
-        if os.path.exists(".codeas"):
-            self._overwrite_configs()
+        if os.path.exists(".codeas/prompts.yaml"):
             self._set_prompts()
-            self._set_openai_model()
-            self._parse_codebase()
-
-    def _overwrite_configs(self):
-        _configs = read_yaml(".codeas/assistant.yaml")
-        for attr, value in _configs.items():
-            if getattr(self, attr) != value:
-                setattr(self, attr, value)
+        self._set_openai_model()
+        self._parse_codebase()
 
     def _set_prompts(self):
         self._prompts = read_yaml(".codeas/prompts.yaml")
