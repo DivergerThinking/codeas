@@ -93,7 +93,7 @@ class FileHandler(BaseModel):
 
     def make_backup_dir(self):
         if not os.path.exists(self.backup_dir):
-            os.mkdir(self.backup_dir)
+            os.makedirs(self.backup_dir)
 
     def move_target_files_to_backup(self):
         for target_path in self._target_files:

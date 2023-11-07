@@ -6,34 +6,22 @@ from dotenv import load_dotenv
 
 from codeas.assistant import Assistant
 
+from .utils import create_dummy_repo, remove_dummy_repo, reset_dummy_repo
+
 load_dotenv()
 
-os.chdir("./tests")
+remove_dummy_repo()
+create_dummy_repo()
+os.chdir("./dummy_repo")
 
 
 @pytest.fixture
 def assistant():
-    _clean_dummy_files()
-    _create_dummy_files()
+    reset_dummy_repo()
     return Assistant()
 
 
-def _clean_dummy_files():
-    if os.path.exists("./src"):
-        shutil.rmtree("./src")
-    if os.path.exists("./tests"):
-        shutil.rmtree("./tests")
-    if os.path.exists("./docs"):
-        shutil.rmtree("./docs")
-
-
-def _create_dummy_files():
-    os.mkdir("./src")
-    with open("./src/dummy_module.py", "w") as f:
-        f.write("def dummy_function():\n    pass\n")
-
-
-def test_init_configs(assistant):
+def test_init_configs(assistant: Assistant):
     if os.path.exists(".codeas"):
         shutil.rmtree("./.codeas")
     assistant.init_configs()
@@ -42,24 +30,25 @@ def test_init_configs(assistant):
     assert os.path.exists(".codeas/prompts.yaml")
 
 
-def test_execute_preprompt(assistant):
+def test_execute_preprompt(assistant: Assistant):
     _monkeypatch_prompts(assistant)
     _monkeypatch_model(assistant)
     assistant.execute_preprompt("modify_code")
-    assert os.path.exists("./src/dummy_module_preview.py")
+    assert os.path.exists("./src/module1_preview.py")
 
 
-def _monkeypatch_prompts(assistant):
+def _monkeypatch_prompts(assistant: Assistant):
     assistant._prompts = {
         "modify_code": {
             "instructions": "modify some code",
             "target": "code",
             "context": "code",
+            "scope": "module",
         }
     }
 
 
-def _monkeypatch_model(assistant):
+def _monkeypatch_model(assistant: Assistant):
     assistant.model = "fake"
     assistant._set_openai_model()
 
@@ -72,40 +61,37 @@ def _monkeypatch_model(assistant):
         ("docs", "code"),
     ],
 )
-def test_execute_prompt(target, context, assistant):
+def test_execute_prompt(target, context, assistant: Assistant):
     _monkeypatch_model(assistant)
     assistant.execute_prompt(
-        instructions="instructions",
-        target=target,
-        context=context,
+        instructions="instructions", target=target, context=context, scope="module"
     )
     if target == "code":
-        assert os.path.exists("./src/dummy_module_preview.py")
+        assert os.path.exists("./src/module1_preview.py")
     elif target == "tests":
-        assert os.path.exists("./tests/test_dummy_module_preview.py")
+        assert os.path.exists("./tests/test_module1_preview.py")
     elif target == "docs":
-        assert os.path.exists("./docs/dummy_module_preview.md")
+        assert os.path.exists("./docs/module1_preview.md")
 
 
-def test_apply_changes(assistant):
+def test_apply_changes(assistant: Assistant):
     _monkeypatch_model(assistant)
-    assistant.execute_prompt("instructions")
+    assistant.execute_prompt("instructions", scope="module")
     assistant.apply_changes()
-    assert not os.path.exists("./src/dummy_module_preview.py")
-    assert os.path.exists("./.codeas/backup/dummy_module.py")
+    assert not os.path.exists("./src/module1_preview.py")
+    assert os.path.exists("./.codeas/backup/module1.py")
 
 
-def test_reject_changes(assistant):
+def test_reject_changes(assistant: Assistant):
     if os.path.exists("./.codeas/backup/"):
         shutil.rmtree("./.codeas/backup/")
     _monkeypatch_model(assistant)
-    assistant.execute_prompt("instructions")
+    assistant.execute_prompt("instructions", scope="module")
     assistant.reject_changes()
-    assert not os.path.exists("./src/dummy_module_preview.py")
-    assert not os.path.exists("./.codeas/backup/dummy_module.py")
+    assert not os.path.exists("./src/module1_preview.py")
+    assert not os.path.exists("./.codeas/backup/module1.py")
 
 
 def test_cleanup():
-    _clean_dummy_files()
-    if os.path.exists(".codeas"):
-        shutil.rmtree("./.codeas")
+    os.chdir("..")
+    remove_dummy_repo()

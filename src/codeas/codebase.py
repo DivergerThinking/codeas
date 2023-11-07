@@ -90,11 +90,7 @@ class Codebase(BaseModel):
             module_content = source.read()
         node = self._parser.parse(bytes(module_content, "utf8")).root_node
         rel_path = os.path.relpath(path, self.code_folder)
-        name = (
-            os.path.splitext(rel_path)[0]
-            .replace(os.path.sep, ".")
-            .strip(self.code_format)
-        )
+        name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
         module = Module(name=name, node=node, parser=self._parser)
         module.parse_entities()
         self._modules.append(module)
