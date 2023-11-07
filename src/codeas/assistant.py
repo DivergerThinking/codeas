@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List
+from typing import Any, List, Literal
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -111,7 +111,10 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         target = self._prompts[name].get("target", "code")
         context = self._prompts[name].get("context", "code")
         guideline_prompt = self._prompts[name].get("guideline_prompt", "")
-        self.execute_prompt(instructions, target, context, guideline_prompt, modules)
+        scope = self._prompts[name].get("scope", "global")
+        self.execute_prompt(
+            instructions, target, context, guideline_prompt, modules, scope
+        )
 
     def _check_prompt_name(self, name: str):
         if name not in self._prompts.keys():
@@ -126,6 +129,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         context: str = "code",
         guideline_prompt: str = "",
         modules: List[str] = None,
+        scope: Literal["global", "module"] = "global",
     ):
         """Execute a prompt on the codebase
 
@@ -150,13 +154,18 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
             guideline_prompt=guideline_prompt,
             model=self._openai_model,
         )
-        for module in self.codebase.get_modules(modules):
-            if count_tokens(module.get(context)) > self.max_tokens_per_module:
-                for entity in module.get_entities():
-                    request.execute(entity)
-                module.merge_entities(target)
-            else:
-                request.execute(module)
+        if scope == "global":
+            request.execute_globally(self.codebase, modules)
+        elif scope == "module":
+            for module in self.codebase.get_modules(modules):
+                if count_tokens(module.get(context)) > self.max_tokens_per_module:
+                    for entity in module.get_entities():
+                        request.execute(entity)
+                    module.merge_entities(target)
+                else:
+                    request.execute(module)
+        else:
+            raise ValueError(f"Scope {scope} not recognized. Use 'global' or 'module'")
         self.file_handler.export_modifications(self.codebase, target)
 
     def apply_changes(self):
