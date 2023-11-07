@@ -1,9 +1,11 @@
 import logging
-from typing import Optional, Union
+import re
+from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
-from codeas._templates import TEMPLATE
+from codeas._templates import TEMPLATE, TEMPLATE_GLOBAL
+from codeas.codebase import Codebase
 from codeas.entities import Entity, Module
 
 
@@ -29,6 +31,37 @@ class Request(BaseModel):
     guideline_prompt: Optional[str]
     model: object
     target: str
+
+    def execute_globally(
+        self, codebase: Codebase, modules: List[str], verbose: bool = True
+    ):
+        logging.info("Executing request globally")
+
+        global_context = ""
+        for module in codebase.get_modules(modules):
+            global_context += f"<{module.name}>"
+            global_context += module.get(self.context)
+            global_context += f"</{module.name}>\n"
+
+        prompt = TEMPLATE_GLOBAL.format(
+            global_context=global_context,
+            instructions=self.instructions,
+            guideline_prompt=self.guideline_prompt,
+        )
+        if verbose:
+            logging.info(f"Prompt:\n {prompt}")
+
+        logging.info("Model output: \n")
+        output = self.model.predict(prompt)
+
+        for module_name, module_content in self._parse_markup_string(output):
+            module = codebase.get_module(module_name)
+            module.modify(self.target, module_content)
+
+    def _parse_markup_string(input_string):
+        pattern = r"<([^<>]+)>\n(.*?)\n</\1>"
+        matches = re.findall(pattern, input_string, re.DOTALL)
+        return [(match[0], match[1]) for match in matches]
 
     def execute(self, entity: Union[Entity, Module], verbose: bool = True):
         if isinstance(entity, Entity):
