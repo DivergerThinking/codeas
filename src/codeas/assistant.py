@@ -47,7 +47,6 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         """When the model is instantiated, this method is called to set the assistant
         attributes based on the configurations (if initialized).
         """
-        # TODO: Config will be moved out of this class in the future.
         if os.path.exists(".codeas/prompts.yaml"):
             self._set_prompts()
         self._set_openai_model()
