@@ -10,10 +10,6 @@ from .utils import create_dummy_repo, remove_dummy_repo, reset_dummy_repo
 
 load_dotenv()
 
-remove_dummy_repo()
-create_dummy_repo()
-os.chdir("./dummy_repo")
-
 
 @pytest.fixture
 def assistant():
@@ -22,10 +18,10 @@ def assistant():
 
 
 def test_init_configs(assistant: Assistant):
-    if os.path.exists(".codeas"):
-        shutil.rmtree("./.codeas")
+    remove_dummy_repo()
+    create_dummy_repo()
+    os.chdir("./dummy_repo")
     assistant.init_configs()
-    assert os.path.exists(".codeas")
     assert os.path.exists(".codeas/assistant.yaml")
     assert os.path.exists(".codeas/prompts.yaml")
 
@@ -90,8 +86,3 @@ def test_reject_changes(assistant: Assistant):
     assistant.reject_changes()
     assert not os.path.exists("./src/module1_preview.py")
     assert not os.path.exists("./.codeas/backup/module1.py")
-
-
-def test_cleanup():
-    os.chdir("..")
-    remove_dummy_repo()

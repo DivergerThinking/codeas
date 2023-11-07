@@ -7,13 +7,9 @@ from langchain.schema import AIMessage
 from codeas.codebase import Codebase
 from codeas.request import Request
 
-from .utils import create_dummy_repo, remove_dummy_repo
+from .utils import remove_dummy_repo, reset_dummy_repo
 
 load_dotenv()
-
-remove_dummy_repo()
-create_dummy_repo()
-os.chdir("./dummy_repo")
 
 dummy_func1 = """def dummy_func_rewritten1():\n    print('it worked')"""
 dummy_func2 = """def dummy_func_rewritten12():\n    print('it worked')"""
@@ -27,6 +23,7 @@ codebase.parse_modules()
 
 
 def test_execute_globally():
+    reset_dummy_repo()
     request = Request(
         instructions="instructions",
         model=model,
