@@ -21,10 +21,6 @@ msg = AIMessage(
     content=f"<module1>\n{dummy_func1}\n</module1>\n\n<module2>\n{dummy_func2}\n</module2>\n\n"
 )
 model = FakeMessagesListChatModel(responses=[msg])
-# model = ChatOpenAI(
-#     callbacks=[StreamingStdOutCallbackHandler()],
-#     streaming=True,
-# )
 
 codebase = Codebase(language="python")
 codebase.parse_modules()
