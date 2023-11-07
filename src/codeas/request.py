@@ -33,13 +33,13 @@ class Request(BaseModel):
     target: str
 
     def execute_globally(
-        self, codebase: Codebase, modules: List[str], verbose: bool = True
+        self, codebase: Codebase, modules: List[str] = None, verbose: bool = True
     ):
         logging.info("Executing request globally")
 
         global_context = ""
         for module in codebase.get_modules(modules):
-            global_context += f"<{module.name}>"
+            global_context += f"\n<{module.name}>\n"
             global_context += module.get(self.context)
             global_context += f"</{module.name}>\n"
 
@@ -58,7 +58,7 @@ class Request(BaseModel):
             module = codebase.get_module(module_name)
             module.modify(self.target, module_content)
 
-    def _parse_markup_string(input_string):
+    def _parse_markup_string(self, input_string):
         pattern = r"<([^<>]+)>\n(.*?)\n</\1>"
         matches = re.findall(pattern, input_string, re.DOTALL)
         return [(match[0], match[1]) for match in matches]
