@@ -6,31 +6,19 @@ from dotenv import load_dotenv
 
 from codeas.assistant import Assistant
 
+from .utils import create_dummy_repo, remove_dummy_repo, reset_dummy_repo
+
 load_dotenv()
 
-os.chdir("./tests")
+remove_dummy_repo()
+create_dummy_repo()
+os.chdir("./dummy_repo")
 
 
 @pytest.fixture
 def assistant():
-    _clean_dummy_files()
-    _create_dummy_files()
+    reset_dummy_repo()
     return Assistant()
-
-
-def _clean_dummy_files():
-    if os.path.exists("./src"):
-        shutil.rmtree("./src")
-    if os.path.exists("./tests"):
-        shutil.rmtree("./tests")
-    if os.path.exists("./docs"):
-        shutil.rmtree("./docs")
-
-
-def _create_dummy_files():
-    os.mkdir("./src")
-    with open("./src/dummy_module.py", "w") as f:
-        f.write("def dummy_function():\n    pass\n")
 
 
 def test_init_configs(assistant):
@@ -106,6 +94,5 @@ def test_reject_changes(assistant):
 
 
 def test_cleanup():
-    _clean_dummy_files()
-    if os.path.exists(".codeas"):
-        shutil.rmtree("./.codeas")
+    os.chdir("..")
+    remove_dummy_repo()
