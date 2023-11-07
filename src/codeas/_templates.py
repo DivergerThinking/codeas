@@ -19,7 +19,7 @@ You will be given files containing code and instructions to perform on these fil
 The files will be given to you in xml format, the markup tags will be the file name and the text between the tags the content of the file.
 You should use the same format to return the modified files.
 
-Example:
+Example request:
 
 <FILE_NAME>
 def function():
@@ -29,7 +29,7 @@ def function():
 INSTRUCTIONS:
 Generate docstrings
 
-Your answer:
+Example answer:
 
 <FILE_NAME>
 def function():
@@ -37,9 +37,12 @@ def function():
     pass
 </FILE_NAME>
 
+Request:
 {global_context}
 
 INSTRUCTIONS:
 {instructions}
 {guideline_prompt}
+
+Answer:
 """
