@@ -16,15 +16,15 @@ from codeas.cli_inputs import (
     input_prompt,
     input_target,
 )
+from codeas.utils import read_yaml
 
 app = typer.Typer()
-assistant = Assistant()
 
 
 def validate_run():
-    if not os.path.exists(".codeas"):
+    if not os.path.exists(".codeas/assistant.yaml"):
         raise typer.Exit(
-            "'.codeas' directory not found. Please run `codeas init` first."
+            "'.codeas/assistant.yaml' not found. Please run `codeas init` first."
         )
 
 
@@ -37,6 +37,7 @@ def init(
         ),
     ] = None,
 ):
+    assistant = Assistant()
     assistant.init_configs(path)
 
 
@@ -63,6 +64,8 @@ def run(
     use_default: Annotated[Optional[bool], typer.Option("-d")] = False,
 ):
     validate_run()
+    assistant_args = read_yaml(".codeas/assistant.yaml")
+    assistant = Assistant(**assistant_args)
     if use_inputs:
         prompt = input_prompt()
         modules = input_modules(assistant, use_default)
