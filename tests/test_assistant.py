@@ -34,7 +34,7 @@ def test_execute_preprompt(assistant):
     _monkeypatch_prompts(assistant)
     _monkeypatch_model(assistant)
     assistant.execute_preprompt("modify_code")
-    assert os.path.exists("./src/dummy_module_preview.py")
+    assert os.path.exists("./src/module1_preview.py")
 
 
 def _monkeypatch_prompts(assistant):
@@ -68,19 +68,19 @@ def test_execute_prompt(target, context, assistant):
         context=context,
     )
     if target == "code":
-        assert os.path.exists("./src/dummy_module_preview.py")
+        assert os.path.exists("./src/module1_preview.py")
     elif target == "tests":
-        assert os.path.exists("./tests/test_dummy_module_preview.py")
+        assert os.path.exists("./tests/test_module1_preview.py")
     elif target == "docs":
-        assert os.path.exists("./docs/dummy_module_preview.md")
+        assert os.path.exists("./docs/module1_preview.md")
 
 
 def test_apply_changes(assistant):
     _monkeypatch_model(assistant)
     assistant.execute_prompt("instructions")
     assistant.apply_changes()
-    assert not os.path.exists("./src/dummy_module_preview.py")
-    assert os.path.exists("./.codeas/backup/dummy_module.py")
+    assert not os.path.exists("./src/module1_preview.py")
+    assert os.path.exists("./.codeas/backup/module1.py")
 
 
 def test_reject_changes(assistant):
@@ -89,8 +89,8 @@ def test_reject_changes(assistant):
     _monkeypatch_model(assistant)
     assistant.execute_prompt("instructions")
     assistant.reject_changes()
-    assert not os.path.exists("./src/dummy_module_preview.py")
-    assert not os.path.exists("./.codeas/backup/dummy_module.py")
+    assert not os.path.exists("./src/module1_preview.py")
+    assert not os.path.exists("./.codeas/backup/module1.py")
 
 
 def test_cleanup():
