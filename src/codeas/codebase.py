@@ -49,7 +49,7 @@ class Codebase(BaseModel):
     def get_modules_paths(self, path):
         module_paths = []
         for ext in LANG_EXTENSION_MAP.keys():
-            module_paths.append(
+            module_paths.extend(
                 [
                     file_path
                     for file_path in glob.glob(f"{path}/**/*{ext}", recursive=True)
@@ -142,7 +142,7 @@ class Codebase(BaseModel):
             target_format = self.docs_format
         else:
             target_format = os.path.splitext(module_name)[1]
-        module_path = module_name.replace(".", "/")
+        module_path = os.path.splitext(module_name)[0].replace(".", "/")
         module_head, module_tail = os.path.split(module_path)
         return os.path.join(
             target_folder,
