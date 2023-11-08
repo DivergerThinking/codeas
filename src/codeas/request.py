@@ -45,10 +45,10 @@ class Request(BaseModel):
 
         logging.info("Model output: \n")
         output = self.model.predict(prompt)
-        return self._parse_csv_string(output)
+        return self._parse_modules(output)
 
-    def _parse_csv_string(self, input_string):
-        return input_string.split(",")
+    def _parse_modules(self, input_string):
+        return [module.replace("/", ".") for module in input_string.split(",")]
 
     def execute_globally(
         self, codebase: Codebase, modules: List[str] = None, verbose: bool = True
