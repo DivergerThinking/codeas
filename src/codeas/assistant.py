@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List, Literal
+from typing import Any, List, Literal, Union
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -95,7 +95,9 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         initializer = Initializer()
         initializer.init_configs(self, source_path)
 
-    def execute_preprompt(self, name: str, modules: List[str] = None):
+    def execute_preprompt(
+        self, name: str, modules: Union[List[str], Literal["auto"]] = None
+    ):
         """Execute a preprompt from prompts.yaml file
 
         Parameters
@@ -128,7 +130,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         target: str = "code",
         context: str = "code",
         guideline_prompt: str = "",
-        modules: List[str] = None,
+        modules: Union[List[str], Literal["auto"]] = None,
         scope: Literal["global", "module"] = "global",
     ):
         """Execute a prompt on the codebase
@@ -154,6 +156,9 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
             guideline_prompt=guideline_prompt,
             model=self._openai_model,
         )
+        if modules == "auto":
+            modules = request.get_modules_from_instructions(self.codebase)
+
         if scope == "global":
             request.execute_globally(self.codebase, modules)
         elif scope == "module":
@@ -166,6 +171,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
                     request.execute(module)
         else:
             raise ValueError(f"Scope {scope} not recognized. Use 'global' or 'module'")
+
         self.file_handler.export_modifications(self.codebase, target)
 
     def apply_changes(self):

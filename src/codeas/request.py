@@ -4,9 +4,10 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
-from codeas._templates import TEMPLATE, TEMPLATE_GLOBAL
+from codeas._templates import TEMPLATE, TEMPLATE_GLOBAL, TEMPLATE_MODULES
 from codeas.codebase import Codebase
 from codeas.entities import Entity, Module
+from codeas.utils import tree
 
 
 class Request(BaseModel):
@@ -32,11 +33,27 @@ class Request(BaseModel):
     model: object
     target: str
 
+    def get_modules_from_instructions(self, codebase: Codebase, verbose: bool = True):
+        logging.info("Getting modules from instructions")
+        prompt = TEMPLATE_MODULES.format(
+            dir_structure=tree(codebase.code_folder),
+            instructions=self.instructions,
+            guideline_prompt=self.guideline_prompt,
+        )
+        if verbose:
+            logging.info(f"Prompt:\n {prompt}")
+
+        logging.info("Model output: \n")
+        output = self.model.predict(prompt)
+        return self._parse_modules(output)
+
+    def _parse_modules(self, input_string):
+        return [module.replace("/", ".") for module in input_string.split(",")]
+
     def execute_globally(
         self, codebase: Codebase, modules: List[str] = None, verbose: bool = True
     ):
         logging.info("Executing request globally")
-
         global_context = ""
         for module in codebase.get_modules(modules):
             global_context += f"\n<{module.name}>\n"

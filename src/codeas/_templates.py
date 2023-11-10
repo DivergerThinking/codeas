@@ -46,3 +46,34 @@ INSTRUCTIONS:
 
 Answer:
 """
+
+TEMPLATE_MODULES = """
+You are a senior software developer.
+You will be given the structure of the codebase and some instructions which should be performed on that codebase.
+You should return the full path of the modules which are relevant to these instructions in csv format.
+
+Example request:
+
+src/
+├── codeas/
+│   ├── _templates.py
+│   ├── assistant.py
+│   ├── cli.py
+│   ├── cli_inputs.py
+
+INSTRUCTIONS:
+Move the overwrite_configs method in assistant.py to cli.py.
+
+Example answer:
+src/codeas/assistant.py,src/codeas/cli.py
+
+Request:
+
+{dir_structure}
+
+INSTRUCTIONS:
+{instructions}
+{guideline_prompt}
+
+Answer:
+"""
