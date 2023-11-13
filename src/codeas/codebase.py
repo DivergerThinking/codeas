@@ -2,12 +2,24 @@ import glob
 import os
 from typing import List
 
+import tree_sitter_languages
 from pydantic import BaseModel, PrivateAttr
-from tree_sitter import Language, Parser
+from tree_sitter import Parser
 
 from codeas.entities import Module
 
-LANG_EXTENSION_MAP = {".py": "python", ".java": "java", ".js": "javascript"}
+LANG_EXTENSION_MAP = {
+    ".py": "python",
+    ".java": "java",
+    ".js": "javascript",
+    ".ts": "typescript",
+    ".cs": "c_sharp",
+    ".rs": "rust",
+    ".rb": "ruby",
+    ".c": "c",
+    ".go": "go",
+    ".php": "php",
+}
 
 
 class Codebase(BaseModel):
@@ -83,10 +95,8 @@ class Codebase(BaseModel):
     def _set_parser(self, language) -> object:
         """Reads the tree sitter grammar file and sets the selected language.
         The grammar file is hardcoded by now. Pending test on different OS."""
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        language_grammar = Language(f"{current_dir}/tree-sitter-grammars.so", language)
         self._parser = Parser()
-        self._parser.set_language(language_grammar)
+        self._parser.set_language(tree_sitter_languages.get_language(language))
 
     def get_modules(self, module_names: list = None) -> List[Module]:
         """Return a list of modules. If module_names is None, return all modules."""
