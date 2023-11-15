@@ -39,7 +39,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
     # TODO: Look for a formatter available for different languages or enable just for python.
     file_handler: FileHandler = FileHandler(auto_format=False)
     max_tokens_per_module: int = 8000
-    model: str = "gpt-3.5-turbo-16k"
+    model: str = "gpt-3.5-turbo-1106"
     _prompts: dict = PrivateAttr(default_factory=dict)
     _openai_model: object = PrivateAttr(None)
 
