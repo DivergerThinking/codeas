@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import os
 from pathlib import Path
@@ -65,7 +66,7 @@ def copy_files(source_path, target_path):
         copyfile(source_path, target_path)
 
 
-def tree(dir_path: str, ignore_startswith: List[str] = None):
+def tree(dir_path: str, exclude_patterns: List[str] = None):
     """A recursive generator, given a directory Path object
     will yield a visual tree structure line by line
     with each line prefixed by the same characters
@@ -77,11 +78,17 @@ def tree(dir_path: str, ignore_startswith: List[str] = None):
     tee = "├── "
     last = "└── "
 
-    def _tree(dir_path: str, prefix: str = "", ignore_startswith: List[str] = None):
+    def _tree(
+        dir_path: str,
+        prefix: str = "",
+        exclude_patterns: List[str] = None,
+        include_file_patterns: List[str] = None,
+    ):
         contents = list(
             path
             for path in Path(dir_path).iterdir()
-            if _not_startswith(path, ignore_startswith)
+            if _not_match(path, exclude_patterns)
+            and _match(path, include_file_patterns)
         )
         # contents each get pointers that are ├── with a final └── :
         pointers = [tee] * (len(contents) - 1) + [last]
@@ -91,19 +98,25 @@ def tree(dir_path: str, ignore_startswith: List[str] = None):
                 extension = branch if pointer == tee else space
                 # i.e. space because last, └── , above so no more |
                 yield from _tree(
-                    path, prefix=prefix + extension, ignore_startswith=ignore_startswith
+                    path, prefix=prefix + extension, exclude=exclude_patterns
                 )
 
-    def _not_startswith(path: Path, ignore_startswith: List[str] = None):
-        if ignore_startswith is None:
+    def _not_match(path: Path, patterns: List[str] = None):
+        if any(patterns):
+            for pattern in patterns:
+                if fnmatch.fnmatch(path.name, pattern):
+                    return False
             return True
         else:
-            for char in ignore_startswith:
-                if path.name.startswith(char):
-                    return False
+            return True
+
+    def _match(path: Path, file_patterns: list):
+        if path.is_file() and any(file_patterns):
+            return any([fnmatch(path.name, pattern) for pattern in file_patterns])
+        else:
             return True
 
     tree_str = ""
-    for line in _tree(dir_path, ignore_startswith=ignore_startswith):
+    for line in _tree(dir_path, exclude=exclude_patterns):
         tree_str += f"{line}\n"
     return tree_str
