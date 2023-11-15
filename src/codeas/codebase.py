@@ -38,48 +38,8 @@ class Codebase(BaseModel):
 
     def parse_modules(self):
         """Parse all the modules in the code folder and save them in the modules list."""
-        self._check_code_folder()
         for module_path in self.get_modules_paths():
             self.parse_module(module_path)
-
-    def _check_code_folder(self):
-        if not os.path.exists(self.code_folder):
-            raise ValueError(
-                f"Source code folder {self.code_folder} not found. Check your configurations in the assistant.yaml file."
-            )
-
-    def get_tree(self):
-        tree = ""
-        for path_element in self._get_tree_recursively("."):
-            tree += f"{path_element}\n"
-        return tree
-
-    def _get_tree_recursively(self, path: str, prefix: str = ""):
-        paths = self._get_matching_paths(path)
-        space = "    "
-        branch = "│   "
-        tee = "├── "
-        last = "└── "
-        # paths each get pointers that are ├── with a final └── :
-        pointers = [tee] * (len(paths) - 1) + [last]
-        for pointer, path in zip(pointers, paths):
-            if path.is_dir() and self._match(path, self.include_file_patterns, True):
-                yield prefix + pointer + path.name + "/"
-            elif path.is_file():
-                yield prefix + pointer + path.name
-
-            if path.is_dir():  # extend the prefix and recurse:
-                extension = branch if pointer == tee else space
-                # i.e. space because last, └── , above so no more |
-                yield from self._get_tree_recursively(path, prefix=prefix + extension)
-
-    def _get_matching_paths(self, path):
-        return list(
-            path
-            for path in Path(path).iterdir()
-            if self._not_match(path, self.exclude_patterns)
-            and self._match(path, self.include_file_patterns)
-        )
 
     def get_modules_paths(self):
         paths = []
@@ -94,6 +54,14 @@ class Codebase(BaseModel):
                 yield from self._get_paths_recursively(path)
             else:
                 yield str(path)
+
+    def _get_matching_paths(self, path):
+        return list(
+            path
+            for path in Path(path).iterdir()
+            if self._not_match(path, self.exclude_patterns)
+            and self._match(path, self.include_file_patterns)
+        )
 
     def _not_match(self, path: Path, patterns: list):
         if any(patterns):
@@ -128,8 +96,7 @@ class Codebase(BaseModel):
         with open(path) as source:
             module_content = source.read()
         node = self._parser.parse(bytes(module_content, "utf8")).root_node
-        rel_path = os.path.relpath(path, self.code_folder)
-        name = rel_path.replace(os.path.sep, ".")
+        name = path.replace(os.path.sep, ".")
         module = Module(name=name, node=node, parser=self._parser)
         module.parse_entities()
         self._modules.append(module)
@@ -139,6 +106,31 @@ class Codebase(BaseModel):
         The grammar file is hardcoded by now. Pending test on different OS."""
         self._parser = Parser()
         self._parser.set_language(tree_sitter_languages.get_language(language))
+
+    def get_tree(self):
+        tree = ""
+        for path_element in self._get_tree_recursively("."):
+            tree += f"{path_element}\n"
+        return tree
+
+    def _get_tree_recursively(self, path: str, prefix: str = ""):
+        paths = self._get_matching_paths(path)
+        space = "    "
+        branch = "│   "
+        tee = "├── "
+        last = "└── "
+        # paths each get pointers that are ├── with a final └── :
+        pointers = [tee] * (len(paths) - 1) + [last]
+        for pointer, path in zip(pointers, paths):
+            if path.is_dir() and self._match(path, self.include_file_patterns, True):
+                yield prefix + pointer + path.name + "/"
+            elif path.is_file():
+                yield prefix + pointer + path.name
+
+            if path.is_dir():  # extend the prefix and recurse:
+                extension = branch if pointer == tee else space
+                # i.e. space because last, └── , above so no more |
+                yield from self._get_tree_recursively(path, prefix=prefix + extension)
 
     def get_modules(self, module_names: list = None) -> List[Module]:
         """Return a list of modules. If module_names is None, return all modules."""
@@ -153,15 +145,15 @@ class Codebase(BaseModel):
                     pass
             return modules
 
-    def get_module_names(self):
-        """Return a list of module names."""
-        return [module.name for module in self._modules]
-
     def get_module(self, name):
         for module in self._modules:
             if module.name == name:
                 return module
         raise ValueError(f"Module {name} not found")
+
+    def get_module_names(self):
+        """Return a list of module names."""
+        return [module.name for module in self._modules]
 
     def add_module(self, name, content):
         self._modules.append(Module(name=name, new_content=content, modified=True))
