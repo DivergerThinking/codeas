@@ -48,6 +48,8 @@ class FileHandler(BaseModel):
         # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
         prefix = "test_" if (self.add_test_prefix and target == "tests") else ""
         for module in codebase.get_modified_modules():
+            if module.new_content != "":
+                target = "new_content"
             path = codebase.get_path(module.name, target, prefix)
             self._target_files.append(path)
             if self.preview:

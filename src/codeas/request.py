@@ -2,9 +2,10 @@ import logging
 import re
 from typing import List, Optional, Union
 
+from langchain.schema import HumanMessage, SystemMessage
 from pydantic import BaseModel
 
-from codeas._templates import TEMPLATE, TEMPLATE_GLOBAL, TEMPLATE_MODULES
+from codeas._templates import SYSTEM_PROMPT_GLOBAL, TEMPLATE, TEMPLATE_MODULES
 from codeas.codebase import Codebase
 from codeas.entities import Entity, Module
 from codeas.utils import tree
@@ -36,7 +37,7 @@ class Request(BaseModel):
     def get_modules_from_instructions(self, codebase: Codebase, verbose: bool = True):
         logging.info("Getting modules from instructions")
         prompt = TEMPLATE_MODULES.format(
-            dir_structure=tree(codebase.code_folder),
+            dir_structure=tree(".", exclude=codebase.exclude),
             instructions=self.instructions,
             guideline_prompt=self.guideline_prompt,
         )
@@ -54,26 +55,28 @@ class Request(BaseModel):
         self, codebase: Codebase, modules: List[str] = None, verbose: bool = True
     ):
         logging.info("Executing request globally")
-        global_context = ""
+        modules_content = ""
         for module in codebase.get_modules(modules):
-            global_context += f"\n<{module.name}>\n"
-            global_context += module.get(self.context)
-            global_context += f"</{module.name}>\n"
+            modules_content += f"\n<{module.name}>\n"
+            modules_content += module.get(self.context)
+            modules_content += f"</{module.name}>\n"
 
-        prompt = TEMPLATE_GLOBAL.format(
-            global_context=global_context,
-            instructions=self.instructions,
-            guideline_prompt=self.guideline_prompt,
-        )
-        if verbose:
-            logging.info(f"Prompt:\n {prompt}")
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT_GLOBAL),
+            HumanMessage(content=modules_content),
+            HumanMessage(content=self.instructions),
+        ]
 
         logging.info("Model output: \n")
-        output = self.model.predict(prompt)
+        output = self.model(messages).content
 
         for module_name, module_content in self._parse_markup_string(output):
-            module = codebase.get_module(module_name)
-            module.modify(self.target, module_content)
+            try:
+                module = codebase.get_module(module_name)
+                module.modify
+                (self.target, module_content)
+            except ValueError:
+                codebase.add_module(module_name, module_content)
 
     def _parse_markup_string(self, input_string):
         pattern = r"<([^<>]+)>\n(.*?)\n</\1>"

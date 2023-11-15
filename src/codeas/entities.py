@@ -23,11 +23,12 @@ class BaseEntity(BaseModel):
         flag to indicate if the entity has been modified, by default False
     """
 
-    node: object
-    parser: object
+    node: object = None
+    parser: object = None
     code: str = ""
     docs: str = ""
     tests: str = ""
+    new_content: str = ""
     modified: bool = False
     body: list = []
 
@@ -68,10 +69,12 @@ class BaseEntity(BaseModel):
             self.update_module_node()
 
     def set_code(self):
-        self.code = self.node.text.decode()
+        if self.node is not None:
+            self.code = self.node.text.decode()
 
     def set_body(self):
-        self.body = [child for child in self.node.children]
+        if self.node is not None:
+            self.body = [child for child in self.node.children]
 
 
 class Entity(BaseEntity, arbitrary_types_allowed=True):
