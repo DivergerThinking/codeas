@@ -28,7 +28,6 @@ class FileHandler(BaseModel):
 
     backup_dir: str = ".codeas/backup"
     preview: bool = True
-    add_test_prefix: bool = True
     auto_format: bool = True
     format_command: str = "black"
     _target_files: list = PrivateAttr(default_factory=list)
@@ -46,18 +45,17 @@ class FileHandler(BaseModel):
             the target of the modifications. It can be "code", "docs", or "tests".
         """
         # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
-        prefix = "test_" if (self.add_test_prefix and target == "tests") else ""
         for module in codebase.get_modified_modules():
-            if module.new_content != "":
-                target = "new_content"
-            path = codebase.get_path(module.name, target, prefix)
+            module_stem, module_ext = os.path.splitext(module.name)
+            module_path = module_stem.replace(".", "/")
+            path = module_path + module_ext
             self._target_files.append(path)
             if self.preview:
-                path = codebase.get_path(module.name, target, prefix, "_preview")
+                path = module_path + "_preview" + module_ext
                 self._preview_files.append(path)
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
-            self._write_file(path, module.get(target))
+            self._write_file(path, module.get("new_content"))
             if self.auto_format:
                 self._format_file(path)
 

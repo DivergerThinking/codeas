@@ -168,37 +168,3 @@ class Codebase(BaseModel):
             for entity in module._entities:
                 if entity.modified is True:
                     module.modified = True
-
-    def get_path(
-        self, module_name: str, target: str, prefix: str = "", suffix: str = ""
-    ):
-        """Return the path for a target file of a module.
-
-        Parameters
-        ----------
-        module_name : str
-            The name of the module
-        target : str
-            The target of the file. Options: "code", "docs", "tests"
-        prefix : str, optional
-            The prefix to add to the module name, by default ""
-        suffix : str, optional
-            The suffix to add to the module name, by default ""
-
-        Returns
-        -------
-        str
-            The path of the target file
-        """
-        target_folder = getattr(self, f"{target}_folder")
-        if target == "docs":
-            target_format = self.docs_format
-        else:
-            target_format = os.path.splitext(module_name)[1]
-        module_path = os.path.splitext(module_name)[0].replace(".", "/")
-        module_head, module_tail = os.path.split(module_path)
-        return os.path.join(
-            target_folder,
-            module_head,
-            prefix + module_tail + suffix + target_format,
-        )

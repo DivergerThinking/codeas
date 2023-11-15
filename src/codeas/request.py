@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from codeas._templates import SYSTEM_PROMPT_GLOBAL, TEMPLATE, TEMPLATE_MODULES
 from codeas.codebase import Codebase
 from codeas.entities import Entity, Module
-from codeas.utils import tree
 
 
 class Request(BaseModel):
@@ -37,7 +36,7 @@ class Request(BaseModel):
     def get_modules_from_instructions(self, codebase: Codebase, verbose: bool = True):
         logging.info("Getting modules from instructions")
         prompt = TEMPLATE_MODULES.format(
-            dir_structure=tree(".", exclude=codebase.exclude),
+            dir_structure=codebase.get_tree(),
             instructions=self.instructions,
             guideline_prompt=self.guideline_prompt,
         )
