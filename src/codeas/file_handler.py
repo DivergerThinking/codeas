@@ -34,15 +34,13 @@ class FileHandler(BaseModel):
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
 
-    def export_modifications(self, codebase: Codebase, target: str):
+    def export_modifications(self, codebase: Codebase):
         """Export the modified modules to the target files.
 
         Parameters
         ----------
         codebase : Codebase
             the codebase of the assistant
-        target : str
-            the target of the modifications. It can be "code", "docs", or "tests".
         """
         # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
         for module in codebase.get_modified_modules():
@@ -55,7 +53,7 @@ class FileHandler(BaseModel):
                 self._preview_files.append(path)
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
-            self._write_file(path, module.get("new_content"))
+            self._write_file(path, module.content)
             if self.auto_format:
                 self._format_file(path)
 

@@ -131,7 +131,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
             model=self._openai_model,
         )
         request.execute(self.codebase)
-        self.file_handler.export_modifications(self.codebase, "new_content")
+        self.file_handler.export_modifications(self.codebase)
 
     def apply_changes(self):
         logging.info("Applying changes")

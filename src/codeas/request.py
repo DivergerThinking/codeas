@@ -35,7 +35,7 @@ class Request(BaseModel):
         modules_content = ""
         for module in codebase.get_modules(modules_to_read):
             modules_content += f"\n<{module.name}>\n"
-            modules_content += module.get("code")
+            modules_content += module.content
             modules_content += f"</{module.name}>\n"
         logging.info(f"\nCODEBASE CONTEXT:\n\n{modules_content}")
 
@@ -53,8 +53,9 @@ class Request(BaseModel):
 
         for module_name, module_content in self._parse_markup_string(output).items():
             try:
+                # TODO: refactor error handling
                 module = codebase.get_module(module_name)
-                module.modify("new_content", module_content)
+                module.modify(module_content)
             except ValueError:
                 codebase.add_module(module_name, module_content)
 

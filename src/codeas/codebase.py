@@ -158,7 +158,7 @@ class Codebase(BaseModel):
         return [module.name for module in self._modules]
 
     def add_module(self, name, content):
-        self._modules.append(Module(name=name, new_content=content, modified=True))
+        self._modules.append(Module(name=name, content=content, modified=True))
 
     def get_modified_modules(self):
         """Return a list of modules that have been modified."""

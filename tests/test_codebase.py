@@ -21,14 +21,14 @@ def test_parse_modules():
     codebase = Codebase()
     codebase.parse_modules()
 
-    assert codebase.get_module("src.module1.py").code == PY_FUNC
-    assert codebase.get_module("src.module2.java").code == JAVA_FUNC
-    assert codebase.get_module("src.module3.js").code == JS_FUNC
-    assert codebase.get_module("src.module4.ts").code == TS_FUNC
-    assert codebase.get_module("src.module5.cs").code == CSHARP_FUNC
-    assert codebase.get_module("src.module6.rs").code == RUST_FUNC
-    assert codebase.get_module("src.module7.rb").code == RUBY_FUNC
-    assert codebase.get_module("src.module8.c").code == C_FUNC
-    assert codebase.get_module("src.module9.go").code == GO_FUNC
-    assert codebase.get_module("src.module10.php").code == PHP_FUNC
+    assert codebase.get_module("src.module1.py").content == PY_FUNC
+    assert codebase.get_module("src.module2.java").content == JAVA_FUNC
+    assert codebase.get_module("src.module3.js").content == JS_FUNC
+    assert codebase.get_module("src.module4.ts").content == TS_FUNC
+    assert codebase.get_module("src.module5.cs").content == CSHARP_FUNC
+    assert codebase.get_module("src.module6.rs").content == RUST_FUNC
+    assert codebase.get_module("src.module7.rb").content == RUBY_FUNC
+    assert codebase.get_module("src.module8.c").content == C_FUNC
+    assert codebase.get_module("src.module9.go").content == GO_FUNC
+    assert codebase.get_module("src.module10.php").content == PHP_FUNC
     remove_dummy_repo()
