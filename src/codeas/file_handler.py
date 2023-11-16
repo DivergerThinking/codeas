@@ -28,7 +28,7 @@ class FileHandler(BaseModel):
 
     backup_dir: str = ".codeas/backup"
     preview: bool = True
-    auto_format: bool = True
+    auto_format: bool = False
     format_command: str = "black"
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
@@ -64,6 +64,7 @@ class FileHandler(BaseModel):
             f.write(content)
 
     def _format_file(self, file_path: str):
+        # TODO: Look for a formatter available for different languages or enable just for python.
         if file_path.endswith(".py"):
             subprocess.run(f"{self.format_command} {file_path}", shell=True, check=True)
 
