@@ -3,15 +3,22 @@ from typing import Optional
 
 import typer
 from dotenv import load_dotenv
+from termcolor import colored
 from typing_extensions import Annotated
 
 load_dotenv()
 
 from codeas.assistant import Assistant
-from codeas.cli_inputs import input_apply_changes
 from codeas.utils import read_yaml
 
 app = typer.Typer()
+
+
+def input_apply_changes():
+    selected_option = input(
+        colored("\nDo you want to apply the changes? [yes/no]\ninput: [yes]", "blue")
+    )
+    return selected_option == "yes" or selected_option == "y" or selected_option == ""
 
 
 def validate_run():
