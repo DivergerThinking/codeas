@@ -1,13 +1,12 @@
 import logging
 import re
-from typing import List, Optional, Union
+from typing import Optional
 
 from langchain.schema import HumanMessage, SystemMessage
 from pydantic import BaseModel
 
-from codeas._templates import SYSTEM_PROMPT_GLOBAL, TEMPLATE, TEMPLATE_MODULES
+from codeas._templates import SYSTEM_PROMPT_GLOBAL, SYSTEM_PROMPT_MODULES
 from codeas.codebase import Codebase
-from codeas.entities import Entity, Module
 
 
 class Request(BaseModel):
@@ -17,96 +16,82 @@ class Request(BaseModel):
     ----------
     instructions : str
         the instructions for the request
-    context : str
-        the context of the request. It can be "code", "docs", or "tests".
     guideline_prompt : Optional[str]
         the prompt to be used as a guideline for the model, by default None
     model : object
         the model to use for executing the request
-    target : str
-        the target of the request. It can be "code", "docs", or "tests".
     """
 
     instructions: str
-    context: str
     guideline_prompt: Optional[str]
     model: object
-    target: str
 
-    def get_modules_from_instructions(self, codebase: Codebase, verbose: bool = True):
-        logging.info("Getting modules from instructions")
-        prompt = TEMPLATE_MODULES.format(
-            dir_structure=codebase.get_tree(),
-            instructions=self.instructions,
-            guideline_prompt=self.guideline_prompt,
-        )
-        if verbose:
-            logging.info(f"Prompt:\n {prompt}")
+    def execute(self, codebase: Codebase):
+        logging.info("\n=======\nIDENTIFYING RELEVANT FILES\n=======\n")
+        relevant_files = self._identify_relevant_files(codebase)
 
-        logging.info("Model output: \n")
-        output = self.model.predict(prompt)
-        return self._parse_modules(output)
-
-    def _parse_modules(self, input_string):
-        return [module.replace("/", ".") for module in input_string.split(",")]
-
-    def execute_globally(
-        self, codebase: Codebase, modules: List[str] = None, verbose: bool = True
-    ):
-        logging.info("Executing request globally")
+        logging.info("\n=======\nEXECUTING REQUEST\n=======\n")
+        modules_to_read = self._parse_csv_string(relevant_files["read"])
         modules_content = ""
-        for module in codebase.get_modules(modules):
+        for module in codebase.get_modules(modules_to_read):
             modules_content += f"\n<{module.name}>\n"
-            modules_content += module.get(self.context)
+            modules_content += module.get("code")
             modules_content += f"</{module.name}>\n"
+        logging.info(f"\nCODEBASE CONTEXT:\n\n{modules_content}")
+
+        user_message = self._get_user_message(relevant_files)
+        logging.info(f"\nPROMPT:\n\n{user_message}")
 
         messages = [
             SystemMessage(content=SYSTEM_PROMPT_GLOBAL),
             HumanMessage(content=modules_content),
-            HumanMessage(content=self.instructions),
+            HumanMessage(content=user_message),
         ]
 
-        logging.info("Model output: \n")
+        logging.info("\nMODEL OUTPUT:\n\n")
         output = self.model(messages).content
 
-        for module_name, module_content in self._parse_markup_string(output):
+        for module_name, module_content in self._parse_markup_string(output).items():
             try:
                 module = codebase.get_module(module_name)
-                module.modify
-                (self.target, module_content)
+                module.modify("new_content", module_content)
             except ValueError:
                 codebase.add_module(module_name, module_content)
 
+    def _identify_relevant_files(self, codebase: Codebase):
+        tree = codebase.get_tree()
+        logging.info(f"\nDIRECTORY TREE: {tree}")
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT_MODULES),
+            HumanMessage(content=tree),
+            HumanMessage(content=self.instructions),
+        ]
+        logging.info("\nMODEL OUTPUT:\n\n")
+        model_output = self.model(messages).content
+        return self._parse_markup_string(model_output)
+
+    def _parse_csv_string(self, input_string):
+        return [module.replace("/", ".") for module in input_string.split(",")]
+
     def _parse_markup_string(self, input_string):
         pattern = r"<([^<>]+)>\n(.*?)\n</\1>"
-        matches = re.findall(pattern, input_string, re.DOTALL)
-        return [(match[0], match[1]) for match in matches]
+        return dict(re.findall(pattern, input_string, re.DOTALL))
 
-    def execute(self, entity: Union[Entity, Module], verbose: bool = True):
-        if isinstance(entity, Entity):
-            logging.info(f"Executing request for {entity.node.name}")
-        elif isinstance(entity, Module):
-            logging.info(f"Executing request for {entity.name}")
+    def _get_user_message(self, relevant_files: dict):
+        user_message = ""
+        user_message += f"Instructions:\n{self.instructions}\n"
 
-        entity_context = entity.get(self.context)
-        prompt = TEMPLATE.format(
-            context=self.context,
-            CONTEXT=self.context.upper(),
-            entity_context=entity_context,
-            instructions=self.instructions,
-            guideline_prompt=self.guideline_prompt,
-            target=self.target,
-        )
-        if verbose:
-            logging.info(f"Prompt:\n {prompt}")
+        output_format = ""
+        if "modify" in relevant_files:
+            for module_name in self._parse_csv_string(relevant_files["modify"]):
+                output_format += f"<{module_name}>\n"
+                output_format += "[FILE_CONTENT]\n"
+                output_format += f"</{module_name}>\n"
+        if "create" in relevant_files:
+            for module_name in self._parse_csv_string(relevant_files["create"]):
+                output_format += f"<{module_name}>\n"
+                output_format += "[FILE_CONTENT]\n"
+                output_format += f"</{module_name}>\n"
 
-        logging.info("Model output: \n")
-        output = self.model.predict(prompt)
-
-        if self.target in ["code", "tests"]:
-            output = self._parse_output(output)
-
-        entity.modify(self.target, output)
-
-    def _parse_output(self, output: str):
-        return output.replace("```python", "").replace("```", "").replace("CODE:", "")
+        user_message += f"Output format:\n{output_format}"
+        return user_message
