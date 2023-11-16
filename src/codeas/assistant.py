@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List, Literal, Union
+from typing import Any
 
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
@@ -12,7 +12,7 @@ from codeas.codebase import Codebase
 from codeas.file_handler import FileHandler
 from codeas.initializer import Initializer
 from codeas.request import Request
-from codeas.utils import count_tokens, read_yaml
+from codeas.utils import read_yaml
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -35,11 +35,10 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         Description, by default "gpt-3.5-turbo"
     """
 
-    codebase: Codebase = Codebase(language="python")
-    # TODO: Look for a formatter available for different languages or enable just for python.
-    file_handler: FileHandler = FileHandler(auto_format=False)
+    codebase: Codebase = Codebase()
+    file_handler: FileHandler = FileHandler()
     max_tokens_per_module: int = 8000
-    model: str = "gpt-3.5-turbo-16k"
+    model: str = "gpt-3.5-turbo-1106"
     _prompts: dict = PrivateAttr(default_factory=dict)
     _openai_model: object = PrivateAttr(None)
 
@@ -95,28 +94,19 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         initializer = Initializer()
         initializer.init_configs(self, source_path)
 
-    def execute_preprompt(
-        self, name: str, modules: Union[List[str], Literal["auto"]] = None
-    ):
+    def execute_preprompt(self, name: str):
         """Execute a preprompt from prompts.yaml file
 
         Parameters
         ----------
         name : str
             The name of the preprompt
-        modules : List[str], optional
-            The list of modules to execute the preprompt on, by default None
         """
         self._check_prompt_name(name)
         logging.info(f"Executing preprompt {name}")
         instructions = self._prompts[name]["instructions"]
-        target = self._prompts[name].get("target", "code")
-        context = self._prompts[name].get("context", "code")
         guideline_prompt = self._prompts[name].get("guideline_prompt", "")
-        scope = self._prompts[name].get("scope", "global")
-        self.execute_prompt(
-            instructions, target, context, guideline_prompt, modules, scope
-        )
+        self.execute_prompt(instructions, guideline_prompt)
 
     def _check_prompt_name(self, name: str):
         if name not in self._prompts.keys():
@@ -124,55 +114,24 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
             logging.error(err_msg)
             raise ValueError(err_msg)
 
-    def execute_prompt(
-        self,
-        instructions: str,
-        target: str = "code",
-        context: str = "code",
-        guideline_prompt: str = "",
-        modules: Union[List[str], Literal["auto"]] = None,
-        scope: Literal["global", "module"] = "global",
-    ):
+    def execute_prompt(self, instructions: str, guideline_prompt: str = ""):
         """Execute a prompt on the codebase
 
         Parameters
         ----------
         instructions : str
             The instructions for the model to perform
-        target : str, optional
-            The target to modify in the codebase, by default "code"
-        context : str, optional
-            The context to get from the codebase, by default "code"
         guideline_prompt : List[str], optional
             The list of guidelines to be used in the prompt, by default None
-        modules : List[str], optional
-            The list of modules to execute the prompt on, by default None
         """
         logging.info(f"Executing prompt {instructions}")
         request = Request(
             instructions=instructions,
-            context=context,
-            target=target,
             guideline_prompt=guideline_prompt,
             model=self._openai_model,
         )
-        if modules == "auto":
-            modules = request.get_modules_from_instructions(self.codebase)
-
-        if scope == "global":
-            request.execute_globally(self.codebase, modules)
-        elif scope == "module":
-            for module in self.codebase.get_modules(modules):
-                if count_tokens(module.get(context)) > self.max_tokens_per_module:
-                    for entity in module.get_entities():
-                        request.execute(entity)
-                    module.merge_entities(target)
-                else:
-                    request.execute(module)
-        else:
-            raise ValueError(f"Scope {scope} not recognized. Use 'global' or 'module'")
-
-        self.file_handler.export_modifications(self.codebase, target)
+        request.execute(self.codebase)
+        self.file_handler.export_modifications(self.codebase)
 
     def apply_changes(self):
         logging.info("Applying changes")
