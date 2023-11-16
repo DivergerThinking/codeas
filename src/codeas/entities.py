@@ -162,10 +162,3 @@ class Module(BaseEntity):
         """
         if attr == "code":
             self.code = "\n".join([child.text.decode() for child in self.body])
-        # useless at the moment
-        # else:
-        #     # reset the attribute to empty string and then add the attribute of each entity
-        #     self.modify(attr, "")
-        #     for entity in self.get_entities():
-        #         module_attr = self.get(attr)
-        #         module_attr += entity.get(attr)
