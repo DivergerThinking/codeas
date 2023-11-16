@@ -1,7 +1,7 @@
 import os
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import tree_sitter_languages
 from pydantic import BaseModel, PrivateAttr
@@ -132,11 +132,11 @@ class Codebase(BaseModel):
                 # i.e. space because last, └── , above so no more |
                 yield from self._get_tree_recursively(path, prefix=prefix + extension)
 
-    def get_modules(self, module_names: list = None) -> List[Module]:
+    def get_modules(self, module_names: Union[list, str] = None) -> List[Module]:
         """Return a list of modules. If module_names is None, return all modules."""
         if module_names is None:
             return self._modules
-        else:
+        elif isinstance(module_names, list):
             modules = []
             for module_name in module_names:
                 try:
@@ -144,6 +144,8 @@ class Codebase(BaseModel):
                 except ValueError:
                     pass
             return modules
+        elif isinstance(module_names, str):
+            return [self.get_module(module_names)]
 
     def get_module(self, name):
         for module in self._modules:
