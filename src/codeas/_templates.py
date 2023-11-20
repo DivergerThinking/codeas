@@ -60,57 +60,54 @@ IMPORTANT: the path separator used is "." instead of "/"
 Example when the request is related to modifying existing files:
 """
 └── src/
-    └── codeas/
-        ├── file_handler.py
-        ├── assistant.py
-        └── request.py
+    ├── file_handler.py
+    ├── assistant.py
+    └── request.py
 
 Add docstrings to all python files in the src/ folder
 
 <read>
-src.codeas.file_handler.py,src.codeas.assistant.py,src.codeas.request.py
+src.file_handler.py,src.assistant.py,src.request.py
 </read>
 
 <modify>
-src.codeas.file_handler.py,src.codeas.assistant.py,src.codeas.request.py
+src.file_handler.py,src.assistant.py,src.request.py
 </modify>
 """
 
 Example when the request is related to creating new files:
 """
 └── src/
-    └── codeas/
-        ├── file_handler.py
-        ├── assistant.py
-        └── request.py
+    ├── file_handler.py
+    ├── assistant.py
+    └── request.py
 
 Generate tests for file_handler.py and assistant.py using pytest. Write the files under tests/ directory. The file names should start with "test_"
 
 <read>
-src.codeas.file_handler.py,src.codeas.assistant.py
+src.file_handler.py,src.assistant.py
 </read>
 
 <create>
-tests.codeas.test_file_handler.py,tests.codeas.test_assistant.py
+tests.test_file_handler.py,tests.test_assistant.py
 </create>
 """
 
 BE CAREFUL WITH FILE FORMAT, some requests might require you to create files with a different format than the original file. Example:
 """
 └── src/
-    └── codeas/
-        ├── file_handler.py
-        ├── assistant.py
-        └── request.py
+    ├── file_handler.py
+    ├── assistant.py
+    └── request.py
 
 Generate documentation for request.py in markdown format. Write the documentation files in the docs/ directory.
 
 <read>
-src.codeas.request.py
+src.request.py
 </read>
 
 <create>
-docs.codeas.request.md
+docs.request.md
 </create>
 """
 '''
@@ -122,14 +119,14 @@ If the instructions are related to creating documentation and there is a guideli
 
 User:
 """
-{"docs": "all documentation files should be stored in docs/ folder in markdown format"}
+{"documentation": "all documentation files should be stored in docs/ folder in markdown format"}
 
 Create usage documentation for evaluator.py 
 """
 
 Assistant:
 """
-docs
+documentation
 """
 
 If multiple relevant guidelines are found, return the names in CSV format. 
