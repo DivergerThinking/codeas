@@ -5,7 +5,11 @@ from typing import Optional
 from langchain.schema import HumanMessage, SystemMessage
 from pydantic import BaseModel
 
-from codeas._templates import SYSTEM_PROMPT_GLOBAL, SYSTEM_PROMPT_MODULES
+from codeas._templates import (
+    SYSTEM_PROMPT_FILES,
+    SYSTEM_PROMPT_GUIDELINES,
+    SYSTEM_PROMPT_REQUEST,
+)
 from codeas.codebase import Codebase
 
 
@@ -16,21 +20,55 @@ class Request(BaseModel):
     ----------
     instructions : str
         the instructions for the request
-    guideline_prompt : Optional[str]
-        the prompt to be used as a guideline for the model, by default None
     model : object
         the model to use for executing the request
+    guidelines : Optional[list]
+        the guidelines which can be identified belonging to a prompt, by default None
     """
 
     instructions: str
-    guideline_prompt: Optional[str]
     model: object
+    guidelines: Optional[dict] = None
 
     def execute(self, codebase: Codebase):
+        logging.info("\n=======\ADDING RELEVANT GUIDELINES\n=======\n")
+        self.add_relevant_guidelines()
+
         logging.info("\n=======\nIDENTIFYING RELEVANT FILES\n=======\n")
-        relevant_files = self._identify_relevant_files(codebase)
+        relevant_files = self.identify_relevant_files(codebase)
 
         logging.info("\n=======\nEXECUTING REQUEST\n=======\n")
+        self.execute_request(codebase, relevant_files)
+
+    def add_relevant_guidelines(self) -> list:
+        if self.guidelines is not None:
+            messages = [
+                SystemMessage(content=SYSTEM_PROMPT_GUIDELINES),
+                HumanMessage(content=str(self.guidelines)),
+                HumanMessage(content=self.instructions),
+            ]
+            logging.info("\nMODEL OUTPUT:\n\n")
+            model_output = self.model(messages).content
+            guideline_names = self._parse_csv_string(model_output)
+            for guideline_name in guideline_names:
+                try:
+                    self.instructions += f"\n{self.guidelines[guideline_name]}"
+                except Exception:
+                    logging.info(f"Guideline {guideline_name} not found in guidelines")
+
+    def identify_relevant_files(self, codebase: Codebase) -> dict:
+        tree = codebase.get_tree()
+        logging.info(f"\nDIRECTORY TREE: {tree}")
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT_FILES),
+            HumanMessage(content=tree),
+            HumanMessage(content=self.instructions),
+        ]
+        logging.info("\nMODEL OUTPUT:\n\n")
+        model_output = self.model(messages).content
+        return self._parse_markup_string(model_output)
+
+    def execute_request(self, codebase, relevant_files):
         modules_to_read = self._parse_csv_string(relevant_files["read"])
         modules_content = ""
         for module in codebase.get_modules(modules_to_read):
@@ -43,7 +81,7 @@ class Request(BaseModel):
         logging.info(f"\nPROMPT:\n\n{user_message}")
 
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT_GLOBAL),
+            SystemMessage(content=SYSTEM_PROMPT_REQUEST),
             HumanMessage(content=modules_content),
             HumanMessage(content=user_message),
         ]
@@ -59,20 +97,8 @@ class Request(BaseModel):
             except ValueError:
                 codebase.add_module(module_name, module_content)
 
-    def _identify_relevant_files(self, codebase: Codebase):
-        tree = codebase.get_tree()
-        logging.info(f"\nDIRECTORY TREE: {tree}")
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT_MODULES),
-            HumanMessage(content=tree),
-            HumanMessage(content=self.instructions),
-        ]
-        logging.info("\nMODEL OUTPUT:\n\n")
-        model_output = self.model(messages).content
-        return self._parse_markup_string(model_output)
-
     def _parse_csv_string(self, input_string):
-        return [module.replace("/", ".") for module in input_string.split(",")]
+        return input_string.split(",")
 
     def _parse_markup_string(self, input_string):
         pattern = r"<([^<>]+)>\n(.*?)\n</\1>"

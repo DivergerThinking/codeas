@@ -53,23 +53,6 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
 
     def _set_prompts(self):
         self._prompts = read_yaml(".codeas/prompts.yaml")
-        self._add_guideline_prompts(self._prompts)
-
-    def _add_guideline_prompts(self, prompts: dict):
-        guidelines = prompts.get("guidelines")
-        for prompt in prompts.values():
-            prompt_guidelines = prompt.get("guidelines")
-            if prompt_guidelines is not None:
-                prompt["guideline_prompt"] = ""
-                for prompt_guideline in prompt_guidelines:
-                    if prompt_guideline in guidelines.keys():
-                        prompt["guideline_prompt"] += (
-                            guidelines[prompt_guideline] + "\n"
-                        )
-                    else:
-                        err_msg = f"Guideline {prompt_guideline} not found"
-                        logging.error(err_msg)
-                        raise ValueError(err_msg)
 
     def _set_openai_model(self):
         if self.model == "fake":
@@ -105,8 +88,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         self._check_prompt_name(name)
         logging.info(f"Executing preprompt {name}")
         instructions = self._prompts[name]["instructions"]
-        guideline_prompt = self._prompts[name].get("guideline_prompt", "")
-        self.execute_prompt(instructions, guideline_prompt)
+        self.execute_prompt(instructions)
 
     def _check_prompt_name(self, name: str):
         if name not in self._prompts.keys():
@@ -114,7 +96,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
             logging.error(err_msg)
             raise ValueError(err_msg)
 
-    def execute_prompt(self, instructions: str, guideline_prompt: str = ""):
+    def execute_prompt(self, instructions: str):
         """Execute a prompt on the codebase
 
         Parameters
@@ -127,7 +109,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         logging.info(f"Executing prompt {instructions}")
         request = Request(
             instructions=instructions,
-            guideline_prompt=guideline_prompt,
+            guidelines=self._prompts.get("guidelines"),
             model=self._openai_model,
         )
         request.execute(self.codebase)
