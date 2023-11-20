@@ -87,8 +87,7 @@ class Assistant(BaseModel, validate_assignment=True, extra="forbid"):
         """
         self._check_prompt_name(name)
         logging.info(f"Executing preprompt {name}")
-        instructions = self._prompts[name]["instructions"]
-        self.execute_prompt(instructions)
+        self.execute_prompt(self._prompts[name])
 
     def _check_prompt_name(self, name: str):
         if name not in self._prompts.keys():
