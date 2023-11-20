@@ -16,7 +16,7 @@ def monkey_patch_relevant_files(self, codebase):
     return {"read": "src.module1.py", "modify": "src.module1.py"}
 
 
-Request._identify_relevant_files = monkey_patch_relevant_files
+Request.identify_relevant_files = monkey_patch_relevant_files
 dummy_func1 = "def dummy_func_rewritten1():\n    print('it worked')"
 msg = AIMessage(content=f"<src.module1.py>\n{dummy_func1}\n</src.module1.py>\n\n")
 dummy_model = FakeMessagesListChatModel(responses=[msg])
