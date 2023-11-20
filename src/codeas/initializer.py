@@ -27,17 +27,26 @@ class Initializer(BaseModel):
 
     def _write_default_prompts(self, file_path: str):
         with open(file_path, "w") as yaml_file:
+            yaml_file.write("# Example prompts you can use\n")
             yaml.dump(
-                {"PROMPT_NAME": {"instructions": "YOUR INSTRUCTIONS HERE"}},
+                {
+                    "generate_docstrings": "Generate docstrings for all files under src/",
+                    "generate_tests": "Generate tests for all files under src/",
+                    "generate_documentation": "Generate usage documentation for all files under src/",
+                },
                 yaml_file,
                 default_flow_style=False,
                 sort_keys=False,
             )
-            yaml_file.write(
-                "  # target: code\n  # context: code\n  # guidelines:\n  #   - GUIDELINE_NAME\n\n"
-            )
+            yaml_file.write("# Example guidelines you can use\n")
             yaml.dump(
-                {"guidelines": {"GUIDELINE_NAME": "YOUR GUIDELINE HERE"}},
+                {
+                    "guidelines": {
+                        "documentation": "Documentation should be written in docs/ folder in markdown format.",
+                        "tests": "Tests should be written in tests/ folder using pytest, with file name starting with 'test_'.",
+                        "docstrings": "Docstrings should use numpy style.",
+                    }
+                },
                 yaml_file,
                 default_flow_style=False,
                 sort_keys=False,
