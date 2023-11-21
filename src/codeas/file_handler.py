@@ -28,34 +28,32 @@ class FileHandler(BaseModel):
 
     backup_dir: str = ".codeas/backup"
     preview: bool = True
-    add_test_prefix: bool = True
-    auto_format: bool = True
+    auto_format: bool = False
     format_command: str = "black"
     _target_files: list = PrivateAttr(default_factory=list)
     _preview_files: list = PrivateAttr(default_factory=list)
     _backup_files: list = PrivateAttr(default_factory=list)
 
-    def export_modifications(self, codebase: Codebase, target: str):
+    def export_modifications(self, codebase: Codebase):
         """Export the modified modules to the target files.
 
         Parameters
         ----------
         codebase : Codebase
             the codebase of the assistant
-        target : str
-            the target of the modifications. It can be "code", "docs", or "tests".
         """
         # mechanism for adding test_ prefix to test files is not ideal. To be reviewed.
-        prefix = "test_" if (self.add_test_prefix and target == "tests") else ""
         for module in codebase.get_modified_modules():
-            path = codebase.get_path(module.name, target, prefix)
+            module_stem, module_ext = os.path.splitext(module.name)
+            module_path = module_stem.replace(".", "/")
+            path = module_path + module_ext
             self._target_files.append(path)
             if self.preview:
-                path = codebase.get_path(module.name, target, prefix, "_preview")
+                path = module_path + "_preview" + module_ext
                 self._preview_files.append(path)
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
-            self._write_file(path, module.get(target))
+            self._write_file(path, module.content)
             if self.auto_format:
                 self._format_file(path)
 
@@ -64,6 +62,7 @@ class FileHandler(BaseModel):
             f.write(content)
 
     def _format_file(self, file_path: str):
+        # TODO: Look for a formatter available for different languages or enable just for python.
         if file_path.endswith(".py"):
             subprocess.run(f"{self.format_command} {file_path}", shell=True, check=True)
 
@@ -93,7 +92,7 @@ class FileHandler(BaseModel):
 
     def make_backup_dir(self):
         if not os.path.exists(self.backup_dir):
-            os.mkdir(self.backup_dir)
+            os.makedirs(self.backup_dir)
 
     def move_target_files_to_backup(self):
         for target_path in self._target_files:

@@ -23,18 +23,13 @@ class BaseEntity(BaseModel):
         flag to indicate if the entity has been modified, by default False
     """
 
-    node: object
-    parser: object
-    code: str = ""
-    docs: str = ""
-    tests: str = ""
+    content: str = ""
+    node: object = None
+    parser: object = None
     modified: bool = False
     body: list = []
 
-    def get(self, attr):
-        return getattr(self, attr)
-
-    def modify(self, attr, value):
+    def modify(self, content):
         """Modify the attribute and update the node.
 
         Parameters
@@ -44,10 +39,10 @@ class BaseEntity(BaseModel):
         value : str
             the value to set
         """
-        setattr(self, attr, value)
+        self.content = content
         self.modified = True
-        if attr == "code":
-            self.update_node(value)
+        if self.node is not None:
+            self.update_node(content)
 
     def update_node(self, code: str):
         """Update the ast node with the new code.
@@ -61,17 +56,19 @@ class BaseEntity(BaseModel):
         if isinstance(self, Module):
             node = self.parser.parse(bytes(code, "utf8")).root_node
             self.node = node
-            self.set_code()
+            self.set_content()
         elif isinstance(self, Entity):
             # TODO: With this node update, all start/end bytes references breaks. To review.
             self.node = self.parser.parse(bytes(code, "utf8")).root_node
             self.update_module_node()
 
-    def set_code(self):
-        self.code = self.node.text.decode()
+    def set_content(self):
+        if self.node is not None:
+            self.content = self.node.text.decode()
 
     def set_body(self):
-        self.body = [child for child in self.node.children]
+        if self.node is not None:
+            self.body = [child for child in self.node.children]
 
 
 class Entity(BaseEntity, arbitrary_types_allowed=True):
@@ -93,8 +90,6 @@ class Entity(BaseEntity, arbitrary_types_allowed=True):
 
     def update_module_node(self):
         self.module.body[self.body_idx] = self.node
-        # TODO: Due to recursive call at modify an entity we're updating module code. To review.
-        self.module.merge_entities()
 
 
 class Module(BaseEntity):
@@ -104,7 +99,7 @@ class Module(BaseEntity):
     _entities: List[Entity] = PrivateAttr(default_factory=list)
 
     def model_post_init(self, __context: Any) -> None:
-        self.set_code()
+        self.set_content()
         self.set_body()
 
     def get_entities(self, entity_names: Optional[list] = None) -> List[Entity]:
@@ -148,21 +143,3 @@ class Module(BaseEntity):
                 self._entities.append(
                     Entity(node=node, parser=self.parser, module=self, body_idx=idx)
                 )
-
-    def merge_entities(self, attr: str):
-        """Merge the attribute of all entities into the module.
-
-        Parameters
-        ----------
-        attr : str
-            the attribute to merge
-        """
-        if attr == "code":
-            self.code = "\n".join([child.text.decode() for child in self.body])
-        # useless at the moment
-        # else:
-        #     # reset the attribute to empty string and then add the attribute of each entity
-        #     self.modify(attr, "")
-        #     for entity in self.get_entities():
-        #         module_attr = self.get(attr)
-        #         module_attr += entity.get(attr)

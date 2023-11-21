@@ -1,111 +1,77 @@
 import os
-import shutil
 
-import pytest
 from dotenv import load_dotenv
+from langchain.chat_models.fake import FakeMessagesListChatModel
+from langchain.schema import AIMessage
 
 from codeas.assistant import Assistant
+from codeas.request import Request
+
+from .utils import create_dummy_repo, remove_dummy_repo
 
 load_dotenv()
 
-os.chdir("./tests")
+
+def monkey_patch_relevant_files(self, codebase):
+    return {"read": "src.module1.py", "modify": "src.module1.py"}
 
 
-@pytest.fixture
-def assistant():
-    _clean_dummy_files()
-    _create_dummy_files()
-    return Assistant()
+Request.identify_relevant_files = monkey_patch_relevant_files
+dummy_func1 = "def dummy_func_rewritten1():\n    print('it worked')"
+msg = AIMessage(content=f"<src.module1.py>\n{dummy_func1}\n</src.module1.py>\n\n")
+dummy_model = FakeMessagesListChatModel(responses=[msg])
 
 
-def _clean_dummy_files():
-    if os.path.exists("./src"):
-        shutil.rmtree("./src")
-    if os.path.exists("./tests"):
-        shutil.rmtree("./tests")
-    if os.path.exists("./docs"):
-        shutil.rmtree("./docs")
-
-
-def _create_dummy_files():
-    os.mkdir("./src")
-    with open("./src/dummy_module.py", "w") as f:
-        f.write("def dummy_function():\n    pass\n")
-
-
-def test_init_configs(assistant):
-    if os.path.exists(".codeas"):
-        shutil.rmtree("./.codeas")
+def test_init_configs():
+    create_dummy_repo()
+    assistant = Assistant()
     assistant.init_configs()
-    assert os.path.exists(".codeas")
     assert os.path.exists(".codeas/assistant.yaml")
     assert os.path.exists(".codeas/prompts.yaml")
+    remove_dummy_repo()
 
 
-def test_execute_preprompt(assistant):
-    _monkeypatch_prompts(assistant)
-    _monkeypatch_model(assistant)
-    assistant.execute_preprompt("modify_code")
-    assert os.path.exists("./src/dummy_module_preview.py")
-
-
-def _monkeypatch_prompts(assistant):
+def test_execute_preprompt():
+    create_dummy_repo()
+    assistant = Assistant()
+    assistant._openai_model = dummy_model
     assistant._prompts = {
         "modify_code": {
             "instructions": "modify some code",
-            "target": "code",
-            "context": "code",
         }
     }
+    assistant.execute_preprompt("modify_code")
+    assert os.path.exists("./src/module1_preview.py")
+    remove_dummy_repo()
 
 
-def _monkeypatch_model(assistant):
-    assistant.model = "fake"
-    assistant._set_openai_model()
-
-
-@pytest.mark.parametrize(
-    "target, context",
-    [
-        ("code", "code"),
-        ("tests", "code"),
-        ("docs", "code"),
-    ],
-)
-def test_execute_prompt(target, context, assistant):
-    _monkeypatch_model(assistant)
-    assistant.execute_prompt(
-        instructions="instructions",
-        target=target,
-        context=context,
-    )
-    if target == "code":
-        assert os.path.exists("./src/dummy_module_preview.py")
-    elif target == "tests":
-        assert os.path.exists("./tests/test_dummy_module_preview.py")
-    elif target == "docs":
-        assert os.path.exists("./docs/dummy_module_preview.md")
-
-
-def test_apply_changes(assistant):
-    _monkeypatch_model(assistant)
-    assistant.execute_prompt("instructions")
+def test_apply_changes():
+    create_dummy_repo()
+    assistant = Assistant()
+    assistant._openai_model = dummy_model
+    assistant._prompts = {
+        "modify_code": {
+            "instructions": "modify some code",
+        }
+    }
+    assistant.execute_preprompt("modify_code")
     assistant.apply_changes()
-    assert not os.path.exists("./src/dummy_module_preview.py")
-    assert os.path.exists("./.codeas/backup/dummy_module.py")
+    assert not os.path.exists("./src/module1_preview.py")
+    assert os.path.exists("./.codeas/backup/module1.py")
+    remove_dummy_repo()
 
 
-def test_reject_changes(assistant):
-    if os.path.exists("./.codeas/backup/"):
-        shutil.rmtree("./.codeas/backup/")
-    _monkeypatch_model(assistant)
-    assistant.execute_prompt("instructions")
+def test_reject_changes():
+    create_dummy_repo()
+    assistant = Assistant()
+    assistant._openai_model = dummy_model
+    assistant._prompts = {
+        "modify_code": {
+            "instructions": "modify some code",
+        }
+    }
+    assistant.execute_preprompt("modify_code")
     assistant.reject_changes()
-    assert not os.path.exists("./src/dummy_module_preview.py")
-    assert not os.path.exists("./.codeas/backup/dummy_module.py")
-
-
-def test_cleanup():
-    _clean_dummy_files()
-    if os.path.exists(".codeas"):
-        shutil.rmtree("./.codeas")
+    assert not os.path.exists("./src/module1_preview.py")
+    assert not os.path.exists("./.codeas/backup/module1.py")
+    remove_dummy_repo()
