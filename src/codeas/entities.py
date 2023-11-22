@@ -86,7 +86,7 @@ class Entity(BaseEntity, arbitrary_types_allowed=True):
     body_idx: int
 
     def model_post_init(self, __context: Any) -> None:
-        self.set_code()
+        self.set_content()
 
     def update_module_node(self):
         self.module.body[self.body_idx] = self.node
