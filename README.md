@@ -24,7 +24,8 @@ Enables context retrieval and file creation to be more dynamic, making the tool 
 **Release notes**
 - Dynamic context retrieval: specify the files you want the LLM to use in your prompt
 - Dynamic file creation: specify the files you want the LLM to create and where.
-- Dynamic guideline selection: add guidelines in prompts.yaml and let the LLM decide which ones are relevant to each of your requests Cross-language support: automatic file parsing for the most popular programming languages (.ts, .js, .py, .cs, .rb, .rs, .java, .go, .c, .php)
+- Dynamic guideline selection: add guidelines in prompts.yaml and let the LLM decide which ones are relevant to each of your requests 
+- Cross-language support: automatic file parsing for the most popular programming languages (.ts, .js, .py, .cs, .rb, .rs, .java, .go, .c, .php)
 - Multiple file context: multiple files can be used at once within the context
 
 ### v0.1.0 (24.10.2023)
