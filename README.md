@@ -24,14 +24,9 @@ Enables context retrieval and file creation to be more dynamic, making the tool 
 **Release notes**
 - Dynamic context retrieval: specify the files you want the LLM to use in your prompt
 - Dynamic file creation: specify the files you want the LLM to create and where.
-- Dynamic guideline selection: add guidelines in prompts.yaml and let the LLM decide which ones are relevant to each of your requests Cross-language support: automatic file parsing for the most popular programming languages (.ts, .js, .py, .cs, .rb, .rs, .java, .go, .c, .php)
+- Dynamic guideline selection: add guidelines in prompts.yaml and let the LLM decide which ones are relevant to each of your requests 
+- Cross-language support: automatic file parsing for the most popular programming languages (.ts, .js, .py, .cs, .rb, .rs, .java, .go, .c, .php)
 - Multiple file context: multiple files can be used at once within the context
-
-### v0.1.1 (03.11.2023)
-Adds support for other languages by switching from [AST](https://docs.python.org/3/library/ast.html) to [Tree-Sitter](https://tree-sitter.github.io/tree-sitter/).
-
-**Release notes**:
-- Add support for javascript and java codebases.
 
 ### v0.1.0 (24.10.2023)
 First release that supports simple use cases.
@@ -159,10 +154,4 @@ By default, any changes made to the codebase are first written to files with the
 - configurable via the `assistant.yaml` file under `file_handler: preview`. 
 - by default, it is set to True.
 - setting it to False means directly overwriting the original files with the changes.
-
-## What's next ❓
-
-The v0.3 will be focused on:
-- **Improving context retrieval**: use vector db to improve context retrieval
-- **Improving codebase modification**: improve the interaction of the codebase assistant with the file system
 
