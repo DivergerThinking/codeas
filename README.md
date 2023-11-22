@@ -160,9 +160,3 @@ By default, any changes made to the codebase are first written to files with the
 - by default, it is set to True.
 - setting it to False means directly overwriting the original files with the changes.
 
-## What's next ❓
-
-The v0.3 will be focused on:
-- **Improving context retrieval**: use vector db to improve context retrieval
-- **Improving codebase modification**: improve the interaction of the codebase assistant with the file system
-
