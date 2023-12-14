@@ -5,7 +5,7 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
 
-from codeas.tools import get_tools
+from codeas import tools
 
 SYSTEM_MESSAGE = """
 You are CodeAs, a world-class programmer that can perform any coding request on large codebases using a set of tools (available via function calling).
@@ -24,9 +24,38 @@ class Chat(BaseModel):
         default=[{"content": SYSTEM_MESSAGE, "role": "system"}]
     )
 
-    def ask_llm(self, message):
+    def ask(self, message):
         self._messages.append({"role": "user", "content": message})
-        return self._run_and_display(self._messages)
+
+        response = self._run_and_display(self._messages)
+        self._messages.append(response)
+
+        if response["tool_calls"] is not None:
+            self._execute_tool_calls(response)
+
+    def _execute_tool_calls(self, response):
+        for tool_call in response["tool_calls"]:
+            function_output = str(
+                self._execute_function(
+                    tool_call["function"]["name"], tool_call["function"]["arguments"]
+                )
+            )
+            self._messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": function_output,
+                }
+            )
+        # re-execute assistant with function output
+        response = self._run_and_display(self._messages)
+        self._messages.append(response)
+        # if the model returns tool calls again, re-execute them
+        if response["tool_calls"] is not None:
+            self._execute_tool_calls(response)
+
+    def _execute_function(self, function_name, arguments):
+        return getattr(tools, function_name)(eval(arguments))
 
     def _run_and_display(self, messages):
         response = self._run_completion(messages)
@@ -34,6 +63,7 @@ class Chat(BaseModel):
             response = self._parse_and_display_in_terminal(response)
         else:
             response = self._parse_and_display(response)
+        return response
 
     def _run_completion(self, messages):
         client = OpenAI()
@@ -41,7 +71,7 @@ class Chat(BaseModel):
             model=self.model,
             messages=messages,
             stream=self.stream,
-            tools=get_tools(),
+            tools=tools.get_schemas(),
         )
 
     def _parse_and_display_in_terminal(self, response):
@@ -56,12 +86,14 @@ class Chat(BaseModel):
             console.print(panel)
         else:
             response = self._parse_and_display(response, console=console)
+        return response
 
     def _parse_and_display(self, response, dynamic_text=None, live=None, console=None):
         if self.stream:
             response = self._parse_and_display_stream(response, dynamic_text, live)
         else:
             response = self._parse_and_display_response(response, console)
+        return response
 
     def _parse_and_display_stream(self, stream, dynamic_text=None, live=None):
         response = {"role": "assistant", "content": None, "tool_calls": None}
@@ -117,4 +149,4 @@ class Chat(BaseModel):
                 console.print(Panel(Text(content), title="OpenAI Response"))
             else:
                 print(content)
-            return response.choices[0].message.model_dump()
+        return response.choices[0].message.model_dump()

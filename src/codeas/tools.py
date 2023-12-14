@@ -1,7 +1,7 @@
 import inspect
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validate_call
 
 from codeas.codebase import Codebase
 
@@ -33,11 +33,13 @@ class ModifyFileParams(BaseModel):
     )
 
 
+@validate_call
 def get_file_paths(params: GetPathsParams):
     """reads the current working directory structure"""
     return Codebase().get_modules_paths()
 
 
+@validate_call
 def read_file(params: ReadFileParams):
     """reads the content of a file"""
     try:
@@ -47,18 +49,20 @@ def read_file(params: ReadFileParams):
         return "File not found. Make sure the full file path is specified. You can use the get_file_paths function to get the list of relevant file paths."
 
 
+@validate_call
 def modify_file(params: ModifyFileParams):
     """modifies the content of a file"""
     ...
 
 
+@validate_call
 def create_file(params: CreateFileParams):
     """creates a new file with the given content"""
     with open(params.file_path, "w") as f:
         f.write(params.content)
 
 
-def get_schema(function):
+def get_function_schema(function):
     signature = inspect.signature(function)
     first_parameter = next(iter(signature.parameters.values()), None)
     if first_parameter is not None and issubclass(
@@ -73,7 +77,7 @@ def get_schema(function):
         return {}
 
 
-def get_tools():
+def get_schemas():
     schemas = []
     for function in [get_file_paths, read_file, modify_file, create_file]:
         schemas.append(
@@ -82,7 +86,7 @@ def get_tools():
                 "function": {
                     "name": function.__name__,
                     "description": function.__doc__,
-                    "parameters": get_schema(function),
+                    "parameters": get_function_schema(function),
                 },
             }
         )
