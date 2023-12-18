@@ -28,9 +28,12 @@ class Chat(BaseModel):
         self._messages.append({"role": "user", "content": message})
 
         response = self._run_and_display(self._messages)
-        self._messages.append(response)
 
-        if response["tool_calls"] is not None:
+        if response["tool_calls"] is None:
+            response.pop("tool_calls")
+            self._messages.append(response)
+        else:
+            self._messages.append(response)
             self._execute_tool_calls(response)
 
     def _execute_tool_calls(self, response):
