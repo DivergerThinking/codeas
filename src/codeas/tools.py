@@ -2,6 +2,7 @@ import inspect
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, validate_call
+from rich.console import Console
 
 load_dotenv()
 
@@ -10,6 +11,8 @@ class ReadFileParams(BaseModel):
     file_path: str = Field(
         ..., description="relative path of file, including file name"
     )
+    line_start: int = Field(1, description="start line to read")
+    line_end: int = Field(-1, description="end line to read")
 
 
 class CreateFileParams(BaseModel):
@@ -27,16 +30,31 @@ class ModifyFileParams(BaseModel):
     )
 
 
+class File(BaseModel):
+    path: str
+    content: str
+    line_start: int
+    line_end: int
+
+
 @validate_call
 def read_file(params: ReadFileParams):
     """reads the content of a file"""
     try:
+        console = Console()
+        console.print(f"Reading file: {params.file_path}")
         with open(params.file_path) as f:
-            return f.read()
-    except FileNotFoundError:
-        return (
-            "File not found. Please specify the exact file path, including file name."
+            content = "".join(f.readlines()[params.line_start - 1 : params.line_end])
+        return File(
+            path=params.file_path,
+            content=content,
+            line_start=params.line_start,
+            line_end=params.line_end,
         )
+    except FileNotFoundError:
+        return "ERROR: File not found. Please specify the exact file path, including file name."
+    except Exception as e:
+        return f"ERROR: Unexpected error: {e}. Please review request"
 
 
 @validate_call
@@ -67,17 +85,18 @@ def get_function_schema(function):
         return {}
 
 
-def get_schemas():
-    schemas = []
-    for function in [read_file, modify_file, create_file]:
-        schemas.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": function.__name__,
-                    "description": function.__doc__,
-                    "parameters": get_function_schema(function),
-                },
-            }
-        )
-    return schemas
+def get_schemas(functions: list):
+    if functions is not None:
+        schemas = []
+        for function in functions:
+            schemas.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": function.__name__,
+                        "description": function.__doc__,
+                        "parameters": get_function_schema(function),
+                    },
+                }
+            )
+        return schemas
