@@ -42,19 +42,32 @@ def read_file(params: ReadFileParams):
     """reads the content of a file"""
     try:
         console = Console()
-        console.print(f"Reading file: {params.file_path}")
+        console.print("\n")
+        console.rule("Function", style="blue")
+        console.print(f"Reading file: {params.file_path}\n")
+
         with open(params.file_path) as f:
             content = "".join(f.readlines()[params.line_start - 1 : params.line_end])
-        return File(
+
+        file_ = File(
             path=params.file_path,
             content=content,
             line_start=params.line_start,
             line_end=params.line_end,
         )
+        console.print(f"Successfully read file: {params.file_path}")
+        console.rule(style="blue")
+        return file_
+
     except FileNotFoundError:
-        return "ERROR: File not found. Please specify the exact file path, including file name."
+        msg = "ERROR: File not found. Please specify the exact file path, including file name."
+        console.print(msg)
+        return msg
+
     except Exception as e:
-        return f"ERROR: Unexpected error: {e}. Please review request"
+        msg = f"ERROR: Unexpected error: {e}. Please review request"
+        console.print(msg)
+        return msg
 
 
 @validate_call
