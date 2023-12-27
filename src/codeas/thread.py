@@ -98,6 +98,13 @@ class Thread(BaseModel):
         outputs = []
         for tool_call in tool_calls:
             outputs.append(self.call(tool_call))
+            self.messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": "Function call completed",
+                }
+            )
         return outputs
 
     def call(self, tool_call: dict):
