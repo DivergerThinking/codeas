@@ -20,9 +20,3 @@ class Chat(BaseModel):
                 message += self.context.get_file_contents()
             self.thread.add({"role": "user", "content": message})
             return self.thread.run()
-
-
-chat = Chat()
-chat.ask("@add-context add src/codeas/chat.py line 1-40")
-chat.ask("explain what this code does")
-print("works")
