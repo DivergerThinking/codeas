@@ -2,8 +2,8 @@ from typing import Any, Callable, List
 
 from openai import OpenAI
 from pydantic import BaseModel
+from rich.console import Console
 
-from codeas.console import RichConsole
 from codeas.tools import get_schemas
 
 
@@ -24,17 +24,28 @@ class Thread(BaseModel):
             message.pop("tool_calls")
         self.messages.append(message)
 
-    def run(self, display: bool = True):
+    def run(self):
         response = {"role": "assistant", "content": None, "tool_calls": None}
-        console = RichConsole()
+        console = Console()
         for chunk in self._run_completion():
-            if display:
-                console.display(chunk.choices[0].delta.content)
-            else:
-                print(chunk.choices[0].delta.content, end="")
+            content = chunk.choices[0].delta.content
+            if content:
+                self._start_message_block(console, response)
+                console.print(content, end="")
             self._parse(chunk, response)
-        console.end()
+        if response["content"] is not None:
+            self._end_message_block(console)
         return response
+
+    def _start_message_block(self, console, response):
+        # only start block on first iteration, while response["content"] is still empty
+        if response["content"] is None:
+            console.print("\n")
+            console.rule("Assistant")
+
+    def _end_message_block(self, console):
+        console.print("\n")
+        console.rule()
 
     def _run_completion(self):
         client = OpenAI()
@@ -96,8 +107,3 @@ class Thread(BaseModel):
             if tool.__name__ == tool_call["function"]["name"]
         ][0]
         return function(eval(tool_call["function"]["arguments"]))
-
-
-thread = Thread()
-thread.add({"role": "user", "content": "Hello"})
-thread.run()
