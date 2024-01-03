@@ -27,7 +27,6 @@ class Chat(BaseModel):
             self.thread.add(message)
             response = self.thread.run()
             self.thread.add(response)
-        print("done")
 
     def add_context_to_thread(self, thread: Thread):
         context_msg = {"role": "user", "content": self.context.get_file_contents()}
