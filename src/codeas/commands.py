@@ -12,11 +12,12 @@ The user will give you some information about the files that you need to read.
 In case you are not given enough information, ask the user to provide it to you.
 """.strip()
 
-CONTEXT_TOOLS = [tools.read_file]
+CONTEXT_TOOLS = [tools.read_file, tools.add_repo_map]
 
 
 class Context(BaseModel):
     files: List[File] = []
+    repo_map: str = None
     thread: Thread = Thread(system_prompt=CONTEXT_MESSAGE, tools=CONTEXT_TOOLS)
 
     def add(self, message):
@@ -25,12 +26,15 @@ class Context(BaseModel):
         self.thread.add(response)
         if "tool_calls" in response and response["tool_calls"] is not None:
             outputs = self.thread.run_tool_calls(response["tool_calls"])
-            for output in outputs:
-                self.files.append(output)
-                # output_msg = {
-                #     "role": "tool", "tool_call_id": tool_call["id"], "content": output,
-                # }
-                # self.thread.add(output_msg)
+            if isinstance(outputs[0], File):
+                for output in outputs:
+                    self.files.append(output)
+            elif isinstance(outputs[0], str) and len(outputs) == 1:
+                self.repo_map = outputs[0]
+            # output_msg = {
+            #     "role": "tool", "tool_call_id": tool_call["id"], "content": output,
+            # }
+            # self.thread.add(output_msg)
 
     def view(self):
         ...
@@ -38,9 +42,14 @@ class Context(BaseModel):
     def preview(self):
         ...
 
-    def get_file_contents(self):
+    def get_context(self):
         file_contents = "\n".join([file_.model_dump_json() for file_ in self.files])
-        return "CONTEXT:" + file_contents
+        return (
+            "CONTEXT:\n**FILES**:\n"
+            + file_contents
+            + "\n**REPO MAP**:\n"
+            + self.repo_map
+        )
 
 
 IMPLEMENT_MESSAGE = """

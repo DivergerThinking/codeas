@@ -29,7 +29,7 @@ class Chat(BaseModel):
             self.thread.add(response)
 
     def add_context_to_thread(self, thread: Thread):
-        context_msg = {"role": "user", "content": self.context.get_file_contents()}
+        context_msg = {"role": "user", "content": self.context.get_context()}
         # if context already added, we replace it with modified context
         if len(thread.messages) >= 2 and thread.messages[1]["content"].startswith(
             "CONTEXT:"

@@ -5,7 +5,16 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, validate_call
 from rich.console import Console
 
+from codeas.codebase import Codebase
+from codeas.repomap import RepoMap
+
 load_dotenv()
+
+
+class RepoMapParams(BaseModel):
+    max_map_tokens: int = Field(
+        1024, description="maximum number of tokens to use in the repo map"
+    )
 
 
 class ReadFileParams(BaseModel):
@@ -31,6 +40,30 @@ class File(BaseModel):
     content: str
     line_start: int
     line_end: int
+
+
+@validate_call
+def add_repo_map(params: RepoMapParams):
+    """get the repository map"""
+    try:
+        console = Console()
+        console.print("\n")
+        console.rule("Function", style="blue")
+        console.print("Adding repo map\n")
+
+        cb = Codebase()
+        paths = cb.get_modules_paths()
+        rm = RepoMap(params.max_map_tokens)
+        rmap = rm.get_repo_map([], paths)
+
+        console.print("Successfully added repo map")
+        console.rule(style="blue")
+        return rmap
+
+    except Exception as e:
+        msg = f"ERROR: Unexpected error: {e}. Please review request"
+        console.print(msg)
+        return msg
 
 
 @validate_call
