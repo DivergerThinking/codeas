@@ -10,17 +10,26 @@ from codeas.repomap import RepoMap
 
 load_dotenv()
 
-
-class RepoMapParams(BaseModel):
-    max_map_tokens: int = Field(
-        1024, description="maximum number of tokens to use in the repo map"
-    )
+console = Console()
 
 
 class ReadFileParams(BaseModel):
     path: str = Field(..., description="relative file path, including file name")
     line_start: int = Field(1, description="start line to read")
     line_end: int = Field(-1, description="end line to read")
+    structure_only: bool = Field(
+        False, description="read only the structure of the file"
+    )
+
+
+class ReadElementParams(BaseModel):
+    path: str = Field(..., description="relative file path, including file name")
+    function_name: str = Field(None, description="function name if given")
+    class_name: str = Field(None, description="class name if given")
+
+
+class DelegateParams(BaseModel):
+    request: str = Field(..., description="delegate request to more advanced assistant")
 
 
 class CreateFileParams(BaseModel):
@@ -43,39 +52,22 @@ class File(BaseModel):
 
 
 @validate_call
-def add_repo_map(params: RepoMapParams):
-    """get the repository map"""
-    try:
-        console = Console()
-        console.print("\n")
-        console.rule("Function", style="blue")
-        console.print("Adding repo map\n")
-
-        cb = Codebase()
-        paths = cb.get_modules_paths()
-        rm = RepoMap(params.max_map_tokens)
-        rmap = rm.get_repo_map([], paths)
-
-        console.print("Successfully added repo map")
-        console.rule(style="blue")
-        return rmap
-
-    except Exception as e:
-        msg = f"ERROR: Unexpected error: {e}. Please review request"
-        console.print(msg)
-        return msg
+def delegate_to_assistant(params: DelegateParams):
+    """delegates complex tasks that require step by step process to another assistant"""
+    pass
 
 
 @validate_call
 def read_file(params: ReadFileParams):
     """reads the content of a file"""
     try:
-        console = Console()
         console.print("\n")
         console.rule("Function", style="blue")
         console.print(f"Reading file: {params.path}\n")
 
-        file_ = _read_file(params.path, params.line_start, params.line_end)
+        file_ = _read_file(
+            params.path, params.line_start, params.line_end, params.structure_only
+        )
 
         console.print(f"Successfully read file: {params.path}")
         console.rule(style="blue")
@@ -93,9 +85,13 @@ def read_file(params: ReadFileParams):
         return msg
 
 
-def _read_file(path, line_start, line_end):
-    with open(path) as f:
-        content = "".join(f.readlines()[line_start - 1 : line_end])
+def _read_file(path, line_start, line_end, structure_only):
+    if structure_only:
+        rm = RepoMap()
+        content = rm.get_file_structure(path)
+    else:
+        with open(path) as f:
+            content = "".join(f.readlines()[line_start - 1 : line_end])
 
     return File(
         path=path,
@@ -103,6 +99,89 @@ def _read_file(path, line_start, line_end):
         line_start=line_start,
         line_end=line_end,
     )
+
+
+@validate_call
+def read_file_element(params: ReadElementParams):
+    """reads given element from a file. At least one of 'function_name' or a 'class_name' must be given. For methods, both should be given"""
+    try:
+        console.print("\n")
+        console.rule("Function", style="blue")
+
+        if params.function_name and params.class_name:
+            return read_method(params.path, params.function_name, params.class_name)
+        elif params.function_name:
+            return read_function(params.path, params.function_name)
+        elif params.class_name:
+            return read_class(params.path, params.class_name)
+
+        console.rule(style="blue")
+
+    except Exception as e:
+        msg = f"ERROR: Unexpected error: {e}. Please review request"
+        console.print(msg)
+        return msg
+
+
+def read_function(path: str, name: str):
+    """reads a given function from a file"""
+    console.print(f"Reading function '{name}' from '{path}'\n")
+
+    functions = _read_function(path, name)
+
+    if any(functions):
+        console.print(f"Successfully read function: {name}")
+    else:
+        console.print(f"Function '{name}' not found")
+
+    return functions
+
+
+def _read_function(path: str, name: str):
+    cb = Codebase()
+    return cb.get_functions(path, name)
+
+
+def read_class(path: str, name: str):
+    """reads a given class from a file"""
+    console.print(f"Reading class '{name}' from '{path}'\n")
+
+    classes = _read_class(path, name)
+
+    if any(classes):
+        console.print(f"Successfully read class: {name}")
+    else:
+        console.print(f"Class '{name}' not found")
+
+    console.rule(style="blue")
+
+    return classes
+
+
+def _read_class(path: str, name: str):
+    cb = Codebase()
+    return cb.get_classes(path, name)
+
+
+def read_method(path: str, name: str, class_name: str):
+    """reads a given method from a file"""
+    console.print(f"Reading method '{class_name}{name}' from '{path}'\n")
+
+    functions = _read_method(path, name)
+
+    if any(functions):
+        console.print(f"Successfully read function '{class_name}{name}'")
+    else:
+        console.print(f"Method '{class_name}{name}' not found")
+
+    console.rule(style="blue")
+
+    return functions
+
+
+def _read_method(path: str, name: str, class_name: str):
+    cb = Codebase()
+    return cb.get_methods(path, name, class_name)
 
 
 @validate_call
