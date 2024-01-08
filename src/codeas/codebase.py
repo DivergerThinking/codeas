@@ -1,11 +1,12 @@
 import os
+from collections import namedtuple
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import List, Union
 
 import tree_sitter_languages
 from pydantic import BaseModel, PrivateAttr
-from tree_sitter import Parser
+from tree_sitter import Language, Parser
 
 from codeas.entities import Module
 
@@ -23,6 +24,16 @@ LANG_EXTENSION_MAP = {
 }
 DEFAULT_FILE_PATTERNS = [f"*{ext}" for ext in LANG_EXTENSION_MAP.keys()]
 DEFAULT_EXCLUDE_PATTERNS = [".*", "__*"]
+FUNCTION_QUERY = """
+(function_definition
+name: (identifier) @function_name) 
+""".strip()
+
+CLASS_QUERY = """
+(class_definition
+name: (identifier) @class_name)
+}
+""".strip()
 
 
 class Codebase(BaseModel):
@@ -35,6 +46,7 @@ class Codebase(BaseModel):
     include_file_patterns: list = DEFAULT_FILE_PATTERNS
     _modules: List[Module] = PrivateAttr(default_factory=list)
     _parser: Parser = PrivateAttr(None)
+    _language: Language = PrivateAttr(None)
 
     def parse_modules(self):
         """Parse all the modules in the code folder and save them in the modules list."""
@@ -90,22 +102,26 @@ class Codebase(BaseModel):
         path : str
             The path to the source code file
         """
-        language_ext = os.path.splitext(path)[1]
-        Language = LANG_EXTENSION_MAP[language_ext]
-        self._set_parser(Language)
-        with open(path) as source:
-            module_content = source.read()
-        node = self._parser.parse(bytes(module_content, "utf8")).root_node
+        node = self._parse_root_node(path)
         name = path.replace(os.path.sep, ".")
         module = Module(name=name, node=node, parser=self._parser)
         module.parse_entities()
         self._modules.append(module)
 
-    def _set_parser(self, language) -> object:
+    def _parse_root_node(self, path: str):
+        self._set_parser(path)
+        with open(path) as source:
+            module_content = source.read()
+        return self._parser.parse(bytes(module_content, "utf8")).root_node
+
+    def _set_parser(self, path: str):
         """Reads the tree sitter grammar file and sets the selected language.
         The grammar file is hardcoded by now. Pending test on different OS."""
+        language_ext = os.path.splitext(path)[1]
+        language = LANG_EXTENSION_MAP[language_ext]
+        self._language = tree_sitter_languages.get_language(language)
         self._parser = Parser()
-        self._parser.set_language(tree_sitter_languages.get_language(language))
+        self._parser.set_language(self._language)
 
     def get_tree(self):
         tree = ""
@@ -170,3 +186,90 @@ class Codebase(BaseModel):
             for entity in module._entities:
                 if entity.modified is True:
                     module.modified = True
+
+    def get_standalone_functions(self, path: str, name: str = None):
+        functions = self.get_functions(path, name)
+        methods = self.get_methods(path, name)
+        return list(set(functions).difference(methods))
+
+    def get_functions(self, path: str, name: str = None):
+        root_node = self._parse_root_node(path)
+        if "." in name:
+            class_name, function_name = name.split(".")
+            return self.get_methods(path, function_name, class_name)
+        else:
+            query_scm = """
+            (function_definition
+            name: (identifier) @function_name) 
+            """.strip()
+            query = self._language.query(query_scm)
+            Function = namedtuple("Function", "name code")
+            functions = []
+            for node, _ in query.captures(root_node):
+                if name:
+                    if node.text.decode() == name:
+                        functions.append(
+                            Function(
+                                name=node.text.decode(), code=node.parent.text.decode()
+                            )
+                        )
+                else:
+                    functions.append(
+                        Function(
+                            name=node.text.decode(), code=node.parent.text.decode()
+                        )
+                    )
+            return functions
+
+    def get_methods(self, path: str, name: str = None, class_name: str = None):
+        root_node = self._parse_root_node(path)
+        query_scm = """
+        (class_definition
+            name: (identifier) @class_name
+            body: (_
+            (function_definition
+                name: (identifier) @method_name))
+        )
+        """.strip()
+        if class_name:
+            query_scm = "(" + query_scm + f"(eq? @class_name {class_name}))"
+        query = self._language.query(query_scm)
+        Function = namedtuple("Function", "name code")
+        functions = []
+        for node, tag in query.captures(root_node):
+            if tag == "method_name":  # filter out the class_name tags
+                if name:
+                    if node.text.decode() == name:
+                        functions.append(
+                            Function(
+                                name=node.text.decode(), code=node.parent.text.decode()
+                            )
+                        )
+                else:
+                    functions.append(
+                        Function(
+                            name=node.text.decode(), code=node.parent.text.decode()
+                        )
+                    )
+        return functions
+
+    def get_classes(self, path: str, name: str = None):
+        root_node = self._parse_root_node(path)
+        query_scm = """
+        (class_definition
+        name: (identifier) @class_name) 
+        """.strip()
+        query = self._language.query(query_scm)
+        Class = namedtuple("Class", "name code")
+        classes = []
+        for node, _ in query.captures(root_node):
+            if name:
+                if node.text.decode() == name:
+                    classes.append(
+                        Class(name=node.text.decode(), code=node.parent.text.decode())
+                    )
+            else:
+                classes.append(
+                    Class(name=node.text.decode(), code=node.parent.text.decode())
+                )
+        return classes
