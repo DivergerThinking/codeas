@@ -33,6 +33,10 @@ class RepoMap:
         self.tokenizer = tiktoken.encoding_for_model(model)
         self.verbose = verbose
 
+    def get_file_structure(self, path):
+        # reuses the repo map code to get only a single file structure
+        return self.get_repo_map([], [path])
+
     def get_repo_map(self, chat_files, other_files):
         if self.max_map_tokens <= 0:
             logging.warning("Max map tokens should be positive")
