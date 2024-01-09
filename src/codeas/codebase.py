@@ -42,6 +42,7 @@ class Codebase(BaseModel):
     See the Module class for more information.
     """
 
+    base_dir: str = "."
     exclude_patterns: list = DEFAULT_EXCLUDE_PATTERNS
     include_file_patterns: list = DEFAULT_FILE_PATTERNS
     _modules: List[Module] = PrivateAttr(default_factory=list)
@@ -55,7 +56,7 @@ class Codebase(BaseModel):
 
     def get_modules_paths(self):
         paths = []
-        for path in self._get_paths_recursively("."):
+        for path in self._get_paths_recursively(self.base_dir):
             paths.append(path)
         return paths
 
@@ -125,7 +126,7 @@ class Codebase(BaseModel):
 
     def get_tree(self):
         tree = ""
-        for path_element in self._get_tree_recursively("."):
+        for path_element in self._get_tree_recursively(self.base_dir):
             tree += f"{path_element}\n"
         return tree
 
