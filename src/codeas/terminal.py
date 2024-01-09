@@ -21,4 +21,5 @@ def start_terminal():
             chat.ask(message)
 
 
-start_terminal()
+if __name__ == "__main__":
+    start_terminal()
