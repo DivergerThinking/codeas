@@ -13,37 +13,6 @@ load_dotenv()
 console = Console()
 
 
-class ReadFileParams(BaseModel):
-    path: str = Field(..., description="relative file path, including file name")
-    line_start: int = Field(1, description="start line to read")
-    line_end: int = Field(-1, description="end line to read")
-    structure_only: bool = Field(
-        False, description="read only the structure of the file"
-    )
-
-
-class ReadElementParams(BaseModel):
-    path: str = Field(..., description="relative file path, including file name")
-    function_name: str = Field(None, description="function name if given")
-    class_name: str = Field(None, description="class name if given")
-
-
-class DelegateParams(BaseModel):
-    request: str = Field(..., description="delegate request to more advanced assistant")
-
-
-class CreateFileParams(BaseModel):
-    path: str = Field(..., description="relative file path, including file name")
-    content: str = Field(..., description="file content")
-
-
-class ModifyFileParams(BaseModel):
-    path: str = Field(..., description="relative file path, including file name")
-    new_content: str = Field(..., description="new content for the modified file")
-    line_start: int = Field(1, description="start line to modify content from")
-    line_end: int = Field(-1, description="end line to modify content until")
-
-
 class File(BaseModel):
     path: str
     content: str
@@ -51,10 +20,55 @@ class File(BaseModel):
     line_end: int
 
 
+class ListFileParams(BaseModel):
+    dir_path: str = Field(..., description="relative directory path")
+
+
 @validate_call
-def delegate_to_assistant(params: DelegateParams):
-    """delegates complex tasks that require step by step process to another assistant"""
-    pass
+def list_files(params: ListFileParams):
+    """list all of the files in a given directory"""
+    cb = Codebase(base_dir=params.dir_path)
+    return cb.get_modules_paths()
+
+
+class DelegateParams(BaseModel):
+    request: str = Field(..., description="the search request for the assistant")
+
+
+@validate_call
+def ask_assistant_to_search(params: DelegateParams):
+    """asks an assistant to search for specific parts of a codebase"""
+    ...
+
+
+class ReturnAnswerParams(BaseModel):
+    answer: str = Field(..., description="answer to return")
+
+
+def return_answer(params: ReturnAnswerParams):
+    """returns the final answer to the user"""
+    return params.answer
+
+
+class ReadFileParams(BaseModel):
+    path: str = Field(..., description="relative file path, including file name")
+    line_start: int = Field(1, description="start line to read")
+    line_end: int = Field(-1, description="end line to read")
+    structure_only: bool = Field(
+        False, description="if True, uses only the code structure of the file"
+    )
+
+
+def view_file(params: ReadFileParams):
+    """view the content of a file"""
+    # we are simply changing the function naming here for agent prompting purposes
+    return read_file(params)
+
+
+def add_file(params: ReadFileParams):
+    """adds a new file to the context"""
+    # we are simply changing the function naming here for agent prompting purposes
+    return read_file(params)
 
 
 @validate_call
@@ -85,7 +99,7 @@ def read_file(params: ReadFileParams):
         return msg
 
 
-def _read_file(path, line_start, line_end, structure_only):
+def _read_file(path, line_start=1, line_end=-1, structure_only=False):
     if structure_only:
         rm = RepoMap()
         content = rm.get_file_structure(path)
@@ -99,6 +113,12 @@ def _read_file(path, line_start, line_end, structure_only):
         line_start=line_start,
         line_end=line_end,
     )
+
+
+class ReadElementParams(BaseModel):
+    path: str = Field(..., description="relative file path, including file name")
+    function_name: str = Field(None, description="function name if given")
+    class_name: str = Field(None, description="class name if given")
 
 
 @validate_call
@@ -184,6 +204,11 @@ def _read_method(path: str, name: str, class_name: str):
     return cb.get_methods(path, name, class_name)
 
 
+class CreateFileParams(BaseModel):
+    path: str = Field(..., description="relative file path, including file name")
+    content: str = Field(..., description="file content")
+
+
 @validate_call
 def create_file(params: CreateFileParams):
     """creates a new file with the given content"""
@@ -210,6 +235,13 @@ def _write_file(path, content):
 
     with open(path, "w") as f:
         f.write(content)
+
+
+class ModifyFileParams(BaseModel):
+    path: str = Field(..., description="relative file path, including file name")
+    new_content: str = Field(..., description="new content for the modified file")
+    line_start: int = Field(1, description="start line to modify content from")
+    line_end: int = Field(-1, description="end line to modify content until")
 
 
 @validate_call
