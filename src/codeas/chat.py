@@ -1,7 +1,11 @@
+from typing import List
+
 from pydantic import BaseModel
 
-from codeas.commands import Context, Implementation
+from codeas.agents import ContextAgent, SearchAgent, WritingAgent
+from codeas.commands import view_context
 from codeas.thread import Thread
+from codeas.utils import File
 
 SYSTEM_MESSAGE = """
 You are CodeAs, a world-class programmer that can perform any coding request on large codebases using a set of tools (available via function calling).
@@ -9,31 +13,41 @@ You are CodeAs, a world-class programmer that can perform any coding request on 
 
 
 class Chat(BaseModel):
-    context: Context = Context()
-    implementation: Implementation = Implementation()
+    context: List[File] = []
     thread: Thread = Thread(system_prompt=SYSTEM_MESSAGE)
 
     def ask(self, message: str):
-        if "@add-context" in message:
-            message = {"role": "user", "content": message.replace("@add-context", "")}
-            self.context.add(message)
-            self.add_context_to_thread(self.thread)
-            self.add_context_to_thread(self.implementation.thread)
-        elif "@implement" in message:
-            message = {"role": "user", "content": message.replace("@implement", "")}
-            self.implementation.implement(self.thread.messages[-2:] + [message])
+        if "@" in message and message.split("@", 1)[1].split(" ")[0] in [
+            "context",
+            "write",
+            "search",
+        ]:
+            self.run_agent(message)
+        elif message.strip() in ["/view", "/clear"]:
+            self.run_command(message)
         else:
-            message = {"role": "user", "content": message}
-            self.thread.add(message)
-            response = self.thread.run()
-            self.thread.add(response)
+            self.run_thread(message)
 
-    def add_context_to_thread(self, thread: Thread):
-        context_msg = {"role": "user", "content": self.context.get_context()}
-        # if context already added, we replace it with modified context
-        if len(thread.messages) >= 2 and thread.messages[1]["content"].startswith(
-            "CONTEXT:"
-        ):
-            thread.messages[1] = context_msg
-        else:  # otherwise we insert context as first message
-            thread.messages.insert(1, context_msg)
+    def run_agent(self, message: str):
+        if "@context" in message:
+            agent = ContextAgent()
+            agent.run(message)
+            self.context = agent.context
+        elif "@write" in message:
+            agent = WritingAgent(context=self.context)
+            agent.run(message)
+        elif "@search" in message:
+            agent = SearchAgent()
+            agent.run(message)
+
+    def run_command(self, message: str):
+        if message.strip() == "/view":
+            view_context(self.context)
+        elif message.strip() == "/clear":
+            self.context = []
+
+    def run_thread(self, message: str):
+        message = {"role": "user", "content": message}
+        self.thread.add(message)
+        response = self.thread.run()
+        self.thread.add(response)
