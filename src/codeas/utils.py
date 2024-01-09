@@ -3,9 +3,20 @@ import os
 from shutil import copyfile, copytree
 
 import yaml
+from pydantic import BaseModel
+from rich.console import Console
 from tiktoken import encoding_for_model
 
 encoder = encoding_for_model("gpt-3.5-turbo")
+
+console = Console()
+
+
+class File(BaseModel):
+    path: str
+    content: str
+    line_start: int
+    line_end: int
 
 
 def count_tokens(text):

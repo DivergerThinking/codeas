@@ -7,17 +7,11 @@ from rich.console import Console
 
 from codeas.codebase import Codebase
 from codeas.repomap import RepoMap
+from codeas.utils import File
 
 load_dotenv()
 
 console = Console()
-
-
-class File(BaseModel):
-    path: str
-    content: str
-    line_start: int
-    line_end: int
 
 
 class ListFileParams(BaseModel):
@@ -105,13 +99,14 @@ def _read_file(path, line_start=1, line_end=-1, structure_only=False):
         content = rm.get_file_structure(path)
     else:
         with open(path) as f:
-            content = "".join(f.readlines()[line_start - 1 : line_end])
+            lines = f.readlines()
+            content = "".join(lines[line_start - 1 : line_end])
 
     return File(
         path=path,
         content=content,
         line_start=line_start,
-        line_end=line_end,
+        line_end=len(lines) if line_end == -1 else line_end,
     )
 
 
