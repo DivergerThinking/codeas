@@ -1,62 +1,46 @@
-from typing import List
+from __future__ import annotations
 
-from pydantic import BaseModel
+import os
+from typing import TYPE_CHECKING
 
-from codeas import tools
-from codeas.thread import Thread
-from codeas.tools import File
+import pyperclip
 
-CONTEXT_MESSAGE = """
-You are a smart computer who need to read the content of files in the file system. 
-The user will give you some information about the files that you need to read.
-In case you are not given enough information, ask the user to provide it to you.
-""".strip()
+from codeas.utils import console, count_tokens
 
-CONTEXT_TOOLS = [tools.read_file]
+if TYPE_CHECKING:
+    from codeas.chat import Chat
 
 
-class Context(BaseModel):
-    files: List[File] = []
-    thread: Thread = Thread(system_prompt=CONTEXT_MESSAGE, tools=CONTEXT_TOOLS)
-
-    def add(self, message):
-        self.thread.add(message)
-        response = self.thread.run()
-        self.thread.add(response)
-        if "tool_calls" in response and response["tool_calls"] is not None:
-            outputs = self.thread.run_tool_calls(response["tool_calls"])
-            for output in outputs:
-                self.files.append(output)
-                # output_msg = {
-                #     "role": "tool", "tool_call_id": tool_call["id"], "content": output,
-                # }
-                # self.thread.add(output_msg)
-
-    def view(self):
-        ...
-
-    def preview(self):
-        ...
-
-    def get_file_contents(self):
-        file_contents = "\n".join([file_.model_dump_json() for file_ in self.files])
-        return "CONTEXT:" + file_contents
+def copy_last_message(chat: Chat):
+    pyperclip.copy(chat.thread.messages[-1]["content"])
 
 
-IMPLEMENT_MESSAGE = """
-You are a smart computer who is capable of creating and modifying files.
-When asked to modify files, pay attention to the lines of the file which you need to modify""".strip()
-
-IMPLEMENT_TOOLS = [tools.create_file, tools.modify_file]
+def clear_chat(chat: Chat):
+    chat.thread.messages = []
+    chat.context = []
 
 
-class Implementation(BaseModel):
-    thread: Thread = Thread(system_prompt=IMPLEMENT_MESSAGE, tools=IMPLEMENT_TOOLS)
+def view_context(chat: Chat):
+    console.rule("Context", style="yellow")
+    if any(chat.context):
+        for file_ in chat.context:
+            context_path = os.path.join(os.getcwd(), f".codeas/{file_.path}")
+            dir_path = os.path.dirname(context_path)
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
 
-    def implement(self, messages: list):
-        for message in messages:
-            self.thread.add(message)
-        response = self.thread.run()
-        self.thread.add(response)
-        if "tool_calls" in response and response["tool_calls"] is not None:
-            _ = self.thread.run_tool_calls(response["tool_calls"])
+            with open(context_path, "w") as f:
+                f.write(file_.content)
+
+            lines = (
+                f"l.{file_.line_start}-{file_.line_end}"
+                if file_.line_end != -1
+                else "structure"
+            )
+
+            console.print(
+                f"{file_.path} | {lines} | {count_tokens(file_.content)} tokens"
+            )
+    else:
+        console.print("No files in context")
+    console.rule(style="yellow")

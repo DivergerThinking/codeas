@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from rich.console import Console
 
 from codeas.tools import get_schemas
+from codeas.utils import File
 
 
 class Thread(BaseModel):
@@ -14,6 +15,7 @@ class Thread(BaseModel):
     model: str = "gpt-3.5-turbo-1106"
     temperature: float = 0
     messages: List[str] = []
+    use_console: bool = True
 
     def model_post_init(self, __context: Any) -> None:
         if self.system_prompt is not None:
@@ -24,6 +26,22 @@ class Thread(BaseModel):
             message.pop("tool_calls")
         self.messages.append(message)
 
+    def add_context(self, context: List[File]):
+        """adds codebase context to the thread"""
+        if any(context):
+            context_msg = {
+                "role": "user",
+                "content": (
+                    """###CONTEXT###\n"""
+                    + "\n".join([f"{c.path}\n{c.content}" for c in context])
+                ),
+            }
+            messages = self.messages
+            if len(messages) > 1 and messages[1]["content"].startswith("###CONTEXT###"):
+                messages[1] = context_msg
+            else:
+                messages.insert(1, context_msg)
+
     def run(self):
         response = {"role": "assistant", "content": None, "tool_calls": None}
         console = Console()
@@ -31,7 +49,10 @@ class Thread(BaseModel):
             content = chunk.choices[0].delta.content
             if content:
                 self._start_message_block(console, response)
-                console.print(content, end="")
+                if self.use_console:
+                    console.print(content, end="")
+                else:
+                    print(content, end="")
             self._parse(chunk, response)
         if response["content"] is not None:
             self._end_message_block(console)
@@ -94,23 +115,14 @@ class Thread(BaseModel):
                     "arguments"
                 ] += tchunk.function.arguments
 
-    def run_tool_calls(self, tool_calls: list):
-        outputs = []
-        for tool_call in tool_calls:
-            outputs.append(self.call(tool_call))
-            self.messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "content": "Function call completed",
-                }
-            )
-        return outputs
-
     def call(self, tool_call: dict):
         function = [
             tool
             for tool in self.tools
             if tool.__name__ == tool_call["function"]["name"]
         ][0]
-        return function(eval(tool_call["function"]["arguments"]))
+        # fix booleans without capital letters
+        args = tool_call["function"]["arguments"]
+        args = args.replace("true", "True")
+        args = args.replace("false", "False")
+        return function(eval(args))
