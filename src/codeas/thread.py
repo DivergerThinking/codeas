@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from rich.console import Console
 
 from codeas.tools import get_schemas
+from codeas.utils import File
 
 
 class Thread(BaseModel):
@@ -24,6 +25,22 @@ class Thread(BaseModel):
         if "tool_calls" in message and message["tool_calls"] is None:
             message.pop("tool_calls")
         self.messages.append(message)
+
+    def add_context(self, context: List[File]):
+        """adds codebase context to the thread"""
+        if any(context):
+            context_msg = {
+                "role": "user",
+                "content": (
+                    """###CONTEXT###\n"""
+                    + "\n".join([f"{c.path}\n{c.content}" for c in context])
+                ),
+            }
+            messages = self.messages
+            if len(messages) > 1 and messages[1]["content"].startswith("###CONTEXT###"):
+                messages[1] = context_msg
+            else:
+                messages.insert(1, context_msg)
 
     def run(self):
         response = {"role": "assistant", "content": None, "tool_calls": None}
