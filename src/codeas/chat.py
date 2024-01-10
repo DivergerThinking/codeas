@@ -3,28 +3,25 @@ from typing import List
 from pydantic import BaseModel
 
 from codeas.agents import ContextAgent, SearchAgent, WritingAgent
-from codeas.commands import view_context
+from codeas.commands import clear_chat, view_context
 from codeas.thread import Thread
 from codeas.utils import File
-
-SYSTEM_MESSAGE = """
-You are a superintelligent machine who assists senior software engineers on working with their codebase.
-You will be given context about the codebase at the start of the conversation and some tasks to perform on it.
-Think through the request carefully and answer it as well as you can.
-In case of doubts, ask the user to provide more information.
-"""
 
 
 class Chat(BaseModel):
     context: List[File] = []
-    thread: Thread = Thread(system_prompt=SYSTEM_MESSAGE)
+    thread: Thread = Thread(
+        system_prompt="""
+You are a superintelligent machine who assists senior software engineers on working with their codebase.
+You will be given context about the codebase at the start of the conversation and some tasks to perform on it.
+Think through the request carefully and answer it as well as you can.
+In case of doubts, ask the user to provide more information.
+""",
+        model="gpt-4-1106-preview",
+    )
 
     def ask(self, message: str):
-        if "@" in message and message.split("@", 1)[1].split(" ")[0] in [
-            "context",
-            "write",
-            "search",
-        ]:
+        if any(agent in message for agent in ["@context", "@write", "@search"]):
             self.run_agent(message)
         elif message.strip() in ["/view", "/clear"]:
             self.run_command(message)
@@ -47,7 +44,7 @@ class Chat(BaseModel):
         if message.strip() == "/view":
             view_context(self.context)
         elif message.strip() == "/clear":
-            self.context = []
+            clear_chat(self)
 
     def run_thread(self, message: str):
         self.thread.add_context(self.context)

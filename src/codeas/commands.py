@@ -1,7 +1,15 @@
 import os
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from codeas.utils import File, console, count_tokens
+
+if TYPE_CHECKING:
+    from codeas.chat import Chat
+
+
+def clear_chat(chat: Chat):
+    chat.thread.messages = []
+    chat.context = []
 
 
 def view_context(context: List[File]):
