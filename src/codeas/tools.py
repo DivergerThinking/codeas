@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field, validate_call
 from rich.console import Console
 
 from codeas.codebase import Codebase
-from codeas.repomap import RepoMap
 from codeas.utils import File
 
 load_dotenv()
@@ -116,8 +115,8 @@ def read_file(params: ReadFileParams):
 
 def _read_file(path, line_start=1, line_end=-1, structure_only=False):
     if structure_only:
-        rm = RepoMap()
-        content = rm.get_file_structure(path)
+        cb = Codebase()
+        content = cb.get_file_structure(path)
     else:
         with open(path) as f:
             lines = f.readlines()
