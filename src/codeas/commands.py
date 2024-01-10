@@ -1,10 +1,18 @@
-import os
-from typing import TYPE_CHECKING, List
+from __future__ import annotations
 
-from codeas.utils import File, console, count_tokens
+import os
+from typing import TYPE_CHECKING
+
+import pyperclip
+
+from codeas.utils import console, count_tokens
 
 if TYPE_CHECKING:
     from codeas.chat import Chat
+
+
+def copy_last_message(chat: Chat):
+    pyperclip.copy(chat.thread.messages[-1]["content"])
 
 
 def clear_chat(chat: Chat):
@@ -12,10 +20,10 @@ def clear_chat(chat: Chat):
     chat.context = []
 
 
-def view_context(context: List[File]):
+def view_context(chat: Chat):
     console.rule("Context", style="yellow")
-    if any(context):
-        for file_ in context:
+    if any(chat.context):
+        for file_ in chat.context:
             context_path = os.path.join(os.getcwd(), f".codeas/{file_.path}")
             dir_path = os.path.dirname(context_path)
             if not os.path.exists(dir_path):

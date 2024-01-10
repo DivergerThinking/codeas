@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel
 
 from codeas.agents import ContextAgent, SearchAgent, WritingAgent
-from codeas.commands import clear_chat, view_context
+from codeas.commands import clear_chat, copy_last_message, view_context
 from codeas.thread import Thread
 from codeas.utils import File
 
@@ -23,7 +23,7 @@ In case of doubts, ask the user to provide more information.
     def ask(self, message: str):
         if any(agent in message for agent in ["@context", "@write", "@search"]):
             self.run_agent(message)
-        elif message.strip() in ["/view", "/clear"]:
+        elif any(command in message for command in ["/view", "/clear", "/copy"]):
             self.run_command(message)
         else:
             self.run_thread(message)
@@ -42,9 +42,11 @@ In case of doubts, ask the user to provide more information.
 
     def run_command(self, message: str):
         if message.strip() == "/view":
-            view_context(self.context)
+            view_context(self)
         elif message.strip() == "/clear":
             clear_chat(self)
+        elif message.strip() == "/copy":
+            copy_last_message(self)
 
     def run_thread(self, message: str):
         self.thread.add_context(self.context)
