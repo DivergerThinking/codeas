@@ -39,6 +39,7 @@ class ReturnAnswerParams(BaseModel):
     answer: str = Field(..., description="answer to return")
 
 
+@validate_call
 def return_answer(params: ReturnAnswerParams):
     """returns the final answer to the user"""
     return params.answer
@@ -101,12 +102,12 @@ def _read_file(path, line_start=1, line_end=-1, structure_only=False):
         with open(path) as f:
             lines = f.readlines()
             content = "".join(lines[line_start - 1 : line_end])
-
+            line_end = len(lines) if line_end == -1 else line_end
     return File(
         path=path,
         content=content,
         line_start=line_start,
-        line_end=len(lines) if line_end == -1 else line_end,
+        line_end=line_end,
     )
 
 
@@ -114,6 +115,12 @@ class ReadElementParams(BaseModel):
     path: str = Field(..., description="relative file path, including file name")
     function_name: str = Field(None, description="function name if given")
     class_name: str = Field(None, description="class name if given")
+
+
+def add_file_element(params: ReadFileParams):
+    """adds a file element to the context"""
+    # we are simply changing the function naming here for agent prompting purposes
+    return read_file_element(params)
 
 
 @validate_call
