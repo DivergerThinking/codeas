@@ -16,8 +16,14 @@ def view_context(context: List[File]):
             with open(context_path, "w") as f:
                 f.write(file_.content)
 
+            lines = (
+                f"l.{file_.line_start}-{file_.line_end}"
+                if file_.line_end != -1
+                else "structure"
+            )
+
             console.print(
-                f"{file_.path} | l.{file_.line_start}-{file_.line_end} | {count_tokens(file_.content)} tokens"
+                f"{file_.path} | {lines} | {count_tokens(file_.content)} tokens"
             )
     else:
         console.print("No files in context")
