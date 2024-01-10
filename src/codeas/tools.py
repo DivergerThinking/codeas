@@ -20,8 +20,22 @@ class ListFileParams(BaseModel):
 @validate_call
 def list_files(params: ListFileParams):
     """list all of the files in a given directory"""
-    cb = Codebase(base_dir=params.dir_path)
-    return cb.get_modules_paths()
+    try:
+        console.print("\n")
+        console.rule("Function", style="blue")
+        console.print(f"Listing files in directory {params.dir_path}\n")
+
+        cb = Codebase(base_dir=params.dir_path)
+        files = cb.get_modules_paths()
+
+        console.print("Successfully listed files")
+        console.rule(style="blue")
+
+        return files
+    except Exception as e:
+        msg = f"ERROR: Unexpected error: {e}. Please review request"
+        console.print(msg)
+        return msg
 
 
 class DelegateParams(BaseModel):
