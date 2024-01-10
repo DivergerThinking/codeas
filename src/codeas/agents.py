@@ -105,9 +105,3 @@ When you find a relevant file, see which sections of that file are relevant.
                 return "Maximum number of search steps reached"
             else:
                 self.run()
-
-
-if __name__ == "__main__":
-    search = SearchAgent()
-    response = search.search("which code is related to parsing the codebase?")
-    print(response)
