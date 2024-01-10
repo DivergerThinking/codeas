@@ -10,18 +10,20 @@ from codeas.tools import File
 class ContextAgent(BaseModel):
     thread: Thread = Thread(
         system_prompt="""
-You are a smart computer who need to read the content of files in the file system. 
-The user will give you some information about the files that you need to read.
-In case you are not given enough information, ask the user to provide it to you.
+You are a superintelligent machine who assists senior software engineers by interacting with a codebase.
+The engineers will ask you to add certain parts of the codebase to the conversation context in order to later use that context for other tasks.
+You can add a file's content, sections of it (lines, functions or classes) or its code structure. 
+Some engineers' requests may specify the name and sections of the files to read, while others may not.
+DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if information is missing
 """.strip(),
-        tools=[tools.read_file, tools.read_file_element, tools.ask_assistant_to_search],
+        tools=[tools.add_file, tools.add_file_element, tools.ask_assistant_to_search],
+        model="gpt-4-1106-preview",
     )
     context: List[File] = []
 
     def run(self, message: str = None):
         if message:
             self.thread.add({"role": "user", "content": message})
-
         response = self.thread.run()
         self.thread.add(response)
 
@@ -40,19 +42,23 @@ In case you are not given enough information, ask the user to provide it to you.
 class WritingAgent(BaseModel):
     thread: Thread = Thread(
         system_prompt="""
-You are a smart computer who is capable of writing content to files on the file system.
-When asked to modify files, pay attention to the lines of the file which you need to modify
+You are a superintelligent machine who assists senior software engineers to write content to files.
+Pay close attention to the path and the format of the file you are given.
 """.strip(),
         tools=[tools.create_file],
     )
     context: List[File] = []
 
-    def run(self, message: list):
-        self.thread.add(message)
+    def run(self, message: str = None):
+        self.thread.add_context(self.context)
+        if message:
+            self.thread.add({"role": "user", "content": message})
         response = self.thread.run()
         self.thread.add(response)
+
         if "tool_calls" in response and response["tool_calls"] is not None:
-            _ = self.thread.run_tool_calls(response["tool_calls"])
+            for tool_call in response["tool_calls"]:
+                self.thread.call(tool_call)
 
 
 class SearchAgent(BaseModel):
@@ -65,9 +71,8 @@ Think step by step and keep searching through the codebase until you think you h
 GUIDELINES:
 You should try and minimize the number of files you search through, focusing the part of the codebase you think more relevant.
 When you find a relevant file, see which sections of that file are relevant.
-Once you are done searching, return to the user a final answer listing the files and sections you have found relevant.
 """.strip(),
-        tools=[tools.list_files, tools.view_file, tools.return_answer],
+        tools=[tools.list_files, tools.view_file],
         model="gpt-4-1106-preview",
     )
     max_steps: int = 10
@@ -76,18 +81,12 @@ Once you are done searching, return to the user a final answer listing the files
     def run(self, message: str = None):
         if message:
             self.thread.add({"role": "user", "content": message})
-
         response = self.thread.run()
         self.thread.add(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
             for tool_call in response["tool_calls"]:
                 output = self.thread.call(tool_call)
-
-                # as soon as the return_answer is given, we stop searching
-                if tool_call["function"]["name"] == "return_answer":
-                    return output
-
                 output = output if isinstance(output, str) else str(output)
                 self.thread.messages.append(
                     {
@@ -96,12 +95,12 @@ Once you are done searching, return to the user a final answer listing the files
                         "content": output,
                     }
                 )
-        self._current_step += 1
+            self._current_step += 1
 
-        if self._current_step > self.max_steps:
-            return "Couldn't return an answer in the given number of search steps."
-        else:
-            self.search()
+            if self._current_step > self.max_steps:
+                return "Maximum number of search steps reached"
+            else:
+                self.run()
 
 
 if __name__ == "__main__":
