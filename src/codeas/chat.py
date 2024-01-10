@@ -8,7 +8,10 @@ from codeas.thread import Thread
 from codeas.utils import File
 
 SYSTEM_MESSAGE = """
-You are CodeAs, a world-class programmer that can perform any coding request on large codebases using a set of tools (available via function calling).
+You are a superintelligent machine who assists senior software engineers on working with their codebase.
+You will be given context about the codebase at the start of the conversation and some tasks to perform on it.
+Think through the request carefully and answer it as well as you can.
+In case of doubts, ask the user to provide more information.
 """
 
 
@@ -47,6 +50,7 @@ class Chat(BaseModel):
             self.context = []
 
     def run_thread(self, message: str):
+        self.thread.add_context(self.context)
         message = {"role": "user", "content": message}
         self.thread.add(message)
         response = self.thread.run()
