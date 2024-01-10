@@ -45,6 +45,26 @@ def return_answer(params: ReturnAnswerParams):
     return params.answer
 
 
+class ReadDirParams(BaseModel):
+    path: str = Field(..., description="relative directory path")
+    structure_only: bool = Field(
+        False,
+        description="if True, uses only the code structure of files in the directory",
+    )
+
+
+@validate_call
+def add_files_in_dir(params: ReadDirParams):
+    """adds all files in a given directory to the context"""
+    files = []
+    cb = Codebase(base_dir=params.path)
+    for file_path in cb.get_modules_paths():
+        params = ReadFileParams(path=file_path, structure_only=params.structure_only)
+        file_ = read_file(params)
+        files.append(file_)
+    return files
+
+
 class ReadFileParams(BaseModel):
     path: str = Field(..., description="relative file path, including file name")
     line_start: int = Field(1, description="start line to read")

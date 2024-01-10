@@ -16,7 +16,7 @@ You can add a file's content, sections of it (lines, functions or classes) or it
 Some engineers' requests may specify the name and sections of the files to read, while others may not.
 DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if information is missing
 """.strip(),
-        tools=[tools.add_file, tools.add_file_element, tools.ask_assistant_to_search],
+        tools=[tools.add_file, tools.add_file_element, tools.add_files_in_dir],
         model="gpt-4-1106-preview",
     )
     context: List[File] = []
@@ -29,7 +29,11 @@ DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if 
 
         if "tool_calls" in response and response["tool_calls"] is not None:
             for tool_call in response["tool_calls"]:
-                self.context.append(self.thread.call(tool_call))
+                output = self.thread.call(tool_call)
+                if isinstance(output, list):
+                    self.context.extend(output)
+                else:
+                    self.context.append(output)
                 self.thread.messages.append(
                     {
                         "role": "tool",
