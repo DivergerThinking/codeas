@@ -61,8 +61,14 @@ Pay close attention to the path and the format of the file you are given.
         self.thread.add(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
-            for tool_call in response["tool_calls"]:
-                self.thread.call(tool_call)
+            for tool_call in self.thread.run_calls(response["tool_calls"]):
+                self.thread.messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": "Function call completed",
+                    }
+                )
 
 
 class SearchAgent(BaseModel):
@@ -89,14 +95,17 @@ When you find a relevant file, see which sections of that file are relevant.
         self.thread.add(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
-            for tool_call in response["tool_calls"]:
-                output = self.thread.call(tool_call)
-                output = output if isinstance(output, str) else str(output)
+            for tool_call in self.thread.run_calls(response["tool_calls"]):
+                tool_call["output"] = (
+                    tool_call["output"]
+                    if isinstance(tool_call["output"], str)
+                    else str(tool_call["output"])
+                )
                 self.thread.messages.append(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call["id"],
-                        "content": output,
+                        "content": tool_call["output"],
                     }
                 )
             self._current_step += 1

@@ -2,10 +2,11 @@ from typing import Any, Callable, List
 
 from openai import OpenAI
 from pydantic import BaseModel
+from rich.live import Live
 from rich.pretty import Pretty, pprint
 
 from codeas.tools import get_schemas
-from codeas.utils import File, console, end_message_block, live, start_message_block
+from codeas.utils import File, console, end_message_block, start_message_block
 
 
 class Thread(BaseModel):
@@ -46,25 +47,38 @@ class Thread(BaseModel):
     def run(self):
         if self.verbose and self.use_console:
             start_message_block("Assistant", "blue")
-            live.start()
 
         response = {"role": "assistant", "content": None, "tool_calls": None}
         for chunk in self._run_completion():
             choice = chunk.choices[0]
+
             if choice.delta and choice.delta.content:
                 self._parse_delta_content(choice.delta, response)
                 if self.verbose:
                     self._print_delta_content(choice.delta)
+
             elif choice.delta and choice.delta.tool_calls:
+                if response["tool_calls"] is None:  # only runs on first chunk
+                    response["tool_calls"] = []
+                    if self.verbose and self.use_console:
+                        live = Live()
+                        live.start()
+
                 self._parse_delta_tools(choice.delta, response)
-                if self.verbose:
-                    self._print_delta_tools(response)
-            elif choice.finish_reason is not None:
-                if self.verbose and self.use_console is False:
-                    pprint(response, expand_all=True)  # print response at the end
+                if self.verbose and self.use_console:
+                    self._print_delta_tools(response, live)
+
+            elif choice.finish_reason is not None:  # only runs on last chunk
+                if self.verbose and self.use_console and response["tool_calls"]:
+                    live.stop()
+                elif (
+                    self.verbose
+                    and self.use_console is False
+                    and response["tool_calls"]
+                ):
+                    pprint(response, expand_all=True)
 
         if self.verbose and self.use_console:
-            live.stop()
             end_message_block("blue")
 
         return response
@@ -93,8 +107,6 @@ class Thread(BaseModel):
             print(delta.content, end="")
 
     def _parse_delta_tools(self, delta, response):
-        if response["tool_calls"] is None:
-            response["tool_calls"] = []
         for tchunk in delta.tool_calls:
             if len(response["tool_calls"]) <= tchunk.index:
                 response["tool_calls"].append(
@@ -115,10 +127,9 @@ class Thread(BaseModel):
                     "arguments"
                 ] += tchunk.function.arguments
 
-    def _print_delta_tools(self, response):
-        if self.use_console:
-            pretty = Pretty(response, expand_all=True)
-            live.update(pretty)
+    def _print_delta_tools(self, response, live):
+        pretty = Pretty(response, expand_all=True)
+        live.update(pretty)
 
     def run_calls(self, tool_calls: List[dict]):
         if self.verbose and self.use_console:

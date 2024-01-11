@@ -21,7 +21,7 @@ def clear_chat(chat: Chat):
 
 
 def view_context(chat: Chat):
-    console.rule("Context", style="yellow")
+    console.rule("Context", style="blue")
     if any(chat.context):
         for file_ in chat.context:
             context_path = os.path.join(os.getcwd(), f".codeas/{file_.path}")
@@ -43,4 +43,4 @@ def view_context(chat: Chat):
             )
     else:
         console.print("No files in context")
-    console.rule(style="yellow")
+    console.rule(style="blue")
