@@ -1,5 +1,6 @@
 from typing import List
 
+from prompt_toolkit import prompt
 from pydantic import BaseModel
 
 from codeas.agents import ContextAgent, SearchAgent, WritingAgent
@@ -20,12 +21,34 @@ In case of doubts, ask the user to provide more information.
     )
 
     def ask(self, message: str):
+        message = self.check_message(message)
         if any(agent in message for agent in ["@context", "@write", "@search"]):
             self.run_agent(message)
         elif any(command in message for command in ["/view", "/clear", "/copy"]):
             self.run_command(message)
         else:
             self.run_thread(message)
+
+    def check_message(self, message: str):
+        if "context" in message:
+            answer = prompt(
+                "Did you mean to use @context agent to add context to the conversation? (y/n): "
+            )
+            if answer == "y":
+                message = message.replace("context", "@context")
+        elif "write" in message:
+            answer = prompt(
+                "Did you mean to use @write agent to write to a file? (y/n): "
+            )
+            if answer == "y":
+                message = message.replace("write", "@write")
+        elif "search" in message:
+            answer = prompt(
+                "Did you mean to use @search agent to search for a file? (y/n): "
+            )
+            if answer == "y":
+                message = message.replace("search", "@search")
+        return message
 
     def run_agent(self, message: str):
         if "@context" in message:
