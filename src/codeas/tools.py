@@ -3,14 +3,11 @@ import os
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, validate_call
-from rich.console import Console
 
 from codeas.codebase import Codebase
 from codeas.utils import File
 
 load_dotenv()
-
-console = Console()
 
 
 class ListFileParams(BaseModel):
@@ -20,32 +17,8 @@ class ListFileParams(BaseModel):
 @validate_call
 def list_files(params: ListFileParams):
     """list all of the files in a given directory"""
-    try:
-        console.print("\n")
-        console.rule("Function", style="blue")
-        console.print(f"Listing files in directory {params.dir_path}\n")
-
-        cb = Codebase(base_dir=params.dir_path)
-        files = cb.get_modules_paths()
-
-        console.print("Successfully listed files")
-        console.rule(style="blue")
-
-        return files
-    except Exception as e:
-        msg = f"ERROR: Unexpected error: {e}. Please review request"
-        console.print(msg)
-        return msg
-
-
-class DelegateParams(BaseModel):
-    request: str = Field(..., description="the search request for the assistant")
-
-
-@validate_call
-def ask_assistant_to_search(params: DelegateParams):
-    """asks an assistant to search for specific parts of a codebase"""
-    ...
+    codebase = Codebase(base_dir=params.dir_path)
+    return codebase.get_modules_paths()
 
 
 class ReturnAnswerParams(BaseModel):
@@ -70,8 +43,8 @@ class ReadDirParams(BaseModel):
 def add_files_in_dir(params: ReadDirParams):
     """adds all files in a given directory to the context"""
     files = []
-    cb = Codebase(base_dir=params.path)
-    for file_path in cb.get_modules_paths():
+    codebase = Codebase(base_dir=params.path)
+    for file_path in codebase.get_modules_paths():
         params = ReadFileParams(path=file_path, structure_only=params.structure_only)
         file_ = read_file(params)
         files.append(file_)
@@ -102,45 +75,19 @@ def add_file(params: ReadFileParams):
 @validate_call
 def read_file(params: ReadFileParams):
     """reads the content of a file"""
-    try:
-        console.print("\n")
-        console.rule("Function", style="blue")
-        console.print(f"Reading file: {params.path}\n")
-
-        file_ = _read_file(
-            params.path, params.line_start, params.line_end, params.structure_only
-        )
-
-        console.print(f"Successfully read file: {params.path}")
-        console.rule(style="blue")
-
-        return file_
-
-    except FileNotFoundError:
-        msg = "ERROR: File not found. Please specify the exact file path, including file name."
-        console.print(msg)
-        return msg
-
-    except Exception as e:
-        msg = f"ERROR: Unexpected error: {e}. Please review request"
-        console.print(msg)
-        return msg
-
-
-def _read_file(path, line_start=1, line_end=-1, structure_only=False):
-    if structure_only:
-        cb = Codebase()
-        content = cb.get_file_structure(path)
+    if params.structure_only:
+        codebase = Codebase()
+        content = codebase.get_file_structure(params.path)
     else:
-        with open(path) as f:
+        with open(params.path) as f:
             lines = f.readlines()
-            content = "".join(lines[line_start - 1 : line_end])
-            line_end = len(lines) if line_end == -1 else line_end
+            content = "".join(lines[params.line_start - 1 : params.line_end])
+            actual_line_end = len(lines) if params.line_end == -1 else params.line_end
     return File(
-        path=path,
+        path=params.path,
         content=content,
-        line_start=line_start,
-        line_end=line_end,
+        line_start=params.line_start,
+        line_end=actual_line_end,
     )
 
 
@@ -159,84 +106,30 @@ def add_file_element(params: ReadFileParams):
 @validate_call
 def read_file_element(params: ReadElementParams):
     """reads given element from a file. At least one of 'function_name' or a 'class_name' must be given. For methods, both should be given"""
-    try:
-        console.print("\n")
-        console.rule("Function", style="blue")
-
-        if params.function_name and params.class_name:
-            return read_method(params.path, params.function_name, params.class_name)
-        elif params.function_name:
-            return read_function(params.path, params.function_name)
-        elif params.class_name:
-            return read_class(params.path, params.class_name)
-
-        console.rule(style="blue")
-
-    except Exception as e:
-        msg = f"ERROR: Unexpected error: {e}. Please review request"
-        console.print(msg)
-        return msg
+    if params.function_name and params.class_name:
+        return read_method(params.path, params.function_name, params.class_name)
+    elif params.function_name:
+        return read_function(params.path, params.function_name)
+    elif params.class_name:
+        return read_class(params.path, params.class_name)
 
 
 def read_function(path: str, name: str):
     """reads a given function from a file"""
-    console.print(f"Reading function '{name}' from '{path}'\n")
-
-    functions = _read_function(path, name)
-
-    if any(functions):
-        console.print(f"Successfully read function: {name}")
-    else:
-        console.print(f"Function '{name}' not found")
-
-    return functions
-
-
-def _read_function(path: str, name: str):
-    cb = Codebase()
-    return cb.get_functions(path, name)
+    codebase = Codebase()
+    return codebase.get_functions(path, name)
 
 
 def read_class(path: str, name: str):
     """reads a given class from a file"""
-    console.print(f"Reading class '{name}' from '{path}'\n")
-
-    classes = _read_class(path, name)
-
-    if any(classes):
-        console.print(f"Successfully read class: {name}")
-    else:
-        console.print(f"Class '{name}' not found")
-
-    console.rule(style="blue")
-
-    return classes
-
-
-def _read_class(path: str, name: str):
-    cb = Codebase()
-    return cb.get_classes(path, name)
+    codebase = Codebase()
+    return codebase.get_classes(path, name)
 
 
 def read_method(path: str, name: str, class_name: str):
     """reads a given method from a file"""
-    console.print(f"Reading method '{class_name}{name}' from '{path}'\n")
-
-    functions = _read_method(path, name)
-
-    if any(functions):
-        console.print(f"Successfully read function '{class_name}{name}'")
-    else:
-        console.print(f"Method '{class_name}{name}' not found")
-
-    console.rule(style="blue")
-
-    return functions
-
-
-def _read_method(path: str, name: str, class_name: str):
-    cb = Codebase()
-    return cb.get_methods(path, name, class_name)
+    codebase = Codebase()
+    return codebase.get_methods(path, name, class_name)
 
 
 class CreateFileParams(BaseModel):
@@ -247,29 +140,11 @@ class CreateFileParams(BaseModel):
 @validate_call
 def create_file(params: CreateFileParams):
     """creates a new file with the given content"""
-    try:
-        console = Console()
-        console.print("\n")
-        console.rule("Function", style="blue")
-        console.print(f"Writing file: {params.path}\n")
+    if not os.path.exists(os.path.dirname(params.path)):
+        os.makedirs(os.path.dirname(params.path))
 
-        _write_file(params.path, params.content)
-
-        console.print(f"Successfully wrote file: {params.path}")
-        console.rule(style="blue")
-
-    except Exception as e:
-        msg = f"ERROR: Unexpected error: {e}. Please review request"
-        console.print(msg)
-        return msg
-
-
-def _write_file(path, content):
-    if not os.path.exists(os.path.dirname(path)):
-        os.makedirs(os.path.dirname(path))
-
-    with open(path, "w") as f:
-        f.write(content)
+    with open(params.path, "w") as f:
+        f.write(params.content)
 
 
 class ModifyFileParams(BaseModel):
@@ -282,32 +157,13 @@ class ModifyFileParams(BaseModel):
 @validate_call
 def modify_file(params: ModifyFileParams):
     """modifies the content of a file"""
-    try:
-        console = Console()
-        console.print("\n")
-        console.rule("Function", style="blue")
-        console.print(f"Modifying file: {params.path}\n")
-
-        _modify_file(
-            params.path, params.new_content, params.line_start, params.line_end
-        )
-
-        console.print(f"Successfully modified file: {params.path}")
-        console.rule(style="blue")
-
-    except Exception as e:
-        msg = f"ERROR: Unexpected error: {e}. Please review request"
-        console.print(msg)
-        return msg
-
-
-def _modify_file(path, new_content, line_start, line_end):
-    with open(path, "r") as f:
+    # WARNING: currently not use due to difficulty for LLM to recognize lines to modify
+    with open(params.path, "r") as f:
         lines = f.readlines()
 
-    lines[line_start - 1 : line_end] = new_content
+    lines[params.line_start - 1 : params.line_end] = params.new_content
 
-    with open(path, "w") as f:
+    with open(params.path, "w") as f:
         f.writelines(lines)
 
 

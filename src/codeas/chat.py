@@ -30,19 +30,19 @@ In case of doubts, ask the user to provide more information.
             self.run_thread(message)
 
     def check_message(self, message: str):
-        if "context" in message:
+        if "context" in message and "@context" not in message:
             answer = prompt(
                 "Did you mean to use @context agent to add context to the conversation? (y/n): "
             )
             if answer == "y":
                 message = message.replace("context", "@context")
-        elif "write" in message:
+        elif "write" in message and "@write" not in message:
             answer = prompt(
                 "Did you mean to use @write agent to write to a file? (y/n): "
             )
             if answer == "y":
                 message = message.replace("write", "@write")
-        elif "search" in message:
+        elif "search" in message and "@search" not in message:
             answer = prompt(
                 "Did you mean to use @search agent to search for a file? (y/n): "
             )

@@ -28,12 +28,12 @@ DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if 
         self.thread.add(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
-            for tool_call in response["tool_calls"]:
-                output = self.thread.call(tool_call)
-                if isinstance(output, list):
-                    self.context.extend(output)
+            for tool_call in self.thread.run_calls(response["tool_calls"]):
+                if isinstance(tool_call["output"], list):
+                    self.context.extend(tool_call["output"])
                 else:
-                    self.context.append(output)
+                    self.context.append(tool_call["output"])
+
                 self.thread.messages.append(
                     {
                         "role": "tool",
