@@ -5,19 +5,19 @@ from typing import TYPE_CHECKING
 
 import pyperclip
 
-from codeas.utils import console, count_tokens
+from codeas.utils import console
 
 if TYPE_CHECKING:
     from codeas.chat import Chat
 
 
 def copy_last_message(chat: Chat):
-    pyperclip.copy(chat.thread.messages[-1]["content"])
+    pyperclip.copy(chat.thread._messages[-1]["content"])
 
 
 def clear_chat(chat: Chat):
-    chat.thread.messages = []
-    chat.context = []
+    chat.thread._messages = []
+    chat._context = []
 
 
 def view_context(chat: Chat):
@@ -39,7 +39,7 @@ def view_context(chat: Chat):
             )
 
             console.print(
-                f"{file_.path} | {lines} | {count_tokens(file_.content)} tokens"
+                f"{file_.path} | {lines} | {chat.thread.count_tokens(file_.content)} tokens"
             )
     else:
         console.print("No files in context")

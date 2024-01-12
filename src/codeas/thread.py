@@ -1,52 +1,61 @@
 from typing import Any, Callable, List
 
+import tiktoken
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 from rich.live import Live
 from rich.pretty import Pretty, pprint
 
 from codeas.tools import get_schemas
 from codeas.utils import File, console, end_message_block, start_message_block
 
+MODEL_INFO = {
+    "gpt-4-1106-preview": {"context": 128192, "inprice": 0.01, "outprice": 0.03},
+    "gpt-4": {"context": 8192, "inprice": 0.03, "outprice": 0.06},
+    "gpt-4-0613": {"context": 8192, "inprice": 0.03, "outprice": 0.06},
+    "gpt-4-32k": {"context": 32000, "inprice": 0.06, "outprice": 0.12},
+    "gpt-4-32k-0613": {"context": 32000, "inprice": 0.06, "outprice": 0.12},
+    "gpt-3.5-turbo-1106": {"context": 16385, "inprice": 0.0010, "outprice": 0.0020},
+    "gpt-3.5-turbo-instruct": {"context": 4096, "inprice": 0.0015, "outprice": 0.0020},
+    "gpt-3.5-turbo": {"context": 4096, "inprice": 0.0015, "outprice": 0.0020},
+    "gpt-3.5-turbo-0613": {"context": 4096, "inprice": 0.0015, "outprice": 0.0020},
+    "gpt-3.5-turbo-16k": {"context": 16385, "inprice": 0.0030, "outprice": 0.0040},
+    "gpt-3.5-turbo-16k-0613": {"context": 16385, "inprice": 0.0030, "outprice": 0.0040},
+    "gpt-3.5-turbo-0301": {"context": 4096, "inprice": 0.0015, "outprice": 0.0020},
+}
+MAX_PCT_INPUT_TOKENS = 0.8  # leave at least 20% of context for output
+
 
 class Thread(BaseModel):
     system_prompt: str = None
     tools: List[Callable] = None
-    use_terminal: bool = False
     model: str = "gpt-3.5-turbo-1106"
     temperature: float = 0
-    messages: List[str] = []
     verbose: bool = True
     use_console: bool = True
+    max_tokens_per_completion: int = None
+    _context: PrivateAttr(str) = None
+    _messages: PrivateAttr(List[str]) = []
 
     def model_post_init(self, __context: Any) -> None:
+        # executed on model instantiation
         if self.system_prompt is not None:
-            self.messages.append({"role": "system", "content": self.system_prompt})
-
-    def add(self, message: dict):
-        if "tool_calls" in message and message["tool_calls"] is None:
-            message.pop("tool_calls")
-        self.messages.append(message)
-
-    def add_context(self, context: List[File]):
-        """adds codebase context to the thread"""
-        if any(context):
-            context_msg = {
-                "role": "user",
-                "content": (
-                    """###CONTEXT###\n"""
-                    + "\n".join([f"{c.path}\n{c.content}" for c in context])
-                ),
-            }
-            messages = self.messages
-            if len(messages) > 1 and messages[1]["content"].startswith("###CONTEXT###"):
-                messages[1] = context_msg
-            else:
-                messages.insert(1, context_msg)
+            self.add_message({"role": "system", "content": self.system_prompt})
 
     def run(self):
         if self.verbose and self.use_console:
             start_message_block("Assistant", "blue")
+
+        if self._context is not None:
+            msg_idx = 1 if self.system_prompt else 0
+            self._messages.insert(msg_idx, {"role": "user", "content": self._context})
+
+        if self.check_messages_fit_context_window() is False:
+            if self.check_codebase_context_fits() is False:
+                print("ERROR: Context is too long. Reduce context size")
+                return  # don't run if codebase context doesn't fit
+            else:  # remove oldest messages until it fits
+                self.remove_oldest_messages()
 
         response = {"role": "assistant", "content": None, "tool_calls": None}
         for chunk in self._run_completion():
@@ -83,11 +92,42 @@ class Thread(BaseModel):
 
         return response
 
+    def check_messages_fit_context_window(self):
+        num_tokens = self.count_tokens_from_messages()
+        try:
+            if self.max_tokens_per_completion is None:
+                self.max_tokens_per_completion = (
+                    MODEL_INFO[self.model]["context"] * MAX_PCT_INPUT_TOKENS
+                )
+        except KeyError:
+            print("WARNING: model not found. Assuming model max context is 4k tokens.")
+            self.max_tokens_per_completion = 4096 * MAX_PCT_INPUT_TOKENS
+        if num_tokens > self.max_tokens_per_completion:
+            return False
+        return True
+
+    def check_codebase_context_fits(self):
+        if self._context:
+            if self.count_tokens(self._context) > self.max_tokens_per_completion:
+                return False
+        return True
+
+    def remove_oldest_messages(self):
+        start_msg_idx = 1 if self.system_prompt else 0
+        start_msg_idx += 1 if self._context else 0
+
+        while self.count_tokens_from_messages() > self.max_tokens_per_completion:
+            if len(self._messages) == start_msg_idx + 1:
+                # if only one single message remaining, we stop there
+                return
+            else:
+                self._messages.pop(start_msg_idx)
+
     def _run_completion(self):
         client = OpenAI()
         for chunk in client.chat.completions.create(
             model=self.model,
-            messages=self.messages,
+            messages=self._messages,
             tools=get_schemas(self.tools),
             temperature=self.temperature,
             stream=True,
@@ -182,14 +222,54 @@ class Thread(BaseModel):
         else:
             print(f">>> Call failed: {e}\n")
 
+    def count_tokens_from_messages(self):
+        """Return the number of tokens used by a list of messages.
+        See: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+        """
+        try:
+            encoding = tiktoken.encoding_for_model(self.model)
+        except KeyError:
+            print("Warning: model not found. Using cl100k_base encoding.")
+            encoding = tiktoken.get_encoding("cl100k_base")
+        tokens_per_message = 3
+        tokens_per_name = 1
+        num_tokens = 0
+        for message in self._messages:
+            num_tokens += tokens_per_message
+            for key, value in message.items():
+                num_tokens += len(encoding.encode(value))
+                if key == "name":
+                    num_tokens += tokens_per_name
+        num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+        return num_tokens
+
+    def count_tokens(self, text: str):
+        encoding = tiktoken.encoding_for_model(self.model)
+        return len(encoding.encode(text))
+
+    def add_message(self, message: dict):
+        if "tool_calls" in message and message["tool_calls"] is None:
+            message.pop("tool_calls")
+        self._messages.append(message)
+
+    def add_context(self, context: List[File]):
+        """adds codebase context to the thread"""
+        if any(context):
+            self._context = """###CONTEXT###\n""" + "\n".join(
+                [f"{c.path}\n{c.content}" for c in context]
+            )
+
 
 if __name__ == "__main__":
     from codeas import tools
 
     thread = Thread(
-        console=False, tools=[tools.create_file], model="gpt-4-1106-preview"
+        console=False,
+        tools=[tools.create_file],
+        model="gpt-3.5-turbo-1106",
+        max_tokens_per_completion=100,
     )
-    thread.add({"role": "user", "content": "write hello world to ./file.txt"})
+    thread.add_message(
+        {"role": "user", "content": "hi, please write a random story of 10 words"}
+    )
     response = thread.run()
-    for tool_call in thread.run_calls(response["tool_calls"]):
-        pass

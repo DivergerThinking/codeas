@@ -6,9 +6,6 @@ import yaml
 from pydantic import BaseModel
 from rich.console import Console
 from rich.live import Live
-from tiktoken import encoding_for_model
-
-encoder = encoding_for_model("gpt-3.5-turbo")
 
 console = Console()
 live = Live()
@@ -28,10 +25,6 @@ class File(BaseModel):
     content: str
     line_start: int
     line_end: int
-
-
-def count_tokens(text):
-    return len(encoder.encode(text))
 
 
 def read_yaml(path):

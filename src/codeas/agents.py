@@ -23,9 +23,9 @@ DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if 
 
     def run(self, message: str = None):
         if message:
-            self.thread.add({"role": "user", "content": message})
+            self.thread.add_message({"role": "user", "content": message})
         response = self.thread.run()
-        self.thread.add(response)
+        self.thread.add_message(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
             for tool_call in self.thread.run_calls(response["tool_calls"]):
@@ -34,7 +34,7 @@ DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if 
                 else:
                     self.context.append(tool_call["output"])
 
-                self.thread.messages.append(
+                self.thread.add_message(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call["id"],
@@ -56,13 +56,13 @@ Pay close attention to the path and the format of the file you are given.
     def run(self, message: str = None):
         self.thread.add_context(self.context)
         if message:
-            self.thread.add({"role": "user", "content": message})
+            self.thread.add_message({"role": "user", "content": message})
         response = self.thread.run()
-        self.thread.add(response)
+        self.thread.add_message(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
             for tool_call in self.thread.run_calls(response["tool_calls"]):
-                self.thread.messages.append(
+                self.thread.add_message(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call["id"],
@@ -90,9 +90,9 @@ When you find a relevant file, see which sections of that file are relevant.
 
     def run(self, message: str = None):
         if message:
-            self.thread.add({"role": "user", "content": message})
+            self.thread.add_message({"role": "user", "content": message})
         response = self.thread.run()
-        self.thread.add(response)
+        self.thread.add_message(response)
 
         if "tool_calls" in response and response["tool_calls"] is not None:
             for tool_call in self.thread.run_calls(response["tool_calls"]):
@@ -101,7 +101,7 @@ When you find a relevant file, see which sections of that file are relevant.
                     if isinstance(tool_call["output"], str)
                     else str(tool_call["output"])
                 )
-                self.thread.messages.append(
+                self.thread.add_message(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call["id"],

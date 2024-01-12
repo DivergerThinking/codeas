@@ -73,6 +73,6 @@ In case of doubts, ask the user to provide more information.
     def run_thread(self, message: str):
         self.thread.add_context(self.context)
         message = {"role": "user", "content": message}
-        self.thread.add(message)
+        self.thread.add_message(message)
         response = self.thread.run()
-        self.thread.add(response)
+        self.thread.add_message(response)
