@@ -24,7 +24,7 @@ def view_context(chat: Chat):
     console.rule("Context", style="blue")
     if any(chat.context):
         for file_ in chat.context:
-            context_path = os.path.join(os.getcwd(), f".codeas/{file_.path}")
+            context_path = os.path.join(os.getcwd(), f".codeas/context/{file_.path}")
             dir_path = os.path.dirname(context_path)
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)

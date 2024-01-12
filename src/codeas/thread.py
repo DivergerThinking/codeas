@@ -21,7 +21,6 @@ MODEL_INFO = {
     "gpt-3.5-turbo-0613": {"context": 4096, "inprice": 0.0015, "outprice": 0.0020},
     "gpt-3.5-turbo-16k": {"context": 16385, "inprice": 0.0030, "outprice": 0.0040},
     "gpt-3.5-turbo-16k-0613": {"context": 16385, "inprice": 0.0030, "outprice": 0.0040},
-    "gpt-3.5-turbo-0301": {"context": 4096, "inprice": 0.0015, "outprice": 0.0020},
 }
 MAX_PCT_INPUT_TOKENS = 0.8  # leave at least 20% of context for output
 
@@ -255,7 +254,7 @@ class Thread(BaseModel):
     def add_context(self, context: List[File]):
         """adds codebase context to the thread"""
         if any(context):
-            self._context = """###CONTEXT###\n""" + "\n".join(
+            self._context = """###CODEBASE CONTEXT###\n""" + "\n".join(
                 [f"{c.path}\n{c.content}" for c in context]
             )
 

@@ -5,20 +5,14 @@ from pydantic import BaseModel
 
 from codeas.agents import ContextAgent, SearchAgent, WritingAgent
 from codeas.commands import clear_chat, copy_last_message, view_context
+from codeas.configs import chat_config
 from codeas.thread import Thread
 from codeas.utils import File
 
 
 class Chat(BaseModel):
     context: List[File] = []
-    thread: Thread = Thread(
-        system_prompt="""
-You are a superintelligent machine who assists senior software engineers on working with their codebase.
-You will be given context about the codebase at the start of the conversation and some tasks to perform on it.
-Think through the request carefully and answer it as well as you can.
-In case of doubts, ask the user to provide more information.
-""".strip()
-    )
+    thread: Thread = Thread(**chat_config)
 
     def ask(self, message: str):
         message = self.check_message(message)
