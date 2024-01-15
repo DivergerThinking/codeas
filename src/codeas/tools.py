@@ -82,12 +82,12 @@ def read_file(params: ReadFileParams):
         with open(params.path) as f:
             lines = f.readlines()
             content = "".join(lines[params.line_start - 1 : params.line_end])
-            actual_line_end = len(lines) if params.line_end == -1 else params.line_end
+            params.line_end = len(lines) if params.line_end == -1 else params.line_end
     return File(
         path=params.path,
         content=content,
         line_start=params.line_start,
-        line_end=actual_line_end,
+        line_end=params.line_end,
     )
 
 
