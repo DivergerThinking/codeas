@@ -82,6 +82,10 @@ class Codebase(BaseModel):
         The grammar file is hardcoded by now. Pending test on different OS."""
         language_ext = os.path.splitext(path)[1]
         language = LANG_EXTENSION_MAP[language_ext]
+        if language != "python":
+            raise NotImplementedError(
+                f"Can't parse {path}. Parsing {language} files is not supported yet."
+            )
         self._language = tree_sitter_languages.get_language(language)
         self._parser = Parser()
         self._parser.set_language(self._language)
@@ -237,7 +241,7 @@ class Codebase(BaseModel):
             relevant_lines.update(self._get_definition_lines(class_.node))
         for function_ in self.get_functions(path):
             relevant_lines.update(self._get_definition_lines(function_.node))
-        relevant_lines.update(self.get_imports_lines(path))
+        # relevant_lines.update(self.get_imports_lines(path))
         file_lines = self._read_files_lines(path)
         file_subset = self._read_subset_from_lines(file_lines, relevant_lines)
         return f"# {path}\n" + "".join(file_subset)
