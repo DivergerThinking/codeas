@@ -1,10 +1,9 @@
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion
 
-from codeas import configs
 from codeas.chat import Chat
 from codeas.codebase import Codebase
-from codeas.utils import end_message_block, start_message_block, write_yaml
+from codeas.utils import end_message_block, start_message_block
 
 
 class AutoCompleter(Completer):
@@ -51,29 +50,6 @@ def start_terminal():
         if isinstance(message, str):
             end_message_block("bold magenta")
             chat.ask(message)
-
-
-def write_settings():
-    write_yaml(".codeas/codeas.yaml", get_configs(["model", "temperature"]))
-
-
-def get_configs(attrs: list = []):
-    if any(attrs):
-        return {
-            config_name: {
-                attr: value
-                for attr, value in getattr(configs, config_name).items()
-                if attr in attrs
-            }
-            for config_name in vars(configs)
-            if "_config" in config_name
-        }
-    else:
-        return {
-            config_name: getattr(configs, config_name)
-            for config_name in vars(configs)
-            if "_config" in config_name
-        }
 
 
 if __name__ == "__main__":

@@ -104,5 +104,4 @@ if os.path.exists(".codeas/settings.yaml"):
     settings = read_yaml(".codeas/settings.yaml")
     update_settings()
 else:
-    settings = {}
     write_settings()
