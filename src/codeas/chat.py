@@ -16,7 +16,7 @@ class Chat(BaseModel):
 
     def ask(self, message: str):
         message = self.check_message(message)
-        if any(agent in message for agent in ["@context", "@write", "@search"]):
+        if any(agent in message for agent in ["@add", "@write", "@search"]):
             self.run_agent(message)
         elif any(command in message for command in ["/view", "/clear", "/copy"]):
             self.run_command(message)
@@ -24,12 +24,12 @@ class Chat(BaseModel):
             self.run_thread(message)
 
     def check_message(self, message: str):
-        if "context" in message and "@context" not in message:
+        if "add" in message and "@add" not in message:
             answer = prompt(
-                "Did you mean to use @context agent to add context to the conversation? (y/n): "
+                "Did you mean to use @add agent to add context to the conversation? (y/n): "
             )
             if answer == "y":
-                message = message.replace("context", "@context")
+                message = message.replace("add", "@add")
         elif "write" in message and "@write" not in message:
             answer = prompt(
                 "Did you mean to use @write agent to write to a file? (y/n): "
@@ -45,7 +45,7 @@ class Chat(BaseModel):
         return message
 
     def run_agent(self, message: str):
-        if "@context" in message:
+        if "@add" in message:
             agent = ContextAgent()
             agent.run(message)
             self.context = agent.context
