@@ -97,7 +97,7 @@ class ReadElementParams(BaseModel):
     class_name: str = Field(None, description="class name if given")
 
 
-def add_file_element(params: ReadFileParams):
+def add_file_element(params: ReadElementParams):
     """adds a file element to the context"""
     # we are simply changing the function naming here for agent prompting purposes
     return read_file_element(params)

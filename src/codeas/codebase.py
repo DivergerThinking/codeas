@@ -131,13 +131,14 @@ class Codebase(BaseModel):
             name: (identifier) @function_name) 
             """.strip()
             query = self._language.query(query_scm)
-            Function = namedtuple("Function", "name code node")
+            Function = namedtuple("Function", "path name code node")
             functions = []
             for node, _ in query.captures(root_node):
                 if name:
                     if node.text.decode() == name:
                         functions.append(
                             Function(
+                                path=path,
                                 name=node.text.decode(),
                                 code=node.parent.text.decode(),
                                 node=node.parent,
@@ -146,6 +147,7 @@ class Codebase(BaseModel):
                 else:
                     functions.append(
                         Function(
+                            path=path,
                             name=node.text.decode(),
                             code=node.parent.text.decode(),
                             node=node.parent,
@@ -166,7 +168,7 @@ class Codebase(BaseModel):
         if class_name:
             query_scm = "(" + query_scm + f"(eq? @class_name {class_name}))"
         query = self._language.query(query_scm)
-        Function = namedtuple("Function", "name code node")
+        Function = namedtuple("Function", "path name code node")
         functions = []
         for node, tag in query.captures(root_node):
             if tag == "method_name":  # filter out the class_name tags
@@ -174,6 +176,7 @@ class Codebase(BaseModel):
                     if node.text.decode() == name:
                         functions.append(
                             Function(
+                                path=path,
                                 name=node.text.decode(),
                                 code=node.parent.text.decode(),
                                 node=node.parent,
@@ -182,6 +185,7 @@ class Codebase(BaseModel):
                 else:
                     functions.append(
                         Function(
+                            path=path,
                             name=node.text.decode(),
                             code=node.parent.text.decode(),
                             node=node.parent,
@@ -196,13 +200,14 @@ class Codebase(BaseModel):
         name: (identifier) @class_name) 
         """.strip()
         query = self._language.query(query_scm)
-        Class = namedtuple("Class", "name code node")
+        Class = namedtuple("Class", "path name code node")
         classes = []
         for node, _ in query.captures(root_node):
             if name:
                 if node.text.decode() == name:
                     classes.append(
                         Class(
+                            path=path,
                             name=node.text.decode(),
                             code=node.parent.text.decode(),
                             node=node.parent,
@@ -211,6 +216,7 @@ class Codebase(BaseModel):
             else:
                 classes.append(
                     Class(
+                        path=path,
                         name=node.text.decode(),
                         code=node.parent.text.decode(),
                         node=node.parent,
