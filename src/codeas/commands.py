@@ -26,7 +26,8 @@ def copy_last_message(chat: Chat):
 
 def clear_chat(chat: Chat):
     chat.thread._messages = []
-    chat._context = []
+    chat.thread._context = []
+    chat.context = []
 
 
 def view_context(chat: Chat):
@@ -42,8 +43,7 @@ def view_context(chat: Chat):
                 os.makedirs(dir_path)
 
             with open(context_path, "w") as f:
-                content = file_.content if hasattr(file_, "content") else file_.code
-                f.write(content)
+                f.write(file_.content)
 
             if hasattr(file_, "line_end"):
                 section = (
@@ -54,10 +54,8 @@ def view_context(chat: Chat):
             else:
                 section = file_.name
 
-            content = file_.content if hasattr(file_, "content") else file_.code
-
             console.print(
-                f"{file_.path} | {section} | {chat.thread.count_tokens(content)} tokens"
+                f"{file_.path} | {section} | {chat.thread.count_tokens(file_.content)} tokens"
             )
     else:
         console.print("No files in context")
