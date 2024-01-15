@@ -1,7 +1,24 @@
 import os
 
-from codeas import tools
 from codeas.utils import read_yaml, write_yaml
+
+LANG_EXTENSION_MAP = {
+    ".py": "python",
+    ".java": "java",
+    ".js": "javascript",
+    ".ts": "typescript",
+    ".cs": "c_sharp",
+    ".rs": "rust",
+    ".rb": "ruby",
+    ".c": "c",
+    ".go": "go",
+    ".php": "php",
+}
+
+codebase_config = {
+    "include_file_patterns": [f"*{ext}" for ext in LANG_EXTENSION_MAP.keys()],
+    "exclude_patterns": [".*", "__*"],
+}
 
 chat_config = {
     "system_prompt": """
@@ -27,7 +44,6 @@ Some engineers' requests may specify the name and sections of the files to read,
 DO NOT GUESS ANY PATHS OR SECTIONS TO READ. Ask the user to be more specific if information is missing.
 
 """.strip(),
-    "tools": [tools.add_file, tools.add_file_element, tools.add_files_in_dir],
     "model": "gpt-4-1106-preview",
     "temperature": 0,
 }
@@ -39,7 +55,6 @@ You are a superintelligent machine who assists senior software engineers to writ
 Pay close attention to the path and the format of the file you are given.
 
 """.strip(),
-    "tools": [tools.create_file],
     "model": "gpt-4-1106-preview",
     "temperature": 0,
 }
@@ -56,7 +71,6 @@ You should try and minimize the number of files you search through, focusing the
 When you find a relevant file, see which sections of that file are relevant.
 
 """.strip(),
-    "tools": [tools.list_files, tools.view_file],
     "model": "gpt-4-1106-preview",
     "temperature": 0,
 }
@@ -89,6 +103,7 @@ def write_settings():
                 for key, value in search_agent_config.items()
                 if key in settings_keys
             },
+            "codebase_config": codebase_config,
         },
     )
 
@@ -98,6 +113,7 @@ def update_settings():
     context_agent_config.update(settings.get("context_agent_config", {}))
     writing_agent_config.update(settings.get("writing_agent_config", {}))
     search_agent_config.update(settings.get("search_agent_config", {}))
+    codebase_config.update(settings.get("codebase_config", {}))
 
 
 if os.path.exists(".codeas/settings.yaml"):

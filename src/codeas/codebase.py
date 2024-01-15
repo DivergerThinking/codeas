@@ -7,26 +7,13 @@ import tree_sitter_languages
 from pydantic import BaseModel, PrivateAttr
 from tree_sitter import Language, Parser
 
-LANG_EXTENSION_MAP = {
-    ".py": "python",
-    ".java": "java",
-    ".js": "javascript",
-    ".ts": "typescript",
-    ".cs": "c_sharp",
-    ".rs": "rust",
-    ".rb": "ruby",
-    ".c": "c",
-    ".go": "go",
-    ".php": "php",
-}
-DEFAULT_FILE_PATTERNS = [f"*{ext}" for ext in LANG_EXTENSION_MAP.keys()]
-DEFAULT_EXCLUDE_PATTERNS = [".*", "__*"]
+from codeas.configs import LANG_EXTENSION_MAP, codebase_config
 
 
 class Codebase(BaseModel):
     base_dir: str = "."
-    exclude_patterns: list = DEFAULT_EXCLUDE_PATTERNS
-    include_file_patterns: list = DEFAULT_FILE_PATTERNS
+    exclude_patterns: list = codebase_config["exclude_patterns"]
+    include_file_patterns: list = codebase_config["include_file_patterns"]
     _parser: Parser = PrivateAttr(None)
     _language: Language = PrivateAttr(None)
 

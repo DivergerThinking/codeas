@@ -6,10 +6,18 @@ from typing import TYPE_CHECKING
 
 import pyperclip
 
+from codeas.codebase import Codebase
 from codeas.utils import console
 
 if TYPE_CHECKING:
     from codeas.chat import Chat
+
+
+def tree_display():
+    console.rule("Codebase Tree", style="blue")
+    codebase = Codebase()
+    console.print(codebase.get_tree())
+    console.rule(style="blue")
 
 
 def copy_last_message(chat: Chat):

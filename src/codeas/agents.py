@@ -2,17 +2,21 @@ from typing import List
 
 from pydantic import BaseModel, PrivateAttr
 
+from codeas import tools
 from codeas.configs import (
     context_agent_config,
     search_agent_config,
     writing_agent_config,
 )
 from codeas.thread import Thread
-from codeas.tools import File
+from codeas.utils import File
 
 
 class ContextAgent(BaseModel):
-    thread: Thread = Thread(**context_agent_config)
+    thread: Thread = Thread(
+        tools=[tools.add_file, tools.add_file_element, tools.add_files_in_dir],
+        **context_agent_config,
+    )
     context: List[File] = []
 
     def run(self, message: str = None):
@@ -38,7 +42,7 @@ class ContextAgent(BaseModel):
 
 
 class WritingAgent(BaseModel):
-    thread: Thread = Thread(**writing_agent_config)
+    thread: Thread = Thread(tools=[tools.create_file], **writing_agent_config)
     context: List[File] = []
 
     def run(self, message: str = None):
@@ -60,7 +64,9 @@ class WritingAgent(BaseModel):
 
 
 class SearchAgent(BaseModel):
-    thread: Thread = Thread(**search_agent_config)
+    thread: Thread = Thread(
+        tools=[tools.list_files, tools.view_file], **search_agent_config
+    )
     max_steps: int = 10
     _current_step: int = PrivateAttr(1)
 

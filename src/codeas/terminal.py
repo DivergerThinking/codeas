@@ -7,7 +7,7 @@ from codeas.utils import end_message_block, start_message_block
 
 
 class AutoCompleter(Completer):
-    commands = ["view", "copy", "clear"]
+    commands = ["view", "copy", "clear", "tree"]
     agents = ["search", "add", "write"]
     relative_files = Codebase().get_modules_paths()
 
