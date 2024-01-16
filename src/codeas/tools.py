@@ -135,6 +135,9 @@ def read_method(path: str, name: str, class_name: str):
 class CreateFileParams(BaseModel):
     path: str = Field(..., description="relative file path, including file name")
     content: str = Field(..., description="file content")
+    append: bool = Field(
+        False, description="if True and file exists, appends content to the file"
+    )
 
 
 @validate_call
@@ -143,8 +146,15 @@ def create_file(params: CreateFileParams):
     if not os.path.exists(os.path.dirname(params.path)):
         os.makedirs(os.path.dirname(params.path))
 
-    with open(params.path, "w") as f:
-        f.write(params.content)
+    if os.path.exists(params.path):
+        if params.append:
+            with open(params.path, "a") as f:
+                f.write(params.content)
+        else:
+            raise FileExistsError(f"File {params.path} already exists")
+    else:
+        with open(params.path, "w") as f:
+            f.write(params.content)
 
 
 class ModifyFileParams(BaseModel):
