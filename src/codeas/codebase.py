@@ -7,26 +7,13 @@ import tree_sitter_languages
 from pydantic import BaseModel, PrivateAttr
 from tree_sitter import Language, Parser
 
-LANG_EXTENSION_MAP = {
-    ".py": "python",
-    ".java": "java",
-    ".js": "javascript",
-    ".ts": "typescript",
-    ".cs": "c_sharp",
-    ".rs": "rust",
-    ".rb": "ruby",
-    ".c": "c",
-    ".go": "go",
-    ".php": "php",
-}
-DEFAULT_FILE_PATTERNS = [f"*{ext}" for ext in LANG_EXTENSION_MAP.keys()]
-DEFAULT_EXCLUDE_PATTERNS = [".*", "__*"]
+from codeas.configs import LANG_EXTENSION_MAP, codebase_config
 
 
 class Codebase(BaseModel):
     base_dir: str = "."
-    exclude_patterns: list = DEFAULT_EXCLUDE_PATTERNS
-    include_file_patterns: list = DEFAULT_FILE_PATTERNS
+    exclude_patterns: list = codebase_config["exclude_patterns"]
+    include_file_patterns: list = codebase_config["include_file_patterns"]
     _parser: Parser = PrivateAttr(None)
     _language: Language = PrivateAttr(None)
 
@@ -82,6 +69,10 @@ class Codebase(BaseModel):
         The grammar file is hardcoded by now. Pending test on different OS."""
         language_ext = os.path.splitext(path)[1]
         language = LANG_EXTENSION_MAP[language_ext]
+        if language != "python":
+            raise NotImplementedError(
+                f"Can't parse {path}. Parsing {language} files is not supported yet."
+            )
         self._language = tree_sitter_languages.get_language(language)
         self._parser = Parser()
         self._parser.set_language(self._language)
@@ -127,23 +118,25 @@ class Codebase(BaseModel):
             name: (identifier) @function_name) 
             """.strip()
             query = self._language.query(query_scm)
-            Function = namedtuple("Function", "name code node")
+            Function = namedtuple("Function", "path name content node")
             functions = []
             for node, _ in query.captures(root_node):
                 if name:
                     if node.text.decode() == name:
                         functions.append(
                             Function(
+                                path=path,
                                 name=node.text.decode(),
-                                code=node.parent.text.decode(),
+                                content=node.parent.text.decode(),
                                 node=node.parent,
                             )
                         )
                 else:
                     functions.append(
                         Function(
+                            path=path,
                             name=node.text.decode(),
-                            code=node.parent.text.decode(),
+                            content=node.parent.text.decode(),
                             node=node.parent,
                         )
                     )
@@ -162,7 +155,7 @@ class Codebase(BaseModel):
         if class_name:
             query_scm = "(" + query_scm + f"(eq? @class_name {class_name}))"
         query = self._language.query(query_scm)
-        Function = namedtuple("Function", "name code node")
+        Function = namedtuple("Function", "path name content node")
         functions = []
         for node, tag in query.captures(root_node):
             if tag == "method_name":  # filter out the class_name tags
@@ -170,16 +163,18 @@ class Codebase(BaseModel):
                     if node.text.decode() == name:
                         functions.append(
                             Function(
+                                path=path,
                                 name=node.text.decode(),
-                                code=node.parent.text.decode(),
+                                content=node.parent.text.decode(),
                                 node=node.parent,
                             )
                         )
                 else:
                     functions.append(
                         Function(
+                            path=path,
                             name=node.text.decode(),
-                            code=node.parent.text.decode(),
+                            content=node.parent.text.decode(),
                             node=node.parent,
                         )
                     )
@@ -192,23 +187,25 @@ class Codebase(BaseModel):
         name: (identifier) @class_name) 
         """.strip()
         query = self._language.query(query_scm)
-        Class = namedtuple("Class", "name code node")
+        Class = namedtuple("Class", "path name content node")
         classes = []
         for node, _ in query.captures(root_node):
             if name:
                 if node.text.decode() == name:
                     classes.append(
                         Class(
+                            path=path,
                             name=node.text.decode(),
-                            code=node.parent.text.decode(),
+                            content=node.parent.text.decode(),
                             node=node.parent,
                         )
                     )
             else:
                 classes.append(
                     Class(
+                        path=path,
                         name=node.text.decode(),
-                        code=node.parent.text.decode(),
+                        content=node.parent.text.decode(),
                         node=node.parent,
                     )
                 )
@@ -237,7 +234,7 @@ class Codebase(BaseModel):
             relevant_lines.update(self._get_definition_lines(class_.node))
         for function_ in self.get_functions(path):
             relevant_lines.update(self._get_definition_lines(function_.node))
-        relevant_lines.update(self.get_imports_lines(path))
+        # relevant_lines.update(self.get_imports_lines(path))
         file_lines = self._read_files_lines(path)
         file_subset = self._read_subset_from_lines(file_lines, relevant_lines)
         return f"# {path}\n" + "".join(file_subset)
