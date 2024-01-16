@@ -45,10 +45,29 @@ class Thread(BaseModel):
         if self.verbose and self.use_console:
             start_message_block("Assistant", "blue")
 
+        self._add_context_to_messages()
+
+        self.trim_messages()
+        response = self._run_messages()
+
+        self._remove_context_from_messages()
+
+        if self.verbose and self.use_console:
+            end_message_block("blue")
+
+        return response
+
+    def _add_context_to_messages(self):
         if self._context is not None:
             msg_idx = 1 if self.system_prompt else 0
             self._messages.insert(msg_idx, {"role": "user", "content": self._context})
 
+    def _remove_context_from_messages(self):
+        if self._context is not None:
+            msg_idx = 1 if self.system_prompt else 0
+            self._messages.pop(msg_idx)
+
+    def trim_messages(self):
         if self.check_messages_fit_context_window() is False:
             if self.check_codebase_context_fits() is False:
                 print("ERROR: Context is too long. Reduce context size")
@@ -56,6 +75,7 @@ class Thread(BaseModel):
             else:  # remove oldest messages until it fits
                 self.remove_oldest_messages()
 
+    def _run_messages(self):
         response = {"role": "assistant", "content": None, "tool_calls": None}
         for chunk in self._run_completion():
             choice = chunk.choices[0]
@@ -85,10 +105,6 @@ class Thread(BaseModel):
                     and response["tool_calls"]
                 ):
                     pprint(response, expand_all=True)
-
-        if self.verbose and self.use_console:
-            end_message_block("blue")
-
         return response
 
     def check_messages_fit_context_window(self):
