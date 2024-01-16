@@ -3,13 +3,32 @@ import os
 from shutil import copyfile, copytree
 
 import yaml
-from tiktoken import encoding_for_model
+from pydantic import BaseModel
+from rich.console import Console
+from rich.live import Live
 
-encoder = encoding_for_model("gpt-3.5-turbo")
+console = Console()
+live = Live()
 
 
-def count_tokens(text):
-    return len(encoder.encode(text))
+class ChatExitException(Exception):
+    pass
+
+
+def start_message_block(title: str, color: str):
+    console.print("\n")
+    console.rule(title, style=color)
+
+
+def end_message_block(color: str):
+    console.rule(style=color)
+
+
+class File(BaseModel):
+    path: str
+    content: str
+    line_start: int
+    line_end: int
 
 
 def read_yaml(path):
