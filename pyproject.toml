@@ -17,7 +17,7 @@ Source = 'https://github.com/DivergerThinking/codeas'
 Homepage = 'https://diverger.ai'
 
 [project.scripts]
-codeas = 'codeas.cli:app'
+codeas = 'codeas.terminal:start_terminal'
 
 [tool.setuptools.dynamic]
 version = {attr = "codeas.__version__"}
