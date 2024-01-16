@@ -11,6 +11,10 @@ console = Console()
 live = Live()
 
 
+class ChatExitException(Exception):
+    pass
+
+
 def start_message_block(title: str, color: str):
     console.print("\n")
     console.rule(title, style=color)

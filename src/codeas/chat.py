@@ -4,7 +4,13 @@ from prompt_toolkit import prompt
 from pydantic import BaseModel
 
 from codeas.agents import ContextAgent, SearchAgent, WritingAgent
-from codeas.commands import clear_chat, copy_last_message, tree_display, view_context
+from codeas.commands import (
+    clear_chat,
+    copy_last_message,
+    exit_chat,
+    tree_display,
+    view_context,
+)
 from codeas.configs import chat_config
 from codeas.thread import Thread
 from codeas.utils import File
@@ -19,7 +25,8 @@ class Chat(BaseModel):
         if any(agent in message for agent in ["@add", "@write", "@search"]):
             self.run_agent(message)
         elif any(
-            command in message for command in ["/view", "/clear", "/copy", "/tree"]
+            command in message
+            for command in ["/view", "/clear", "/copy", "/tree", "/exit"]
         ):
             self.run_command(message)
         else:
@@ -73,6 +80,8 @@ class Chat(BaseModel):
             copy_last_message(self)
         elif message.strip() == "/tree":
             tree_display()
+        elif message.strip() == "/exit":
+            exit_chat()
 
     def run_thread(self, message: str):
         self.thread.add_context(self.context)

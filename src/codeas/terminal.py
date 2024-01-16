@@ -3,11 +3,11 @@ from prompt_toolkit.completion import Completer, Completion
 
 from codeas.chat import Chat
 from codeas.codebase import Codebase
-from codeas.utils import end_message_block, start_message_block
+from codeas.utils import ChatExitException, end_message_block, start_message_block
 
 
 class AutoCompleter(Completer):
-    commands = ["view", "copy", "clear", "tree"]
+    commands = ["view", "copy", "clear", "tree", "exit"]
     agents = ["search", "add", "write"]
     relative_files = Codebase().get_modules_paths()
 
@@ -40,24 +40,29 @@ class AutoCompleter(Completer):
 def start_terminal():
     chat = Chat()
     while True:
+        # handle interrupts before prompting
         try:
             start_message_block("User input", "bold magenta")
             session = PromptSession(message="> ", completer=AutoCompleter())
             message = session.prompt()
-        # handle keyboard interrupts before prompting
         except KeyboardInterrupt:
             message = None
             answer = prompt("Are you sure you want to exit the chat interface? (y/n): ")
             if answer == "y":
                 break
+        # handle exceptions while the chat assistant is running
         try:
             if message and isinstance(message, str):
                 end_message_block("bold magenta")
                 chat.ask(message)
-        # handle keyboard interrupts while the chat assistant is running
         except KeyboardInterrupt:
             if chat.get_last_message() == message:
                 chat.remove_last_message()
+        except ChatExitException:
+            message = None
+            answer = prompt("Are you sure you want to exit the chat interface? (y/n): ")
+            if answer == "y":
+                break
 
 
 if __name__ == "__main__":

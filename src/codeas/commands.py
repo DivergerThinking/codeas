@@ -7,10 +7,14 @@ from typing import TYPE_CHECKING
 import pyperclip
 
 from codeas.codebase import Codebase
-from codeas.utils import console
+from codeas.utils import ChatExitException, console
 
 if TYPE_CHECKING:
     from codeas.chat import Chat
+
+
+def exit_chat():
+    raise ChatExitException
 
 
 def tree_display():
