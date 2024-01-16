@@ -25,6 +25,12 @@ class Chat(BaseModel):
         else:
             self.run_thread(message)
 
+    def remove_last_message(self):
+        self.thread._messages.pop()
+
+    def get_last_message(self):
+        return self.thread._messages[-1]["content"]
+
     def check_message(self, message: str):
         if "add" in message and "@add" not in message:
             answer = prompt(

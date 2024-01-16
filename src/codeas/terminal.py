@@ -1,4 +1,4 @@
-from prompt_toolkit import PromptSession
+from prompt_toolkit import PromptSession, prompt
 from prompt_toolkit.completion import Completer, Completion
 
 from codeas.chat import Chat
@@ -44,12 +44,20 @@ def start_terminal():
             start_message_block("User input", "bold magenta")
             session = PromptSession(message="> ", completer=AutoCompleter())
             message = session.prompt()
+        # handle keyboard interrupts before prompting
         except KeyboardInterrupt:
-            break
-
-        if isinstance(message, str):
-            end_message_block("bold magenta")
-            chat.ask(message)
+            message = None
+            answer = prompt("Are you sure you want to exit the chat interface? (y/n): ")
+            if answer == "y":
+                break
+        try:
+            if message and isinstance(message, str):
+                end_message_block("bold magenta")
+                chat.ask(message)
+        # handle keyboard interrupts while the chat assistant is running
+        except KeyboardInterrupt:
+            if chat.get_last_message() == message:
+                chat.remove_last_message()
 
 
 if __name__ == "__main__":
