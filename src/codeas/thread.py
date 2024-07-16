@@ -115,7 +115,7 @@ class Thread(BaseModel):
                     MODEL_INFO[self.model]["context"] * MAX_PCT_INPUT_TOKENS
                 )
         except KeyError:
-            print("WARNING: model not found. Assuming model max context is 4k tokens.")
+            # print("WARNING: model not found. Assuming model max context is 4k tokens.")
             self.max_tokens_per_completion = 4096 * MAX_PCT_INPUT_TOKENS
         if num_tokens > self.max_tokens_per_completion:
             return False
@@ -146,6 +146,7 @@ class Thread(BaseModel):
             tools=get_schemas(self.tools),
             temperature=self.temperature,
             stream=True,
+            seed=1,
         ):
             yield chunk
 
@@ -207,6 +208,23 @@ class Thread(BaseModel):
         except Exception as e:
             self._print_call_error(e)
 
+    def add_tool_responses(self, calls):
+        for tool_call in self.run_calls(calls):
+            tool_call["output"] = (
+                tool_call["output"]
+                if isinstance(tool_call["output"], str)
+                else str(tool_call["output"])
+            )
+            self.add_message(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": tool_call["output"],
+                }
+            )
+            # remove "output" key from tool_call
+            tool_call.pop("output")
+
     def _get_function_args(self, tool_call: dict):
         function = [
             tool
@@ -244,7 +262,7 @@ class Thread(BaseModel):
         try:
             encoding = tiktoken.encoding_for_model(self.model)
         except KeyError:
-            print("Warning: model not found. Using cl100k_base encoding.")
+            # print("Warning: model not found. Using cl100k_base encoding.")
             encoding = tiktoken.get_encoding("cl100k_base")
         tokens_per_message = 3
         tokens_per_name = 1
