@@ -4,15 +4,16 @@ from codeag.core.agent import Agent
 from codeag.core.commands import Commands
 
 if "commands" not in st.session_state:
-    st.session_state.commands = Commands(agent=Agent(repo_path="."), write_output=True)
+    st.session_state.commands = Commands(agent=Agent(repo_path="."))
 if "estimates" not in st.session_state:
     st.session_state.estimates = {}
 if "outputs" not in st.session_state:
     st.session_state.outputs = {}
 
 
-def display_step(label: str, command_name: str, has_multiple_requests: bool):
-    with st.expander(label, expanded=True):
+def display_command(command_name: str):
+    label = command_name.replace("_", " ").title()
+    with st.expander(label):
         st.write("**Estimates**:")
 
         if command_name not in st.session_state.estimates:
@@ -28,7 +29,7 @@ def display_step(label: str, command_name: str, has_multiple_requests: bool):
         )
         st.write(f"tokens: {tokens:,} (in: {in_tokens:,} | out: {out_tokens:,})")
         st.write(f"cost: ${cost}")
-        if has_multiple_requests:
+        if st.session_state.commands.COMMAND_ARGS[command_name].multiple_requests:
             st.write(f"messages [n = {len(messages)}]:")
         else:
             st.write("messages:")
@@ -38,10 +39,11 @@ def display_step(label: str, command_name: str, has_multiple_requests: bool):
 
         if run_func:
             with st.spinner(f"Running '{command_name}'..."):
-                st.session_state.commands.run(command_name)
+                outputs = st.session_state.commands.run(command_name)
+                st.session_state.commands.write(command_name, outputs)
 
         if command_name not in st.session_state.outputs:
-            outputs = st.session_state.commands.read_output(command_name)
+            outputs = st.session_state.commands.read(command_name)
             if outputs:
                 st.session_state.outputs[command_name] = outputs
 
@@ -56,28 +58,22 @@ def display_step(label: str, command_name: str, has_multiple_requests: bool):
             )
             st.write(f"tokens: {tokens:,} (in: {in_tokens:,} | out: {out_tokens:,})")
             st.write(f"cost: {cost}")
-            if has_multiple_requests:
+            if st.session_state.commands.COMMAND_ARGS[command_name].multiple_requests:
                 st.write(f"responses [n = {len(contents)}]:")
             else:
                 st.write("response:")
-            st.json(contents, expanded=False)
+            if isinstance(contents, str):
+                st.write(contents)
+            else:
+                st.json(contents, expanded=False)
 
 
 st.markdown("### Extract codebase information")
-display_step(
-    "Extract file descriptions", "extract_file_descriptions", has_multiple_requests=True
-)
-display_step(
-    "Extract directory descriptions",
-    "extract_directory_descriptions",
-    has_multiple_requests=False,
-)
+display_command("extract_file_descriptions")
+display_command("extract_directory_descriptions")
 
 st.markdown("### Generate documentation")
-# display_step("Extract documentation labels", "extract_documentation_labels", has_multiple_requests=True)
-# display_step("Document directories", "document_directories", has_multiple_requests=False)
-display_step(
-    "Define documentation sections",
-    "define_documentation_sections",
-    has_multiple_requests=False,
-)
+display_command("define_documentation_sections")
+display_command("identify_sections_context")
+display_command("generate_documentation_sections")
+display_command("generate_introduction")
