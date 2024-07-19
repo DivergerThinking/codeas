@@ -1,7 +1,12 @@
+import logging
+import os
+
 import streamlit as st
+from streamlit_searchbox import st_searchbox
 
 from codeag.core.agent import Agent
 from codeag.core.commands import Commands
+from codeag.utils import parser
 
 if "commands" not in st.session_state:
     st.session_state.commands = Commands(agent=Agent(repo_path="."))
@@ -9,6 +14,68 @@ if "estimates" not in st.session_state:
     st.session_state.estimates = {}
 if "outputs" not in st.session_state:
     st.session_state.outputs = {}
+
+
+def list_dir(path: str):
+    # search function that returns the directories with starting path "path"
+    if "/" in path:
+        base_dir, start_next_dir = os.path.split(path)
+        try:
+            return [
+                os.path.join(base_dir, d)
+                for d in os.listdir(base_dir)
+                if os.path.isdir(os.path.join(base_dir, d))
+                and d.startswith(start_next_dir)
+            ]
+        except Exception:
+            return []
+    elif path == "." or path == "..":
+        return [
+            os.path.join(path, d)
+            for d in os.listdir(path)
+            if os.path.isdir(os.path.join(path, d))
+        ]
+
+
+st.markdown("## Repository")
+
+base_path = os.path.abspath(".")
+current_dir_name = os.path.basename(base_path)
+repo_path = st_searchbox(list_dir, label="Path", placeholder=".")
+if repo_path:
+    st.caption(os.path.abspath(repo_path))
+else:
+    st.caption(base_path)
+    repo_path = os.path.abspath(".")
+
+clicked_parse = st.button("Parse", type="primary")
+
+
+def display_paths(repo_path, folder_only):
+    paths = parser.get_repository_paths(
+        repo_path,
+        exclude_dir=[".*"],
+        folder_only=folder_only,  # , check_readibility=True
+    )
+    logging.error(f"Found {len(paths)} paths")
+    if any(paths):
+        data = {"incl.": [True] * len(paths), "paths": paths}
+        return st.data_editor(
+            data,
+            column_config={
+                "incl.": st.column_config.CheckboxColumn(width="small"),
+                "paths": st.column_config.TextColumn(width="large"),
+            },
+            key=str(folder_only),
+        )
+
+
+if clicked_parse:
+    st.write("repo", repo_path)
+    with st.expander("Directories"):
+        dir_paths = display_paths(repo_path, folder_only=True)
+    with st.expander("Files"):
+        file_paths = display_paths(repo_path, folder_only=False)
 
 
 def display_command(command_name: str):
@@ -68,12 +135,12 @@ def display_command(command_name: str):
                 st.json(contents, expanded=False)
 
 
-st.markdown("### Extract codebase information")
-display_command("extract_file_descriptions")
-display_command("extract_directory_descriptions")
+# st.markdown("### Extract codebase information")
+# display_command("extract_file_descriptions")
+# display_command("extract_directory_descriptions")
 
-st.markdown("### Generate documentation")
-display_command("define_documentation_sections")
-display_command("identify_sections_context")
-display_command("generate_documentation_sections")
-display_command("generate_introduction")
+# st.markdown("### Generate documentation")
+# display_command("define_documentation_sections")
+# display_command("identify_sections_context")
+# display_command("generate_documentation_sections")
+# display_command("generate_introduction")

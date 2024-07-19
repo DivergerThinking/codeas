@@ -128,12 +128,12 @@ def filter_files(
             ):
                 continue
             else:
-                file_path = os.path.join(relative_path, item)
+                # file_path = os.path.join(relative_path, item_path)
                 if check_readibility:
-                    if is_file_readable(file_path):
-                        filtered_files.append(file_path)
+                    if is_file_readable(item_path):
+                        filtered_files.append(item_path)
                 else:
-                    filtered_files.append(file_path)
+                    filtered_files.append(item_path)
     return filtered_files
 
 
@@ -188,3 +188,13 @@ def get_repository_paths(
     )
 
     return sorted(contents)
+
+
+if __name__ == "__main__":
+    dir_paths = get_repository_paths(
+        "../abstreet", exclude_dir=[".*"], folder_only=True
+    )
+    file_paths = get_repository_paths(
+        "../abstreet", exclude_dir=[".*"], folder_only=False, check_readibility=True
+    )
+    ...

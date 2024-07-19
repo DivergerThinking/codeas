@@ -180,3 +180,41 @@ Return your answer in JSON format following this structure:
 
 NOTE: the 0 - 1 - 2 - 3 - 4 are just indexes to make the JSON keys unique.
 """
+
+CATEGORIZE_FILE_USAGE = """
+I want to generate documentation, tests and refactor code at a repository level.
+To do so, I want you to categorize the usage of the following file in the repository:
+{get_files_content_short}
+
+*note: only the top 10 and bottom 10 lines of the file are shown to give you an idea of the file content.
+
+Return your answer in JSON format as such:
+{{
+    "use_for_testing": boolean,
+    "use_for_documentation": boolean,
+    "use_for_refactoring": boolean
+}}
+
+**IMPORTANT**:
+A file could be used for multiple purposes (multiple True values) or none of them (all False values).
+Before categorizing the file, you need to pay particular attention to additional instructions provided by the user for each purpose.
+
+GENERAL INSTRUCTIONS:
+{get_general_instructions}
+
+INSTRUCTIONS FOR TESTING:
+{get_test_instructions}
+
+INSTRUCTIONS FOR DOCUMENTATION:
+{get_documentation_instructions}
+
+INSTRUCTIONS FOR REFACTORING:
+{get_refactoring_instructions}
+
+These are some obvious but important rules you should also consider:
+- Testing and refactoring should only be done on files that contain code.
+- Files that already contain tests should not be used for testing.
+- Documentation should also include non-code files (configs, READMEs, etc.) but some files might not be relevant, such as files containing some data or logs.
+
+READ AGAIN the above instructions CAREFULLY before categorizing the file.
+"""
