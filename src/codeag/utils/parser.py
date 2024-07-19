@@ -60,14 +60,18 @@ def list_repository_contents_recursive(
     filter_func: Callable[[str], Tuple[bool, bool]],
     include_files: list,
     exclude_files: list,
-    check_readibility: bool,
+    check_readability: bool,
     folder_only: bool,
-) -> List[str]:
+    as_dict: bool,
+):
     """
     Recursively list contents in a repository, applying the filter function.
     """
+    if as_dict:
+        contents = {"dirs": {}, "files": []}
+    else:
+        contents = []
 
-    contents = []
     relative_path = os.path.relpath(current_path, base_path)
 
     if relative_path == ".":
@@ -77,12 +81,13 @@ def list_repository_contents_recursive(
 
     if should_include:
         matched_files = filter_files(
-            current_path, relative_path, include_files, exclude_files, check_readibility
+            current_path, include_files, exclude_files, check_readability
         )
-        if folder_only:
-            if relative_path:
-                if any(matched_files):
-                    contents.append(relative_path)
+        if as_dict:
+            contents["files"].extend(matched_files)
+        elif folder_only:
+            if relative_path and any(matched_files):
+                contents.append(relative_path)
         else:
             contents.extend(matched_files)
 
@@ -90,24 +95,38 @@ def list_repository_contents_recursive(
         for item in os.listdir(current_path):
             item_path = os.path.join(current_path, item)
             if os.path.isdir(item_path):
-                contents.extend(
-                    list_repository_contents_recursive(
+                if as_dict:
+                    sub_contents = list_repository_contents_recursive(
                         base_path,
                         item_path,
                         filter_func,
                         include_files,
                         exclude_files,
-                        check_readibility,
+                        check_readability,
                         folder_only,
+                        as_dict,
                     )
-                )
+                    if sub_contents["dirs"] or sub_contents["files"]:
+                        contents["dirs"][item] = sub_contents
+                else:
+                    contents.extend(
+                        list_repository_contents_recursive(
+                            base_path,
+                            item_path,
+                            filter_func,
+                            include_files,
+                            exclude_files,
+                            check_readability,
+                            folder_only,
+                            as_dict,
+                        )
+                    )
 
     return contents
 
 
 def filter_files(
     current_path: str,
-    relative_path: str,
     include_files: list,
     exclude_files: list,
     check_readibility: bool,
@@ -128,7 +147,6 @@ def filter_files(
             ):
                 continue
             else:
-                # file_path = os.path.join(relative_path, item_path)
                 if check_readibility:
                     if is_file_readable(item_path):
                         filtered_files.append(item_path)
@@ -157,6 +175,7 @@ def get_repository_paths(
     exclude_files: Optional[List[str]] = [],
     check_readibility: bool = False,
     folder_only: bool = False,
+    as_dict: bool = False,
 ) -> List[str]:
     """
     List contents in a repository, with optional filtering and folder-only mode.
@@ -185,16 +204,33 @@ def get_repository_paths(
         exclude_files,
         check_readibility,
         folder_only,
+        as_dict,
     )
+    if as_dict:
+        contents
+    else:
+        return sorted(contents)
 
-    return sorted(contents)
+
+def extract_folders_at_level(file_paths, level):
+    folders = set()
+    for path in file_paths:
+        parts = os.path.normpath(path).split(os.sep)
+        if len(parts) >= level:
+            folders.add(os.sep.join(parts[:level]))
+    return sorted(list(folders))
 
 
 if __name__ == "__main__":
-    dir_paths = get_repository_paths(
-        "../abstreet", exclude_dir=[".*"], folder_only=True
-    )
+    # dir_paths = get_repository_paths(
+    #     "../abstreet", exclude_dir=[".*"], folder_only=True
+    # )
     file_paths = get_repository_paths(
-        "../abstreet", exclude_dir=[".*"], folder_only=False, check_readibility=True
+        "../abstreet",
+        exclude_dir=[".*"],
+        folder_only=False,
+        check_readibility=True,
+        # as_dict=True
     )
+    folders = extract_folders_at_level(file_paths, 1)
     ...
