@@ -1,13 +1,11 @@
 import string
 
 from codeag.core.retriever import Retriever
-from codeag.utils.codebase import Codebase
 
 
 class Context:
     def __init__(self, repo_path: str):
-        codebase = Codebase(base_dir=repo_path)
-        self.retriever = Retriever(codebase=codebase)
+        self.retriever = Retriever(repo_path)
 
     def fill(self, prompt):
         placeholders = self.identify_placeholders(prompt)

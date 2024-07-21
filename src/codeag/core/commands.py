@@ -87,6 +87,7 @@ class Commands:
         tokens = in_tokens + out_tokens
         cost = self.agent.calculate_cost(messages, response, api_params)
         return {
+            "messages": messages,
             "contents": content,
             "cost": cost,
             "tokens": tokens,
@@ -111,6 +112,7 @@ class Commands:
         tokens = in_tokens + out_tokens
         cost = self.agent.calculate_cost(messages, responses, api_params)
         return {
+            "messages": messages,
             "contents": contents,
             "cost": cost,
             "tokens": tokens,

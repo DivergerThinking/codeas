@@ -1,27 +1,26 @@
 import json
 import logging
-import os
 
 from codeag.configs.db_configs import STORAGE_PATH
-from codeag.configs.extensions import EXTENSIONS
-from codeag.utils.codebase import Codebase
 
 
 class Retriever:
-    def __init__(self, codebase: Codebase):
-        self.codebase = codebase
+    def __init__(self, repo_path: str):
+        self.repo_path = repo_path
 
     def get_files_content(self):
-        files_content = {}
-        file_paths = self.codebase.get_file_paths()
-        for path in file_paths:
-            ext = os.path.splitext(path)[1]
-            if EXTENSIONS.get(ext, "") == "programming":
-                content = (
-                    f"# FILE PATH: {path}\n\n{self.codebase.get_file_content(path)}"
-                )
-                files_content[path] = content
-        return files_content
+        ...
+
+    # files_content = {}
+    # file_paths = self.codebase.get_file_paths()
+    # for path in file_paths:
+    #     ext = os.path.splitext(path)[1]
+    #     if EXTENSIONS.get(ext, "") == "programming":
+    #         content = (
+    #             f"# FILE PATH: {path}\n\n{self.codebase.get_file_content(path)}"
+    #         )
+    #         files_content[path] = content
+    # return files_content
 
     def get_file_descriptions(self, file_paths: list = None):
         contents = self.fetch_contents("extract_file_descriptions")
