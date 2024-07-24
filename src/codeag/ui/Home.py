@@ -3,7 +3,13 @@ import os
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 
-from codeag.ui.shared.state import get_state, init_state, set_state, update_state
+from codeag.ui.shared.state import (
+    filter_files_tokens,
+    get_state,
+    init_state,
+    set_state,
+    update_state,
+)
 from codeag.ui.utils import search_dirs
 from codeag.utils import parser
 
@@ -35,16 +41,16 @@ def display_dirs():
     depth = st.slider("Depth of tree", 1, 10, 1)
     set_state("depth", depth)
     st.write("**Tokens**:", "{:,}".format(sum(get_state("incl_files_tokens").values())))
-    display_common("dir")
+    display_data("dir")
 
 
 def display_files():
     st.write("**Included files**:", "{:,}".format(len(get_state("incl_files_tokens"))))
     st.write("**Tokens**:", "{:,}".format(sum(get_state("incl_files_tokens").values())))
-    display_common("files")
+    display_data("files")
 
 
-def display_common(data_type):
+def display_data(data_type):
     incl_data, excl_data = get_data(data_type)
     incl_data = display_data_editor(incl_data, key=f"incl_data_{data_type}")
     excl_data = display_data_editor(excl_data, key=f"excl_data_{data_type}")
@@ -195,14 +201,6 @@ def update_filter_list(key, filter_type):
         {f"{filter_type}_{key}": st.session_state[f"{filter_type}_{key}_list"]}
     )
     filter_files_tokens()
-
-
-def filter_files_tokens():
-    incl_files_tokens, excl_files_tokens = parser.filter_files(
-        get_state("files_tokens"), **get_state("filters")
-    )
-    set_state("incl_files_tokens", incl_files_tokens)
-    set_state("excl_files_tokens", excl_files_tokens)
 
 
 display_home_page()

@@ -9,18 +9,20 @@ class Retriever:
         self.repo_path = repo_path
 
     def get_files_content(self):
-        ...
+        with open(
+            f"{self.repo_path}/{STORAGE_PATH}/settings/incl_files_tokens.json", "r"
+        ) as f:
+            incl_files_tokens = json.load(f)
 
-    # files_content = {}
-    # file_paths = self.codebase.get_file_paths()
-    # for path in file_paths:
-    #     ext = os.path.splitext(path)[1]
-    #     if EXTENSIONS.get(ext, "") == "programming":
-    #         content = (
-    #             f"# FILE PATH: {path}\n\n{self.codebase.get_file_content(path)}"
-    #         )
-    #         files_content[path] = content
-    # return files_content
+        files_content = {}
+        for path in incl_files_tokens:
+            content = f"# FILE PATH: {path}\n\n{self.read_file(path)}"
+            files_content[path] = content
+        return files_content
+
+    def read_file(self, file_path):
+        with open(file_path, "r") as f:
+            return f.read()
 
     def get_file_descriptions(self, file_paths: list = None):
         contents = self.fetch_contents("extract_file_descriptions")

@@ -27,5 +27,5 @@ dependencies = {file = ["requirements.txt"]}
 [tool.isort]
 profile = "black"
 
-[tool.ruff.per-file-ignores]
-"src/codeas/cli.py" = ["E402"]
+[tool.ruff.lint.per-file-ignores]
+"src/codeag/ui/shared/state.py" = ["F401"]
