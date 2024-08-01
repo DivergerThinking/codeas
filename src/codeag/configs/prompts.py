@@ -77,51 +77,62 @@ Return your answer in JSON format as such:
 DEFINE_DOCUMENTATION_SECTIONS = """
 I want to generate some documentation for an entire repository.
 To do so, I need you to define the sections that should be included in the documentation based on the content of the repository.
+You should keep these sections at the high level. Examples of documentation sections include: 
+"Getting started", "Configuration", "API Reference", "Database Schema", "Testing", "Deployment", "Performance", "Security", "Monitoring and logging", "Dependencies", "Accessibility", "Integration", "Data Management", "Integration", etc.
+You don't need to limit yourself to those examples, feel free to define other sections if you see fit.
 
-Define sections based on the following repositories' directories:
+Here is some information about the directories in the repository:
 {get_directory_descriptions}
 
-**IMPORTANT**: 
-Keep these sections at the high level. EXAMPLES of documentation sections: 
-"Introduction", "Getting started", "Architecture Overview", "Configuration", "API Reference", "Database Schema", "Testing", "Deployment", "Performance", "Security", "Monitoring and logging", "Dependencies", "Accessibility", "Integration", "Data Management", "Integration", etc.
-ALWAYS START WITH "Introduction" as the first section
+Here is some information about the files in the root of the repository:
+{get_root_files_descriptions}
 
-Return your results in JSON format using indices (starting as 0) as keys and section names as values:
+For each section you define, include the relevant root files and directory paths to use as context for generating this section.
+
+Return the sections in the following JSON format:
 {{
-    0: Introduction,
-    1: ...,
-    2: ...
+    section_name1: [path1, path2],
+    section_name2: [path2, path3],
 }}
+
+**IMPORTANT**:
+The same directory and file paths can be used for multiple sections. Example: some configuration file used for deployments can be relevant to both "Configuration" and "Deployment" sections.
+DO NOT include an "Introduction" section, this one will be generated separately at the end.
+ONLY ADD SECTIONS WHICH APPEAR TO BE RELEVANT FROM THE GIVEN REPOSITORY CONTENT 
 """
 
 IDENTIFY_SECTIONS_CONTEXT = """
 I want to generate some documentation for an entire repository.
 I have already defined the different sections I want to generate for the repository, and now want to retrieve the necessary context to generate each section.
-For each file in the repository, I need you to identify the sections of the documentation where this file should be used as context.
 
-Here are the different sections of the documentation:
-{get_documentation_sections_list}
+Here is the content of the file:
+<file-content-start>
+{get_files_content_for_docs}
+<file-content-end>
 
-Identify in which of these sections the following file should be used as context:
-{get_files_content}
+This file will be used as context for generating the following documentation sections:
+{get_files_relevant_sections}
+
+Extract the key information found inside the file that should be used as context for documenting those sections.
+
+Return your answer in JSON format as follows:
+{{
+    "key_info": "extracted key information here"
+}}
 
 **IMPORTANT**:
-The file can be used as context in multiple sections. 
-As an example, a configuration file used for setting up the project could be used in both "Configuration" and "Getting Started" section.
-
-Return your answer in JSON format as follows, using the indexes of the section you identified:
-{{
-    "relevant_sections": [0, 1]
-}}
-where [0, 1] would be the sections with index 0 and 1
+You are not asked to actually document the files, but to EXTRACT INFORMATION FROM THEM.
+BE AS CONCISE AS POSSIBLE. The idea is to capture as much information as possible in as little tokens possible.
+Have another look at the sections that will need to be documented, and make sure you only extract relevant information.
+Try not to exceed 100 tokens unless you think the file contains a large amount of important information and details.
 """
 
 GENERATE_DOCUMENTATION_SECTIONS = """
 I want to generate some documentation for an entire repository.
 I have already defined the different sections I want to generate for the repository and identified the relevant files to use as context for generating each section.
 
-Based on the context of the files, I want you to generate the content for the following section:
-{get_sections_to_generate}
+Generate the content for the following section:
+- {get_sections_to_generate}
 
 Here is the relevant context I have identified for this section:
 {get_sections_file_descriptions}

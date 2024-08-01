@@ -1,18 +1,15 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+import json
 
 from codeag.configs.command_args import COMMAND_ARGS
-from codeag.configs.db_configs import STORAGE_PATH
+from codeag.configs.storage_configs import OUTPUTS_PATH
+from codeag.core.agent import Agent
 from codeag.utils.costs import calculate_cost
-
-if TYPE_CHECKING:
-    from codeag.core.agent import Agent
 
 
 class Commands:
-    def __init__(self, agent: Agent):
-        self.agent = agent
+    def __init__(self, repo_path: str):
+        self.repo_path = repo_path
+        self.agent = Agent(repo_path=repo_path)
         self.COMMAND_ARGS = COMMAND_ARGS
 
     def run(self, command_name):
@@ -44,10 +41,17 @@ class Commands:
             )
 
     def read(self, command_name):
-        return self.agent.read_output(f"{STORAGE_PATH}/{command_name}.json")
+        return self.agent.read_output(f"{OUTPUTS_PATH}/{command_name}.json")
+
+    def exists_output(self, command_name):
+        output = self.read(command_name)
+        if output:
+            return True
+        else:
+            return False
 
     def write(self, command_name, outputs):
-        self.agent.write_output(f"{STORAGE_PATH}/{command_name}.json", outputs)
+        self.agent.write_output(f"{OUTPUTS_PATH}/{command_name}.json", outputs)
 
     def estimate_single_request(self, messages, api_params, estimate_multiplier):
         in_tokens = self.agent.count_in_tokens(messages, api_params)
@@ -99,7 +103,7 @@ class Commands:
         responses = self.agent.generate_responses(messages, api_params)
         if api_params.get("response_format") == {"type": "json_object"}:
             contents = {
-                path: eval(response["content"])
+                path: json.loads(response["content"])
                 for path, response in zip(messages.keys(), responses)
             }
         else:
@@ -122,10 +126,7 @@ class Commands:
 
 
 if __name__ == "__main__":
-    from codeag.core.agent import Agent
-
-    agent = Agent(repo_path=".")
-    commands = Commands(agent=agent, write_output=False)
+    commands = Commands(repo_path=".")
     estimates = commands.estimate("generate_documentation_sections")
     outputs = commands.run("generate_documentation_sections")
     estimates["tokens"]

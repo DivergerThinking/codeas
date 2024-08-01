@@ -5,7 +5,7 @@ import os
 import streamlit as st
 import streamlit_nested_layout  # needed to allow for nested expanders in the UI
 
-from codeag.configs.db_configs import STORAGE_PATH
+from codeag.configs.storage_configs import SETTINGS_PATH
 from codeag.core.agent import Agent
 from codeag.core.commands import Commands
 from codeag.utils import parser
@@ -35,7 +35,7 @@ def set_common_state(repo_path, use_set_state_once=False):
     )
     set_filter_settings(set_func)
     filter_files_tokens(set_func)
-    set_func("commands", Commands(Agent(repo_path=repo_path)))
+    set_func("commands", Commands(repo_path=repo_path))
     set_func("clicked", {})
     set_func("estimates", {})
     set_func("outputs", {})
@@ -53,7 +53,7 @@ def filter_files_tokens(set_func=set_state):
 
 
 def export_filter_settings():
-    settings_path = f"{get_state('repo_path')}/{STORAGE_PATH}/settings"
+    settings_path = f"{get_state('repo_path')}/{SETTINGS_PATH}"
     if not os.path.exists(settings_path):
         os.makedirs(settings_path)
     with open(os.path.join(settings_path, "filter_settings.json"), "w") as f:
@@ -61,7 +61,7 @@ def export_filter_settings():
 
 
 def export_incl_files_tokens():
-    settings_path = f"{get_state('repo_path')}/{STORAGE_PATH}/settings"
+    settings_path = f"{get_state('repo_path')}/{SETTINGS_PATH}"
     if not os.path.exists(settings_path):
         os.makedirs(settings_path)
     with open(os.path.join(settings_path, "incl_files_tokens.json"), "w") as f:
@@ -69,7 +69,7 @@ def export_incl_files_tokens():
 
 
 def import_filter_settings(set_func):
-    settings_path = f"{get_state('repo_path')}/{STORAGE_PATH}/settings"
+    settings_path = f"{get_state('repo_path')}/{SETTINGS_PATH}"
     if not os.path.exists(settings_path):
         os.makedirs(settings_path)
     with open(os.path.join(settings_path, "filter_settings.json"), "r") as f:

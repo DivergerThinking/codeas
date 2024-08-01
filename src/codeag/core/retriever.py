@@ -1,24 +1,25 @@
 import json
 import logging
 
-from codeag.configs.db_configs import STORAGE_PATH
+from codeag.configs.storage_configs import OUTPUTS_PATH, SETTINGS_PATH
 
 
 class Retriever:
     def __init__(self, repo_path: str):
         self.repo_path = repo_path
 
-    def get_files_content(self):
-        with open(
-            f"{self.repo_path}/{STORAGE_PATH}/settings/incl_files_tokens.json", "r"
-        ) as f:
-            incl_files_tokens = json.load(f)
-
+    def get_files_content(self, file_paths: list = None):
+        incl_files_tokens = self.get_incl_files_tokens()
         files_content = {}
         for path in incl_files_tokens:
-            content = f"# FILE PATH: {path}\n\n{self.read_file(path)}"
-            files_content[path] = content
+            if file_paths is None or path in file_paths:
+                content = f"# FILE PATH: {path}\n\n{self.read_file(path)}"
+                files_content[path] = content
         return files_content
+
+    def get_incl_files_tokens(self):
+        with open(f"{self.repo_path}/{SETTINGS_PATH}/incl_files_tokens.json", "r") as f:
+            return json.load(f)
 
     def read_file(self, file_path):
         with open(file_path, "r") as f:
@@ -29,15 +30,40 @@ class Retriever:
         file_descriptions = ""
         for path, content in contents.items():
             if file_paths is None or path in file_paths:
-                file_descriptions += f'File: {path}:\n\tDescription: {content["description"]}:\n\tDetails: {content["details"]}\n\tTechnologies used: {content["technologies"]}\n\n'
+                file_descriptions += f'File path: {path}\n\tDescription: {content["description"]}:\n\tDetails: {content["details"]}\n\tTechnologies used: {content["technologies"]}\n\n'
         return file_descriptions
 
     def get_directory_descriptions(self):
         contents = self.fetch_contents("extract_directory_descriptions")
         directory_descriptions = ""
         for path, content in contents.items():
-            directory_descriptions += f'Directory: {path}:\n\tDescription: {content["description"]}:\n\tDetails: {content["details"]}\n\tTechnologies used: {content["technologies"]}\n\n'
+            directory_descriptions += f'Directory path: {path}\n\tDescription: {content["description"]}:\n\tDetails: {content["details"]}\n\tTechnologies used: {content["technologies"]}\n\n'
         return directory_descriptions
+
+    def get_root_files_descriptions(self):
+        incl_files_tokens = self.get_incl_files_tokens()
+        root_files = [
+            file_path for file_path in incl_files_tokens if "/" not in file_path
+        ]
+        return self.get_file_descriptions(root_files)
+
+    def get_files_relevant_sections(self):
+        contents = self.fetch_contents("define_documentation_sections")
+        incl_files_tokens = self.get_incl_files_tokens()
+
+        files_relevant_sections = {}
+        for file_path in incl_files_tokens:
+            for section, paths in contents.items():
+                for path in paths:
+                    if file_path.startswith(path):
+                        if file_path not in files_relevant_sections:
+                            files_relevant_sections[file_path] = []
+                        files_relevant_sections[file_path].append(section)
+        return files_relevant_sections
+
+    def get_files_content_for_docs(self):
+        files_for_docs = self.get_files_relevant_sections()
+        return self.get_files_content(files_for_docs.keys())
 
     def get_documentation_sections_list(self):
         contents = self.fetch_contents("define_documentation_sections")
@@ -47,33 +73,60 @@ class Retriever:
         return documentation_sections_list
 
     def get_sections_to_generate(self):
-        contents = self.fetch_contents("define_documentation_sections")
-        sections_file_descriptions = self.get_sections_file_descriptions()
         return {
-            section_index: section_name
-            for section_index, section_name in contents.items()
-            if section_index in sections_file_descriptions.keys()
+            section_name: section_name
+            for section_name in self.fetch_contents(
+                "define_documentation_sections"
+            ).keys()
         }
 
+    def get_sections_file_info(self):
+        sections = self.fetch_contents("define_documentation_sections")
+
+        sections_file_info = {}
+        for section_name in sections:
+            self.get_files_info(section_name)
+        return sections_file_info
+
+    def get_files_info(self, section_name):
+        ...
+
     def get_sections_file_descriptions(self):
-        sections_context_contents = self.fetch_contents("identify_sections_context")
         sections_contents = self.fetch_contents("define_documentation_sections")
-        # remove introduction as it is generated later
-        intro_section_name = list(sections_contents.keys())[0]
-        sections_contents.pop(intro_section_name)
+        incl_files_tokens = self.get_incl_files_tokens()
 
         sections_file_descriptions = {}
-        for section_index, section_name in sections_contents.items():
-            relevant_file_paths = self.get_section_relevant_files(
-                sections_context_contents, section_index
+        for section, paths in sections_contents.items():
+            sections_file_descriptions[section] = []
+            for file_path in incl_files_tokens:
+                for path in paths:
+                    if file_path.startswith(path):
+                        sections_file_descriptions[section].append(file_path)
+
+            sections_file_descriptions[section] = self.get_file_descriptions(
+                sections_file_descriptions[section]
             )
-            if any(relevant_file_paths):
-                sections_file_descriptions[section_index] = self.get_file_descriptions(
-                    relevant_file_paths
-                )
-            else:
-                logging.error(f"No relevant files found for section: {section_name}")
+
         return sections_file_descriptions
+
+    #     sections_context_contents = self.fetch_contents("identify_sections_context")
+    #     sections_contents = self.fetch_contents("define_documentation_sections")
+    #     # remove introduction as it is generated later
+    #     intro_section_name = list(sections_contents.keys())[0]
+    #     sections_contents.pop(intro_section_name)
+
+    #     sections_file_descriptions = {}
+    #     for section_index, section_name in sections_contents.items():
+    #         relevant_file_paths = self.get_section_relevant_files(
+    #             sections_context_contents, section_index
+    #         )
+    #         if any(relevant_file_paths):
+    #             sections_file_descriptions[section_index] = self.get_file_descriptions(
+    #                 relevant_file_paths
+    #             )
+    #         else:
+    #             logging.error(f"No relevant files found for section: {section_name}")
+    #     return sections_file_descriptions
 
     def get_section_relevant_files(self, sections_context_contents, section_index):
         relevant_file_paths = []
@@ -107,9 +160,15 @@ class Retriever:
         return sections_markdown
 
     def fetch_contents(self, command_name):
-        file_path = f"{STORAGE_PATH}/{command_name}.json"
+        file_path = f"{self.repo_path}/{OUTPUTS_PATH}/{command_name}.json"
         try:
             with open(file_path, "r") as f:
                 return json.load(f)["contents"]
         except FileNotFoundError:
             logging.error(f"File not found: {file_path}")
+
+
+if __name__ == "__main__":
+    retriever = Retriever(repo_path=".")
+    res = retriever.get_sections_file_descriptions()
+    print(res)

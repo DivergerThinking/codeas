@@ -1,6 +1,12 @@
 import tiktoken
 
 MODEL_INFO = {
+    "gpt-4o-mini": {"context": 128192, "inprice": 0.00015, "outprice": 0.0006},
+    "gpt-4o-mini-2024-07-18": {
+        "context": 128192,
+        "inprice": 0.00015,
+        "outprice": 0.0006,
+    },
     "gpt-4o-2024-05-13": {"context": 128192, "inprice": 0.005, "outprice": 0.015},
     "gpt-4o": {"context": 128192, "inprice": 0.005, "outprice": 0.015},
     "gpt-4-0125-preview": {"context": 128192, "inprice": 0.01, "outprice": 0.03},
