@@ -1,4 +1,5 @@
 import json
+import os
 
 import streamlit as st
 
@@ -134,6 +135,8 @@ def display_export_test_files_button():
         outputs = get_state("commands").read("generate_tests")
         for contents in outputs["contents"].values():
             for test_file_path, tests in contents.items():
+                if not os.path.exists(os.path.dirname(test_file_path)):
+                    os.makedirs(os.path.dirname(test_file_path))
                 with open(test_file_path, "w") as f:
                     f.write(tests)
 

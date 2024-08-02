@@ -67,7 +67,7 @@ COMMAND_ARGS = {
     ),
     "generate_tests": CommandArg(
         prompt=prompts.GENERATE_TESTS,
-        api_params=api_params.GPT4MINI_BASE_PARAMS,
+        api_params=api_params.GPT4_BASE_PARAMS,
         multiple_requests=True,
         estimate_multiplier=100,
     ),
