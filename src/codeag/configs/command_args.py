@@ -47,4 +47,28 @@ COMMAND_ARGS = {
         multiple_requests=False,
         estimate_multiplier=100,
     ),
+    "categorize_test_files": CommandArg(
+        prompt=prompts.CATEGORIZE_TEST_FILES,
+        api_params=api_params.GPT4MINI_BASE_PARAMS,
+        multiple_requests=False,
+        estimate_multiplier=100,
+    ),
+    "define_test_cases": CommandArg(
+        prompt=prompts.DEFINE_TEST_CASES,
+        api_params=api_params.GPT4MINI_BASE_PARAMS,
+        multiple_requests=True,
+        estimate_multiplier=100,
+    ),
+    "define_testing_guidelines": CommandArg(
+        prompt=prompts.DEFINE_TESTING_GUIDELINES,
+        api_params=api_params.GPT4MINI_NO_JSON,
+        multiple_requests=False,
+        estimate_multiplier=100,
+    ),
+    "generate_tests": CommandArg(
+        prompt=prompts.GENERATE_TESTS,
+        api_params=api_params.GPT4MINI_BASE_PARAMS,
+        multiple_requests=True,
+        estimate_multiplier=100,
+    ),
 }

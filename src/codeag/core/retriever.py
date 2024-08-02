@@ -17,6 +17,19 @@ class Retriever:
                 files_content[path] = content
         return files_content
 
+    def get_files_content_testing(self):
+        selected_test_cases = self.read_selected_test_cases()
+        return self.get_files_content(selected_test_cases.keys())
+
+    def get_files_content_str(self, file_paths: list = None):
+        incl_files_tokens = self.get_incl_files_tokens()
+        files_content = ""
+        for path in incl_files_tokens:
+            if file_paths is None or path in file_paths:
+                content = f"# FILE PATH: {path}\n{self.read_file(path)}\n\n"
+                files_content += content
+        return files_content
+
     def get_incl_files_tokens(self):
         with open(f"{self.repo_path}/{SETTINGS_PATH}/incl_files_tokens.json", "r") as f:
             return json.load(f)
@@ -27,10 +40,25 @@ class Retriever:
 
     def get_file_descriptions(self, file_paths: list = None):
         contents = self.fetch_contents("extract_file_descriptions")
+        self.filter_incl_files(contents)
         file_descriptions = ""
         for path, content in contents.items():
             if file_paths is None or path in file_paths:
                 file_descriptions += f'File path: {path}\n\tDescription: {content["description"]}:\n\tDetails: {content["details"]}\n\tTechnologies used: {content["technologies"]}\n\n'
+        return file_descriptions
+
+    def filter_incl_files(self, file_descriptions):
+        incl_files_tokens = self.get_incl_files_tokens()
+        for path in list(file_descriptions.keys()):
+            if path not in incl_files_tokens:
+                file_descriptions.pop(path)
+
+    def get_file_descriptions_dict(self, file_paths: list = None):
+        contents = self.fetch_contents("extract_file_descriptions")
+        file_descriptions = {}
+        for path, content in contents.items():
+            if file_paths is None or path in file_paths:
+                file_descriptions[path] = content
         return file_descriptions
 
     def get_directory_descriptions(self):
@@ -90,6 +118,42 @@ class Retriever:
 
     def get_files_info(self, section_name):
         ...
+
+    def get_test_cases_descriptions(self):
+        selected_test_cases = self.read_selected_test_cases()
+        all_test_cases = self.fetch_contents("define_test_cases")
+
+        test_cases_descriptions = ""
+        for path, all_cases in all_test_cases.items():
+            if path in selected_test_cases:
+                test_cases_descriptions += f"File path: {path}\n"
+                for test_name, test_case in all_cases.items():
+                    if test_name in selected_test_cases[path]:
+                        test_cases_descriptions += f"\tTest case: {test_name}\n\tDescription: {test_case['description']}\n\n"
+        return test_cases_descriptions
+
+    def get_test_cases(self):
+        selected_test_cases = self.read_selected_test_cases()
+        all_test_cases = self.fetch_contents("define_test_cases")
+
+        test_cases = {}
+        for path, all_cases in all_test_cases.items():
+            if path in selected_test_cases:
+                for test_name, test_case in all_cases.items():
+                    if test_name in selected_test_cases[path]:
+                        test_cases[
+                            path
+                        ] = f"Test case: {test_name}\n\tDescription: {test_case['description']}\n\tAsserts: {test_case['asserts']}\n\tParent: {test_case['parent_name']}\n\n"
+        return test_cases
+
+    def get_test_guidelines(self):
+        return self.fetch_contents("define_testing_guidelines")
+
+    def read_selected_test_cases(self):
+        with open(
+            f"{self.repo_path}/{SETTINGS_PATH}/selected_test_cases.json", "r"
+        ) as f:
+            return json.load(f)
 
     def get_sections_file_descriptions(self):
         sections_contents = self.fetch_contents("define_documentation_sections")
@@ -170,5 +234,5 @@ class Retriever:
 
 if __name__ == "__main__":
     retriever = Retriever(repo_path=".")
-    res = retriever.get_sections_file_descriptions()
+    res = retriever.get_test_cases()
     print(res)

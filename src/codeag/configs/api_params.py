@@ -42,3 +42,12 @@ GPT4_NO_JSON = {
     "timeout": 10,
     "model": "gpt-4o",
 }
+
+GPT4MINI_NO_JSON = {
+    "temperature": 0.3,
+    "top_p": 0.7,
+    # "response_format": {"type": "json_object"},
+    "stream": True,
+    "timeout": 10,
+    "model": "gpt-4o-mini",
+}

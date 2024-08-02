@@ -229,3 +229,96 @@ These are some obvious but important rules you should also consider:
 
 READ AGAIN the above instructions CAREFULLY before categorizing the file.
 """
+
+CATEGORIZE_TEST_FILES = """
+I want to generate some tests for a repository.
+In order to do that, I first need to identify which files from the repository are relevant for testing.
+
+The relevance of these tests should be categorized into three main categories:
+- High: files that are critical for the application and should be tested thoroughly
+- Medium: files that are important for the application but not critical
+- Low: files that don't necessarily need to be tested or are difficult to test
+
+Here are some key information about each file in the repository:
+{get_file_descriptions}
+
+**IMPORTANT**:
+Focus on files which are relevant for testing and relatively easy to test (example: unit testing).
+Files that are more difficult to test (UI, integration tests, scripts, etc.) ranked as low priority.
+Ignore files which are already test files.
+
+Return your answer in JSON format as such:
+{{
+    High: ["path1", "path2"],
+    Medium: ["path3", "path4", "path5"],
+    Low: ["path6", "path7"]
+}}
+"""
+
+DEFINE_TEST_CASES = """
+I want to generate some tests for an entire repository.
+For each of the file in the repository, I first want to define the different test cases (i.e. behaviors to cover) that should be implemented.
+The tests will then be generated based on these test cases.
+
+Define some test cases for the following file:
+{get_files_content}
+
+Return your answer in JSON format as such:
+{{
+    "test_name1": {{
+        "description": "description of the test case",
+        "asserts": "assertions to be made in the test case"
+        "importance": int (from 10 highest importance, to 1 lowest importance)"
+        "parent_name": "the class or function name the test case belongs to",
+    }},
+    "test_name2": {{
+        ...
+    }},
+}}
+
+**IMPORTANT**:
+Test case names should reflect the name that would be given to the test function.
+Test case descriptions and asserts should be as concise as possible.
+The test cases should be sorted by order of importance.
+"""
+
+DEFINE_TESTING_GUIDELINES = """
+I want to generate a set of tests for an entire code repository.
+In order for these tests to be somewhat standardized, I first want to define some guidelines on how to generate these tests.
+These guidelines should include the testing framework to be used as well as any other information you think is relevant (naming, structure, etc.).
+
+Define the guidelines for the following files:
+{get_test_cases_descriptions}
+
+**IMPORTANT**:
+ONLY WRITE THE GUIDELINES. Be as concised as possible. Write the guidelines as bullet points. Try and limit them to 5-10 points.
+If you think multiple frameworks or guidelines should be used for different types of files, explain when each should be used.
+DO NOT write guidelines for each file separately, write them as general guidelines for the entire repository.
+Try not to exceed 200-300 tokens.
+"""
+
+GENERATE_TESTS = """
+I want to generate a set of tests for a code repository.
+I have already generated the test cases for each file in the repository.
+
+Here is the file I want to write the tests for:
+{get_files_content_testing}
+
+Generate tests that cover the following test cases:
+{get_test_cases}
+
+Use the following testing guidelines:
+{get_test_guidelines}
+
+Return your answer in JSON format with the test_file's name as key and the content of the test file as value:
+{{
+    "path_of_test_file": "test_file_content"
+}}
+
+**IMPORTANT**:
+Include the full path of the test file. Make sure to follow the testing guidelines.
+Include the test case as docsctring in the corresponding test.
+Ignore testing guidelines that are not relevant for the current task at hand (i.e. if they focus on aspects that are outside of the scope of generating the tests).
+THE CONTENT OF THE FILE SHOULD ONLY BE CODE
+"""
+# ONLY WRITE THE CODE. Your output will directly be written to files as part of the repository, and will be executed as such.

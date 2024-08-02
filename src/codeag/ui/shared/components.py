@@ -7,6 +7,32 @@ def clicked(key):
     get_state("clicked")[key] = True
 
 
+def display_steps(steps):
+    with st.expander("Steps"):
+        for step in steps:
+            display_command(step)
+
+
+def display_button(label, key):
+    st.button(
+        label,
+        type="primary",
+        key=key,
+        on_click=lambda: clicked(key),
+    )
+
+
+def run_section(command_name, spinner_text):
+    with st.spinner(spinner_text):
+        if get_state("commands").exists_output(command_name):
+            outputs = get_state("commands").read(command_name)
+            st.info("Using stored outputs.")
+        else:
+            outputs = get_state("commands").run(command_name)
+            get_state("commands").write(command_name, outputs)
+        return outputs
+
+
 def display_command(command_name: str):
     label = command_name.replace("_", " ").title()
 

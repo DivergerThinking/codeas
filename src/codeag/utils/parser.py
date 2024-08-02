@@ -34,13 +34,13 @@ def filter_files(
         dir_path, file_name = os.path.split(path)
 
         if any(include_files) and not any(
-            match_path(file_name, pattern) for pattern in include_files
+            match_path(path, pattern) for pattern in include_files
         ):
             excluded_files[path] = included_files.pop(path)
             continue
 
         if any(exclude_files) and any(
-            match_path(file_name, pattern) for pattern in exclude_files
+            match_path(path, pattern) for pattern in exclude_files
         ):
             excluded_files[path] = included_files.pop(path)
             continue

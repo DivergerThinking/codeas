@@ -40,6 +40,7 @@ def set_common_state(repo_path, use_set_state_once=False):
     set_func("estimates", {})
     set_func("outputs", {})
     export_filter_settings()
+    set_func("selected_test_cases", {})
 
 
 def filter_files_tokens(set_func=set_state):
