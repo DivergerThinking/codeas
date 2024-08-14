@@ -4,7 +4,7 @@ from codeag.core.storage import Storage
 
 
 class Retriever(BaseModel, arbitrary_types_allowed=True):
-    storage: Storage
+    storage: Storage = Storage()
 
     def get_incl_files_content(self):
         incl_files = self.get_incl_files()
@@ -14,7 +14,7 @@ class Retriever(BaseModel, arbitrary_types_allowed=True):
         return files_content
 
     def get_incl_files(self):
-        return list(self.storage.read_json("settings/incl_files_tokens.json").keys())
+        return list(self.storage.read_json("state/incl_files_tokens.json").keys())
 
     def get_incl_files_info(self):
         extracted_descriptions = self.storage.read_json(

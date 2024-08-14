@@ -3,51 +3,39 @@ import os
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 
-from codeag.ui.shared.state import (
-    filter_files_tokens,
-    get_state,
-    init_state,
-    set_state,
-    update_state,
-)
+from codeag.ui.shared.state import state
 from codeag.ui.utils import search_dirs
-from codeag.utils import parser
-
-init_state()
 
 
 def display_home_page():
     st.markdown("## Repository")
-
-    with st.expander("Path", expanded=True):
-        display_repo_path()
-
-    with st.expander("Files", expanded=True):
-        display_files()
-
-    with st.expander("Directories", expanded=True):
-        display_dirs()
+    display_repo_path()
+    display_files()
+    display_dirs()
 
 
 def display_repo_path():
-    repo_path = st_searchbox(search_dirs, placeholder=".")
-    st.button(
-        "Update", key="update_files_tokens", on_click=lambda: update_state(repo_path)
-    )
-    st.caption(os.path.abspath(get_state("repo_path")))
-
-
-def display_dirs():
-    depth = st.slider("Depth of tree", 1, 10, 1)
-    set_state("depth", depth)
-    st.write("**Tokens**:", "{:,}".format(sum(get_state("incl_files_tokens").values())))
-    display_data("dir")
+    with st.expander("Path", expanded=True):
+        repo_path = st_searchbox(search_dirs, placeholder=".", default=".")
+        st.button(
+            "Update",
+            key="update_files_tokens",
+            on_click=lambda: state.update_repo_path(repo_path),
+        )
+        st.caption(os.path.abspath(state.repo_path))
 
 
 def display_files():
-    st.write("**Included files**:", "{:,}".format(len(get_state("incl_files_tokens"))))
-    st.write("**Tokens**:", "{:,}".format(sum(get_state("incl_files_tokens").values())))
-    display_data("files")
+    n_files = "{:,}".format(len(state.repo.incl_files_tokens))
+    n_tokens = "{:,}".format(sum(state.repo.incl_files_tokens.values()))
+    with st.expander(f"{n_files} files | {n_tokens} tokens", expanded=True):
+        display_data("files")
+
+
+def display_dirs():
+    with st.expander("Directories", expanded=True):
+        state.repo.dir_depth = st.slider("depth", 1, 10, 3)
+        display_data("dir")
 
 
 def display_data(data_type):
@@ -72,37 +60,31 @@ def get_data(data_type):
 
 
 def get_dirs_data():
-    incl_paths, incl_n_files, incl_n_tokens = parser.extract_folders_up_to_level(
-        get_state("repo_path"), get_state("incl_files_tokens"), get_state("depth")
-    )
-    excl_paths, excl_n_files, excl_n_tokens = parser.extract_folders_up_to_level(
-        get_state("repo_path"), get_state("excl_files_tokens"), get_state("depth")
-    )
     incl_data = {
-        "incl.": [True] * len(incl_paths),
-        "paths": incl_paths,
-        "n_files": incl_n_files,
-        "n_tokens": incl_n_tokens,
+        "incl.": [True] * len(state.repo.incl_dir_tokens),
+        "paths": list(state.repo.incl_dir_tokens.keys()),
+        "n_files": list(state.repo.incl_dir_nfiles.values()),
+        "n_tokens": list(state.repo.incl_dir_tokens.values()),
     }
     excl_data = {
-        "incl.": [False] * len(excl_paths),
-        "paths": excl_paths,
-        "n_files": excl_n_files,
-        "n_tokens": excl_n_tokens,
+        "incl.": [False] * len(state.repo.excl_dir_tokens),
+        "paths": list(state.repo.excl_dir_tokens.keys()),
+        "n_files": list(state.repo.excl_dir_nfiles.values()),
+        "n_tokens": list(state.repo.excl_dir_tokens.values()),
     }
     return incl_data, excl_data
 
 
 def get_files_data():
     incl_data = {
-        "incl.": [True] * len(get_state("incl_files_tokens")),
-        "paths": list(get_state("incl_files_tokens").keys()),
-        "n_tokens": list(get_state("incl_files_tokens").values()),
+        "incl.": [True] * len(state.repo.incl_files_tokens),
+        "paths": list(state.repo.incl_files_tokens.keys()),
+        "n_tokens": list(state.repo.incl_files_tokens.values()),
     }
     excl_data = {
-        "incl.": [False] * len(get_state("excl_files_tokens")),
-        "paths": list(get_state("excl_files_tokens").keys()),
-        "n_tokens": list(get_state("excl_files_tokens").values()),
+        "incl.": [False] * len(state.repo.excl_files_tokens),
+        "paths": list(state.repo.excl_files_tokens.keys()),
+        "n_tokens": list(state.repo.excl_files_tokens.values()),
     }
     return incl_data, excl_data
 
@@ -146,8 +128,8 @@ def display_filters(key: str):
             )
             st.multiselect(
                 "Filters",
-                options=get_state("filters")[f"exclude_{key}"],
-                default=get_state("filters")[f"exclude_{key}"],
+                options=state.repo.filters[f"exclude_{key}"],
+                default=state.repo.filters[f"exclude_{key}"],
                 on_change=lambda: update_filter_list(key, "exclude"),
                 key=f"exclude_{key}_list",
             )
@@ -159,8 +141,8 @@ def display_filters(key: str):
             )
             st.multiselect(
                 "Filters",
-                options=get_state("filters").get(f"include_{key}", []),
-                default=get_state("filters").get(f"include_{key}", []),
+                options=state.repo.filters.get(f"include_{key}", []),
+                default=state.repo.filters.get(f"include_{key}", []),
                 on_change=lambda: update_filter_list(key, "include"),
                 key=f"include_{key}_list",
             )
@@ -168,7 +150,7 @@ def display_filters(key: str):
 
 def update_filters_from_data_editor(key: str, data: dict):
     updated_data = st.session_state[key]
-    filters = get_state("filters")
+    filters = state.repo.filters
 
     if key.startswith("incl_data"):
         filter_key = "exclude_dir" if "dir" in key else "exclude_files"
@@ -177,7 +159,8 @@ def update_filters_from_data_editor(key: str, data: dict):
                 item_to_exclude = data["paths"][row_nr]
                 if item_to_exclude not in filters.get(filter_key, []):
                     filters.get(filter_key).append(item_to_exclude)
-                    filter_files_tokens()
+                    state.repo.apply_filters()
+                    state.export_repo_state()
     elif key.startswith("excl_data"):
         filter_key = "exclude_dir" if "dir" in key else "exclude_files"
         for row_nr, edited_values in updated_data["edited_rows"].items():
@@ -185,22 +168,25 @@ def update_filters_from_data_editor(key: str, data: dict):
                 item_to_include = data["paths"][row_nr]
                 if item_to_include in filters.get(filter_key, []):
                     filters.get(filter_key).remove(item_to_include)
-                    filter_files_tokens()
+                    state.repo.apply_filters()
+                    state.export_repo_state()
 
 
 def update_filter(key, filter_type):
-    current_filters = get_state("filters")[f"{filter_type}_{key}"]
+    current_filters = state.repo.filters[f"{filter_type}_{key}"]
     new_filter = st.session_state.get(f"{filter_type}_{key}")
     if new_filter and new_filter not in current_filters:
         current_filters.append(new_filter)
-        filter_files_tokens()
+        state.repo.apply_filters()
+        state.export_repo_state()
 
 
 def update_filter_list(key, filter_type):
-    get_state("filters").update(
+    state.repo.filters.update(
         {f"{filter_type}_{key}": st.session_state[f"{filter_type}_{key}_list"]}
     )
-    filter_files_tokens()
+    state.repo.apply_filters()
+    state.export_repo_state()
 
 
 display_home_page()
