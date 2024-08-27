@@ -5,11 +5,10 @@ import streamlit_nested_layout  # needed to allow for nested expanders in the UI
 from pydantic import BaseModel
 
 from codeag.agents.orchestrator import Orchestrator
+from codeag.agents.storage import Storage
 from codeag.configs.agents_configs import AGENTS_CONFIGS
-from codeag.core import parser
 from codeag.core.repo import Repo
 from codeag.core.retriever import Retriever
-from codeag.core.storage import Storage
 
 session_state = {}
 
@@ -42,9 +41,10 @@ class State(SteamlitState, arbitrary_types_allowed=True, extra="forbid"):
     storage: Storage = None
     retriever: Retriever = None
     orchestrator: Orchestrator = None
-    clicked: dict = {}
+    button_clicked: dict = {}
     selected_test_cases: dict = {}
     depth: int = 1
+    feedback: dict = {}
 
     def model_post_init(self, __context):
         self.storage = Storage(repo_path=self.repo_path)
@@ -69,10 +69,23 @@ class State(SteamlitState, arbitrary_types_allowed=True, extra="forbid"):
         self.storage.write_json(
             "state/incl_files_tokens.json", self.repo.incl_files_tokens
         )
+        self.storage.write_json("state/incl_dir_tokens.json", self.repo.incl_dir_tokens)
 
     def update_repo_path(self, repo_path):
         self.repo_path = repo_path
         self.model_post_init(None)
+
+    def clicked(self, key):
+        self.button_clicked[key] = True
+
+    def unclicked(self, key):
+        self.button_clicked[key] = False
+
+    def is_clicked(self, key):
+        return self.button_clicked.get(key, False)
+
+    def add_feedback(self, key):
+        self.feedback[key] = st.session_state[key]
 
 
 state = State()

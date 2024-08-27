@@ -3,6 +3,7 @@ import os
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 
+from codeag.ui.shared.components import display_agent, display_button
 from codeag.ui.shared.state import state
 from codeag.ui.utils import search_dirs
 
@@ -10,32 +11,55 @@ from codeag.ui.utils import search_dirs
 def display_home_page():
     st.markdown("## Repository")
     display_repo_path()
-    display_files()
-    display_dirs()
+    display_extract_files_info()
+    display_extract_folders_info()
 
 
 def display_repo_path():
     with st.expander("Path", expanded=True):
         repo_path = st_searchbox(search_dirs, placeholder=".", default=".")
-        st.button(
-            "Update",
-            key="update_files_tokens",
-            on_click=lambda: state.update_repo_path(repo_path),
-        )
+
+        display_button("Update", "update_files_tokens")
+        if state.is_clicked("update_files_tokens"):
+            state.update_repo_path(repo_path)
+
         st.caption(os.path.abspath(state.repo_path))
+        state.export_repo_state()
+
+
+def display_extract_files_info():
+    with st.expander("Files Info", expanded=True):
+        display_files()
+        display_agent("extract_files_info", "Extract Files Info", display_json)
+
+
+def display_extract_folders_info():
+    with st.expander("Folders Info", expanded=True):
+        display_dirs()
+        display_agent("extract_folders_info", "Extract Folders Info", display_json)
+
+
+def display_json(output):
+    st.json(output, expanded=False)
 
 
 def display_files():
     n_files = "{:,}".format(len(state.repo.incl_files_tokens))
     n_tokens = "{:,}".format(sum(state.repo.incl_files_tokens.values()))
-    with st.expander(f"{n_files} files | {n_tokens} tokens", expanded=True):
+    with st.expander(f"{n_files} files | {n_tokens} tokens"):
         display_data("files")
 
 
 def display_dirs():
-    with st.expander("Directories", expanded=True):
-        state.repo.dir_depth = st.slider("depth", 1, 10, 3)
+    n_folders = "{:,}".format(len(state.repo.incl_dir_tokens))
+    with st.expander(f"{n_folders} folders"):
+        st.slider("depth", 1, 10, 3, key="dir_depth", on_change=update_repo_dir)
         display_data("dir")
+
+
+def update_repo_dir():
+    state.repo.dir_depth = st.session_state["dir_depth"]
+    state.repo.filter_dirs()
 
 
 def display_data(data_type):

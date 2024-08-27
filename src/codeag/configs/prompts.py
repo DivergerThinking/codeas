@@ -38,8 +38,8 @@ FILES INFORMATION:
 {get_incl_files_info}
 
 **IMPORTANT**:
-Include AS MANY directories and subdirectories as you can.
-Only ignore directories and subdirectories that you think are ABSOLUTELY NOT RELEVANT for the documentation.
+Only include the following directories and subdirectories:
+{get_incl_dirs}
 
 Return your answer in JSON format as such:
 {{
@@ -62,10 +62,10 @@ You should keep these sections at the high level. Examples of documentation sect
 You don't need to limit yourself to those examples, feel free to define other sections if you see fit.
 
 Here is some information about the directories in the repository:
-{get_directory_descriptions}
+{get_dirs_info}
 
 Here is some information about the files in the root of the repository:
-{get_root_files_descriptions}
+{get_root_files_info}
 
 For each section you define, include the relevant root files and directory paths to use as context for generating this section.
 
@@ -111,11 +111,10 @@ GENERATE_DOCUMENTATION_SECTIONS = """
 I want to generate some documentation for an entire repository.
 I have already defined the different sections I want to generate for the repository and identified the relevant files to use as context for generating each section.
 
-Generate the content for the following section:
-- {get_sections_to_generate}
+Generate the content for the following section: "{get_section_name}"
 
 Here is the relevant context I have identified for this section:
-{get_sections_file_descriptions}
+{get_section_file_infos}
 
 **IMPORTANT**:
 Not all files are necessarily relevant to the section.
@@ -235,7 +234,7 @@ Return your answer in JSON format as such:
 }}
 """
 
-DEFINE_TEST_CASES = """
+IDENTIFY_TEST_CASES = """
 I want to generate some tests for an entire repository.
 For each of the file in the repository, I first want to define the different test cases (i.e. behaviors to cover) that should be implemented.
 The tests will then be generated based on these test cases.

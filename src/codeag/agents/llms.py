@@ -15,7 +15,8 @@ def log_retry(retry_state):
 
 
 class LLMClient:
-    max_retries = 5
+    batch_size: int = 100
+    max_retries: int = 5
 
     def __init__(self):
         self._client = OpenAI(max_retries=self.max_retries)
@@ -28,9 +29,11 @@ class LLMClient:
             self._client.close()  # Close the client
             self._client = None
 
-    def run_completions(self, messages, **kwargs) -> dict:
+    def run_completions(self, messages, model="gpt-3.5-turbo-0125", **kwargs) -> dict:
         """runs completions synchronously"""
-        response = self._client.chat.completions.create(messages=messages, **kwargs)
+        response = self._client.chat.completions.create(
+            messages=messages, model=model, **kwargs
+        )
         if "stream" in kwargs and kwargs["stream"]:
             response = self._parse_stream(response)
         return response
@@ -46,31 +49,30 @@ class LLMClient:
                 self._parse_delta_tools(choice.delta, response)
         return response
 
-
-class AsyncLLMClient:
-    batch_size: int = 100
-    max_retries: int = 5
-
-    def run_completions(self, messages_list: list, **kwargs) -> list:
+    def run_batch_completions(self, batch_messages: dict, **kwargs) -> dict:
         """run completions by batch asynchronously"""
-        return asyncio.run(self._run_batch_completions(messages_list, **kwargs))
+        return asyncio.run(self._run_batch_completions(batch_messages, **kwargs))
 
-    async def _run_batch_completions(self, messages_list: list, **kwargs) -> list:
+    async def _run_batch_completions(self, batch_messages: dict, **kwargs) -> dict:
         """runs completions by batch asynchronously"""
         async with AsyncOpenAI(max_retries=self.max_retries) as client:
             coroutines = [
                 self._run_async_completions(client, messages, **kwargs)
-                for messages in messages_list
+                for messages in batch_messages.values()
             ]
             responses = []
             async for batch_responses in self._run_batches(coroutines):
                 responses.extend(batch_responses)
-            return responses
+            return dict(zip(batch_messages.keys(), responses))
 
     @retry(stop=stop_after_attempt(3), after=log_retry)
-    async def _run_async_completions(self, client, messages, **kwargs):
+    async def _run_async_completions(
+        self, client, messages, model="gpt-3.5-turbo-0125", **kwargs
+    ):
         """runs completions asynchronously"""
-        response = await client.chat.completions.create(messages=messages, **kwargs)
+        response = await client.chat.completions.create(
+            messages=messages, model=model, **kwargs
+        )
         if "stream" in kwargs and kwargs["stream"]:
             response = await self._parse_async_stream(response)
         return response

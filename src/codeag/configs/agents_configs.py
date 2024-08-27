@@ -1,12 +1,12 @@
 from codeag.configs import llm_params, prompts
 
 AGENTS_CONFIGS = {
-    "extract_file_descriptions": {
+    "extract_files_info": {
         "prompt": prompts.EXTRACT_FILE_DESCRIPTIONS,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
         "batch_keys": "retriever.get_incl_files",
     },
-    "extract_directory_descriptions": {
+    "extract_folders_info": {
         "prompt": prompts.EXTRACT_DIRECTORY_DESCRIPTIONS,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
     },
@@ -14,13 +14,10 @@ AGENTS_CONFIGS = {
         "prompt": prompts.DEFINE_DOCUMENTATION_SECTIONS,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
     },
-    "identify_sections_context": {
-        "prompt": prompts.IDENTIFY_SECTIONS_CONTEXT,
-        "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
-    },
     "generate_documentation_sections": {
         "prompt": prompts.GENERATE_DOCUMENTATION_SECTIONS,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
+        "batch_keys": "retriever.get_sections_to_generate",
     },
     "generate_introduction": {
         "prompt": prompts.GENERATE_INTRODUCTION,
@@ -30,8 +27,8 @@ AGENTS_CONFIGS = {
         "prompt": prompts.CATEGORIZE_TEST_FILES,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
     },
-    "define_test_cases": {
-        "prompt": prompts.DEFINE_TEST_CASES,
+    "identify_test_cases": {
+        "prompt": prompts.IDENTIFY_TEST_CASES,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
     },
     "define_testing_guidelines": {
