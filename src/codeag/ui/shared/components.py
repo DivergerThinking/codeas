@@ -2,6 +2,7 @@ import logging
 
 import streamlit as st
 
+from codeag.core.retriever import RetrieverError
 from codeag.ui.shared.state import state
 
 
@@ -20,8 +21,12 @@ def display_chain(chain_name, label, steps, output_func):
     if state.is_clicked(chain_name):
         for step in steps:
             with st.spinner(f"Running {step}..."):
-                state.unclicked(step)
-                state.orchestrator.run(step)
+                try:
+                    state.orchestrator.run(step)
+                except RetrieverError as e:
+                    st.error(e)
+                    logging.error(e)
+        state.unclicked(chain_name)
 
     display_button("Preview", f"preview_{chain_name}", "secondary")
     if state.is_clicked(f"preview_{chain_name}"):
@@ -31,8 +36,8 @@ def display_chain(chain_name, label, steps, output_func):
                 try:
                     preview = state.orchestrator.preview(step)
                     st.json(preview, expanded=False)
-                except Exception as e:
-                    st.warning(f"Can't preview '{step}' until previous steps are run.")
+                except RetrieverError as e:
+                    st.error(e)
                     logging.error(e)
     with st.expander("Output"):
         output_func()
@@ -45,13 +50,21 @@ def display_agent(agent_name, label, output_func):
     if state.is_clicked(agent_name):
         with st.spinner(f"Running {agent_name}..."):
             state.unclicked(agent_name)
-            state.orchestrator.run(agent_name)
+            try:
+                state.orchestrator.run(agent_name)
+            except RetrieverError as e:
+                st.error(e)
+                logging.error(e)
 
     display_button("Preview", f"preview_{agent_name}", "secondary")
     if state.is_clicked(f"preview_{agent_name}"):
-        preview = state.orchestrator.preview(agent_name)
-        with st.expander("Preview", expanded=True):
-            st.json(preview, expanded=False)
+        try:
+            preview = state.orchestrator.preview(agent_name)
+            with st.expander("Preview", expanded=True):
+                st.json(preview, expanded=False)
+        except RetrieverError as e:
+            st.error(e)
+            logging.error(e)
 
     with st.expander("Output"):
         if not state.orchestrator.exist_output(agent_name):
@@ -62,16 +75,25 @@ def display_agent(agent_name, label, output_func):
             # display_output_cost("extract_files_info")
 
 
-def display_files(category: str, expanded: bool = False):
+def display_context(category: str, expanded: bool = False):
     n_files = "{:,}".format(len(state.repo.incl_files_tokens[category]))
     n_tokens = "{:,}".format(sum(state.repo.incl_files_tokens[category].values()))
-    with st.expander(f"{n_files} files | {n_tokens} tokens", expanded=expanded):
+    n_folders = "{:,}".format(len(state.repo.incl_dir_tokens[category]))
+    with st.expander(
+        f"CONTEXT ({n_files} files | {n_tokens} tokens | {n_folders} folders)",
+        expanded=expanded,
+    ):
+        display_files(category, expanded=True)
+        display_folders(category, expanded=True)
+
+
+def display_files(category: str, expanded: bool = False):
+    with st.expander("Files", expanded=expanded):
         display_data("files", category)
 
 
 def display_folders(category: str, expanded: bool = False):
-    n_folders = "{:,}".format(len(state.repo.incl_dir_tokens[category]))
-    with st.expander(f"{n_folders} folders", expanded=expanded):
+    with st.expander("Folders", expanded=expanded):
         st.slider(
             "depth",
             1,

@@ -1,4 +1,5 @@
 import copy
+import logging
 import os
 from glob import glob
 from typing import Dict, List
@@ -68,11 +69,15 @@ class Repo(BaseModel, extra="forbid"):
             return f.read()
 
     def read_filters(self):
-        self.filters = self.storage.read_json("repo/filters.json")
+        try:
+            self.filters = self.storage.read_json("repo/filters.json")
+        except Exception:
+            logging.warning("No filters found")
 
     def export_attributes(self):
         self.storage.write_json("repo/filters.json", self.filters)
         self.storage.write_json("repo/incl_files_tokens.json", self.incl_files_tokens)
+        self.storage.write_json("repo/incl_dir_tokens.json", self.incl_dir_tokens)
 
     def apply_filters(self, category: str):
         self.filter_files_tokens(category)

@@ -1,6 +1,3 @@
-import logging
-from typing import Dict, List
-
 import streamlit as st
 import streamlit_nested_layout  # needed to allow for nested expanders in the UI
 from pydantic import BaseModel
@@ -12,29 +9,7 @@ from codeag.core.repo import Repo
 from codeag.core.retriever import Retriever
 
 
-class SteamlitState(BaseModel):
-    def __init__(self, **data):
-        super().__init__(**data)
-        for field in self.model_fields:
-            if field not in st.session_state:
-                st.session_state[field] = getattr(self, field)
-
-    def __getattribute__(self, name: str):
-        # First, get the model_fields to avoid recursion
-        model_fields = super().__getattribute__("model_fields")
-        if name in model_fields:
-            # For model fields, always prioritize session_state
-            return st.session_state.get(name, model_fields[name].default)
-        # For non-model fields, use the default behavior
-        return super().__getattribute__(name)
-
-    def __setattr__(self, name: str, value) -> None:
-        super().__setattr__(name, value)
-        if name in self.model_fields:
-            st.session_state[name] = value
-
-
-class State(SteamlitState, arbitrary_types_allowed=True, extra="forbid"):
+class State(BaseModel, arbitrary_types_allowed=True, extra="forbid"):
     repo_path: str = "."
     repo: Repo = None
     storage: Storage = None
@@ -45,7 +20,7 @@ class State(SteamlitState, arbitrary_types_allowed=True, extra="forbid"):
     depth: int = 1
     feedback: dict = {}
 
-    def init(self):
+    def model_post_init(self, __context):
         self.storage = Storage(repo_path=self.repo_path)
         self.repo = Repo(repo_path=self.repo_path, storage=self.storage)
         self.retriever = Retriever(storage=self.storage)
@@ -55,7 +30,7 @@ class State(SteamlitState, arbitrary_types_allowed=True, extra="forbid"):
 
     def update(self, repo_path):
         self.repo_path = repo_path
-        self.init()
+        self.model_post_init(None)
 
     def clicked(self, key):
         self.button_clicked[key] = True
@@ -71,4 +46,3 @@ class State(SteamlitState, arbitrary_types_allowed=True, extra="forbid"):
 
 
 state = State()
-state.init()

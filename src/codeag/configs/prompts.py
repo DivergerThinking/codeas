@@ -35,11 +35,11 @@ I have already extracted some information about what each of the file in the rep
 Use this information to extract the same information but at the directory level.
 
 FILES INFORMATION:
-{get_incl_files_info}
+{get_info_files_info}
 
 **IMPORTANT**:
 Only include the following directories and subdirectories:
-{get_incl_dirs}
+{get_info_dirs}
 
 Return your answer in JSON format as such:
 {{
@@ -62,7 +62,7 @@ You should keep these sections at the high level. Examples of documentation sect
 You don't need to limit yourself to those examples, feel free to define other sections if you see fit.
 
 Here is some information about the directories in the repository:
-{get_dirs_info}
+{get_folders_info}
 
 Here is some information about the files in the root of the repository:
 {get_root_files_info}
@@ -267,7 +267,7 @@ I want to generate some tests for an entire repository.
 I have already defined the different test cases for each file in the repository.
 
 Here is some information about each of the files inside the repository:
-{get_incl_files_info}
+{get_files_info}
 
 Here are the test cases identified for each file in the repository:
 {get_test_cases}

@@ -1,19 +1,12 @@
 import streamlit as st
 
-from codeag.ui.shared.components import (
-    display_agent,
-    display_chain,
-    display_files,
-    display_folders,
-)
+from codeag.ui.shared.components import display_agent, display_chain, display_context
 from codeag.ui.shared.state import state
 
 
 def display_documentation():
     st.write("## Documentation")
-    with st.expander("CONTEXT", expanded=True):
-        display_files("docs", expanded=True)
-        display_folders("docs", expanded=True)
+    display_context("docs", expanded=True)
     display_define_sections()
     display_generate_documentation()
 
@@ -135,11 +128,11 @@ def get_full_documentation():
     full_documentation = ""
     try:
         full_documentation += state.retriever.get_introduction_markdown()
-    except FileNotFoundError:
+    except Exception:
         pass
     try:
         full_documentation += state.retriever.get_sections_markdown()
-    except FileNotFoundError:
+    except Exception:
         pass
     return full_documentation
 

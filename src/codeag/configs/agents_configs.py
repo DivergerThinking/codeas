@@ -4,7 +4,7 @@ AGENTS_CONFIGS = {
     "extract_files_info": {
         "prompt": prompts.EXTRACT_FILE_DESCRIPTIONS,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
-        "batch_keys": "retriever.get_incl_files",
+        "batch_keys": "retriever.get_info_files",
     },
     "extract_folders_info": {
         "prompt": prompts.EXTRACT_DIRECTORY_DESCRIPTIONS,
