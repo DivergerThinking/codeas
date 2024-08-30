@@ -30,6 +30,11 @@ AGENTS_CONFIGS = {
     "identify_test_cases": {
         "prompt": prompts.IDENTIFY_TEST_CASES,
         "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
+        "batch_keys": "retriever.get_incl_files",
+    },
+    "prioritize_test_cases": {
+        "prompt": prompts.PRIORITIZE_TEST_CASES,
+        "llm_params": llm_params.GPT4MINI_BASE_PARAMS,
     },
     "define_testing_guidelines": {
         "prompt": prompts.DEFINE_TESTING_GUIDELINES,

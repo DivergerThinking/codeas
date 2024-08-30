@@ -240,7 +240,7 @@ For each of the file in the repository, I first want to define the different tes
 The tests will then be generated based on these test cases.
 
 Define some test cases for the following file:
-{get_files_content}
+{get_file_content}
 
 Return your answer in JSON format as such:
 {{
@@ -259,6 +259,30 @@ Return your answer in JSON format as such:
 Test case names should reflect the name that would be given to the test function.
 Test case descriptions and asserts should be as concise as possible.
 The test cases should be sorted by order of importance.
+Try and focus on the most important test cases.
+"""
+
+PRIORITIZE_TEST_CASES = """
+I want to generate some tests for an entire repository.
+I have already defined the different test cases for each file in the repository.
+
+Here is some information about each of the files inside the repository:
+{get_incl_files_info}
+
+Here are the test cases identified for each file in the repository:
+{get_test_cases}
+
+Prioritize the files that should be tested first based on the following criteria:
+- High: Files that are critical for the application and should be tested thoroughly
+- Medium: Files that are important for the application but not critical
+- Low: Files that don't necessarily need to be tested or are difficult to test
+
+Return your answer in JSON format as such:
+{{
+    "High": ["file_path1", "file_path2"],
+    "Medium": ["file_path3", "file_path4", "file_path5"],
+    "Low": ["file_path6", "file_path7"]
+}}
 """
 
 DEFINE_TESTING_GUIDELINES = """

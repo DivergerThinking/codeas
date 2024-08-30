@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from pydantic import BaseModel
@@ -9,7 +10,10 @@ class Storage(BaseModel):
     base_path: str = ".codeas"
 
     def read(self, agent_name: str):
-        return self.read_json(f"output/{agent_name}.json")
+        try:
+            return self.read_json(f"output/{agent_name}.json")
+        except FileNotFoundError:
+            logging.warning(f"File {agent_name}.json not found")
 
     def write(self, agent_name: str, output: dict):
         self.write_json(f"output/{agent_name}.json", output)

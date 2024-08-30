@@ -1,16 +1,21 @@
 import streamlit as st
 
-from codeag.ui.shared.components import display_agent, display_chain
+from codeag.ui.shared.components import (
+    display_agent,
+    display_chain,
+    display_files,
+    display_folders,
+)
 from codeag.ui.shared.state import state
 
 
 def display_documentation():
     st.write("## Documentation")
+    with st.expander("CONTEXT", expanded=True):
+        display_files("docs", expanded=True)
+        display_folders("docs", expanded=True)
     display_define_sections()
     display_generate_documentation()
-    # display_generate_sections()
-    # display_generate_introduction()
-    # display_final_documentation()
 
 
 def display_define_sections():

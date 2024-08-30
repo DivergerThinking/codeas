@@ -30,28 +30,28 @@ class Retriever(BaseModel, arbitrary_types_allowed=True):
             content = extracted_files_info["responses"][path]["content"]
             files_info += f'File path: {path}\n\tDescription: {content["description"]}:\n\tDetails: {content["details"]}\n\tTechnologies used: {content["technologies"]}\n\n'
 
-        if files_info == "":
-            files_info = "No root files found."
-
         return files_info
 
     def get_file_content(self, path: str):
         with open(path, "r") as f:
             return f.read()
 
-    def get_dirs_info(self):
+    def get_folders_info(self):
         extracted_folders_info = self.storage.read("extract_folders_info")
-        dirs_info = ""
+        folders_info = ""
         for path, info in extracted_folders_info["responses"]["content"].items():
-            dirs_info += f"Folder path: {path}\n\tDescription: {info['description']}:\n\tDetails: {info['details']}\n\n"
-        return dirs_info
+            folders_info += f"Folder path: {path}\n\tDescription: {info['description']}:\n\tDetails: {info['details']}\n\tTechnologies used: {info['technologies']}\n\n"
+        return folders_info
 
     def get_root_files_info(self):
         incl_files_tokens = self.get_incl_files()
         root_files = [
             file_path for file_path in incl_files_tokens if "/" not in file_path
         ]
-        return self.get_files_info(root_files)
+        root_files_info = self.get_files_info(root_files)
+        if root_files_info == "":
+            root_files_info = "No root files found."
+        return root_files_info
 
     def get_sections_to_generate(self):
         defined_sections = self.storage.read("define_documentation_sections")
@@ -108,6 +108,15 @@ class Retriever(BaseModel, arbitrary_types_allowed=True):
             elif "p" in key:
                 markdown += f"{content}\n\n"
         return markdown
+
+    def get_test_cases(self):
+        identified_test_cases = self.storage.read("identify_test_cases")
+        test_cases = ""
+        for file_path, file_responses in identified_test_cases["responses"].items():
+            test_cases += f"\nFile path: {file_path}\n"
+            for test_name, test_response in file_responses["content"].items():
+                test_cases += f"\tTest name: {test_name} | Test description: {test_response['description']}\n"
+        return test_cases
 
 
 if __name__ == "__main__":
