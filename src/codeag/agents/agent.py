@@ -6,8 +6,8 @@ from typing import Union
 import tokencost
 from pydantic import BaseModel
 
-from codeag.agents.llms import LLMClient
 from codeag.agents.storage import Storage
+from codeag.core.llms import LLMClient
 
 
 class Agent(BaseModel, arbitrary_types_allowed=True):

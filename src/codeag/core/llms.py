@@ -4,6 +4,8 @@ import logging
 from openai import AsyncOpenAI, OpenAI
 from tenacity import retry, stop_after_attempt
 
+from codeag.configs.llm_params import OPENAI_PARAMS  # Import the parameters
+
 
 def log_retry(retry_state):
     logging.info(
@@ -20,6 +22,10 @@ class LLMClient:
 
     def __init__(self):
         self._client = OpenAI(max_retries=self.max_retries)
+        self.temperature = OPENAI_PARAMS["temperature"]
+        self.top_p = OPENAI_PARAMS["top_p"]
+        self.stream = OPENAI_PARAMS["stream"]
+        self.timeout = OPENAI_PARAMS["timeout"]
 
     def __enter__(self):  # for context manager
         return self
@@ -29,12 +35,22 @@ class LLMClient:
             self._client.close()  # Close the client
             self._client = None
 
-    def run_completions(self, messages, model="gpt-3.5-turbo-0125", **kwargs) -> dict:
+    def run(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
+        kwargs.setdefault("temperature", self.temperature)
+        kwargs.setdefault("top_p", self.top_p)
+        kwargs.setdefault("stream", self.stream)
+        kwargs.setdefault("timeout", self.timeout)
+        if isinstance(messages, list):
+            return self.run_completions(messages, model, **kwargs)
+        elif isinstance(messages, dict):
+            return self.run_batch_completions(messages, model, **kwargs)
+
+    def run_completions(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         """runs completions synchronously"""
         response = self._client.chat.completions.create(
             messages=messages, model=model, **kwargs
         )
-        if "stream" in kwargs and kwargs["stream"]:
+        if kwargs["stream"]:
             response = self._parse_stream(response)
         return response
 
@@ -49,15 +65,19 @@ class LLMClient:
                 self._parse_delta_tools(choice.delta, response)
         return response
 
-    def run_batch_completions(self, batch_messages: dict, **kwargs) -> dict:
+    def run_batch_completions(
+        self, batch_messages: dict, model="gpt-4o-mini", **kwargs
+    ) -> dict:
         """run completions by batch asynchronously"""
-        return asyncio.run(self._run_batch_completions(batch_messages, **kwargs))
+        return asyncio.run(self._run_batch_completions(batch_messages, model, **kwargs))
 
-    async def _run_batch_completions(self, batch_messages: dict, **kwargs) -> dict:
+    async def _run_batch_completions(
+        self, batch_messages: dict, model: str, **kwargs
+    ) -> dict:
         """runs completions by batch asynchronously"""
         async with AsyncOpenAI(max_retries=self.max_retries) as client:
             coroutines = [
-                self._run_async_completions(client, messages, **kwargs)
+                self._run_async_completions(client, messages, model, **kwargs)
                 for messages in batch_messages.values()
             ]
             responses = []
@@ -66,9 +86,7 @@ class LLMClient:
             return dict(zip(batch_messages.keys(), responses))
 
     @retry(stop=stop_after_attempt(3), after=log_retry)
-    async def _run_async_completions(
-        self, client, messages, model="gpt-3.5-turbo-0125", **kwargs
-    ):
+    async def _run_async_completions(self, client, messages, model: str, **kwargs):
         """runs completions asynchronously"""
         response = await client.chat.completions.create(
             messages=messages, model=model, **kwargs

@@ -1,26 +1,142 @@
-EXTRACT_FILE_DESCRIPTIONS = """
-I want to generate some documentation for an entire repository.
-In order to do that, I need to define which sections the documentation should have based on the repository content.
-Given that the repository is very large, I first want to extract some information about what each file in the repo does.
-Based on this information and technologies used, I will define the sections of the documentation.
+BASE_SYSTEM_PROMPT = """
+You are an LLM agent specialized in software engineering tasks.
+You will be given some context about a repository which falls into one of the following categories:
+- file_content: the content of a file inside the repository, including its path
+- file_description: the description of a file inside the repository, including its path
+- folder_description: the description of a directory inside the repository, including its path
+- agent_output: the output from another LLM agent, including its name and instructions
 
-File to extract information from:
-{get_file_content}
+Each of these contexts will be passed as a separate message, starting with <context-start> and ending with <context-end>.
 
-The information you should extract is the following:
-- "description": a brief and concise description of what the file does, with a maximum of around 50 tokens.
-- "details": some additional detail about what the file does, use bullet points to list this information.
-- "technologies": the key technologies used in the file, such as programming languages, frameworks, libraries, etc.
+After receiving the context, you will be given some instructions to follow based on that context.
+Pay close attention to both the context and the instructions given and make sure to follow them carefully.
+""".strip()
 
-Return your answer in JSON format as such:
-{{
-    "description": "description as string",
-    "details": "details as string",
-    "technologies": ["technology1, technology2, technology3"]
-}}
+EXTRACT_FILE_DESCRIPTION = """
+Write a concised description of what the file does.
+Include the technologies used inside that file at the end of that description.
+ONLY WRITE A SINGLE PARAGRAPH. DO NOT USE TITLES, MARKDOWN OR ANY OTHER FORM OF MARKUP.
+If the file is relatively simple and short, your answer SHOULD NOT EXCEED 50 tokens.
+If the file is more complex and longer, your answer SHOULD NOT EXCEED 200 tokens.
+""".strip()
 
-**IMPORTANT**: Only return a single JSON response with description, details and technologies.
+EXTRACT_FOLDER_DESCRIPTION = """
+Write a concised description of what the folder is used for.
+Include the technologies used inside that folder at the end of that description.
+ONLY WRITE A SINGLE PARAGRAPH. DO NOT USE TITLES, MARKDOWN OR ANY OTHER FORM OF MARKUP.
+If the folder is relatively simple and short, your answer SHOULD NOT EXCEED 50 tokens.
+If the folder is more complex and longer, your answer SHOULD NOT EXCEED 200 tokens.
+""".strip()
+
+# ... existing code ...
+
+GENERATE_DOCUMENTATION_OVERVIEW = """
+You are tasked with generating an overview of the documentation for a software project. Based on the information provided about the repository's folders and root files, create a high-level overview of the project's structure and main components.
+
+Please provide a concise overview that includes:
+1. A brief description of the project's purpose
+2. The main components or modules of the project
+3. Key technologies or frameworks used
+4. Any notable features or architectural decisions
+
+Format your response as a single paragraph, not exceeding 200 tokens. Do not use any markdown or special formatting.
 """
+
+GENERATE_DOCUMENTATION_DEPLOYMENT = """
+You are tasked with generating deployment documentation for a software project. Based on the information provided about the relevant files, create a comprehensive guide for deploying the application.
+
+Please provide deployment documentation that includes:
+1. Prerequisites (required software, dependencies, etc.)
+2. Step-by-step deployment instructions
+3. Configuration details (environment variables, settings files, etc.)
+4. Any specific deployment environments (development, staging, production)
+5. Troubleshooting tips or common issues
+
+Format your response using markdown, with appropriate headers and sections. Be as detailed and clear as possible, assuming the reader has basic knowledge of deployment processes.
+"""
+
+DEFINE_UNIT_TESTS = """
+You are tasked with defining unit tests for a specific file in a software project. Based on the file content provided, outline the unit tests that should be implemented to ensure proper functionality and code coverage.
+
+For each function or method in the file, please provide:
+1. The name of the test (following the convention: test_<function_name>_<scenario>)
+2. A brief description of what the test should verify
+3. Any important edge cases or scenarios to consider
+
+Format your response as a JSON object, where each key is the function name, and the value is an array of test definitions. For example:
+
+{
+  "function_name": [
+    {
+      "test_name": "test_function_name_valid_input",
+      "description": "Verify that the function returns the expected output for valid input",
+      "edge_cases": ["Empty input", "Maximum allowed input"]
+    },
+    // ... more tests for this function
+  ],
+  // ... more functions
+}
+
+Be thorough but concise in your test definitions, focusing on the most critical aspects of each function.
+"""
+
+GENERATE_UNIT_TESTS = """
+You are tasked with generating unit tests for a specific file in a software project. Based on the file content and the previously defined unit tests, implement the actual test code.
+
+Use the appropriate testing framework and follow best practices for unit testing. Make sure to include:
+1. Proper test function names (as defined in the previous step)
+2. Necessary imports and setup
+3. Clear assertions that verify the expected behavior
+4. Comments explaining the purpose of each test (if not obvious)
+
+Format your response as a single code block containing all the unit tests for the file. Use the appropriate file naming convention for test files in the project's language/framework.
+
+Remember to handle any necessary mocking or test data creation to isolate the units being tested.
+"""
+
+GENERATE_FUNCTIONAL_TESTS = """
+You are tasked with generating functional tests for a specific component or feature of a software project. Based on the file information provided, create functional tests that verify the overall behavior and integration of the component.
+
+Please generate functional tests that:
+1. Cover the main use cases and user flows
+2. Verify the component's interaction with other parts of the system
+3. Include both positive and negative test scenarios
+4. Test any important edge cases or boundary conditions
+
+Format your response as a code block using the appropriate testing framework for the project. Include:
+1. Necessary imports and setup
+2. Clear test function names describing the scenario being tested
+3. Detailed comments explaining the purpose and steps of each test
+4. Proper assertions to verify the expected outcomes
+
+Remember that functional tests typically operate at a higher level than unit tests, focusing on the overall behavior rather than individual functions.
+"""
+
+# ... existing code ...
+
+
+# I want to generate some documentation for an entire repository.
+# In order to do that, I need to define which sections the documentation should have based on the repository content.
+# Given that the repository is very large, I first want to extract some information about what each file in the repo does.
+# Based on this information and technologies used, I will define the sections of the documentation.
+
+# File to extract information from:
+# {get_file_content}
+
+# The information you should extract is the following:
+# - "description": a brief and concise description of what the file does, with a maximum of around 50 tokens.
+# - "details": some additional detail about what the file does, use bullet points to list this information.
+# - "technologies": the key technologies used in the file, such as programming languages, frameworks, libraries, etc.
+
+# Return your answer in JSON format as such:
+# {{
+#     "description": "description as string",
+#     "details": "details as string",
+#     "technologies": ["technology1, technology2, technology3"]
+# }}
+
+# **IMPORTANT**: Only return a single JSON response with description, details and technologies.
+
 
 EXTRACT_DIRECTORY_DESCRIPTIONS = """
 I want to generate some documentation for an entire repository.

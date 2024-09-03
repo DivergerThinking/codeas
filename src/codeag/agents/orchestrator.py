@@ -3,8 +3,8 @@ from typing import Any, Dict
 from pydantic import BaseModel
 
 from codeag.agents.agent import Agent, BatchAgent
-from codeag.agents.llms import LLMClient
 from codeag.agents.storage import Storage
+from codeag.core.llms import LLMClient
 
 
 class Orchestrator(BaseModel, arbitrary_types_allowed=True):

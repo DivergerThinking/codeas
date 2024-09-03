@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from codeag.agents.orchestrator import Orchestrator
 from codeag.agents.storage import Storage
 from codeag.configs.agents_configs import AGENTS_CONFIGS
-from codeag.core.repo import Repo
+from codeag.core._repo import Repo
 from codeag.core.retriever import Retriever
 
 

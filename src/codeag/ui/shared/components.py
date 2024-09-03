@@ -120,8 +120,6 @@ def display_data(data_type, category: str):
             f"Filter is already applied on these {data_type} or no tokens are found. Check filters and tokens count."
         )
 
-    display_filters(data_type, category)
-
 
 # Update the get_data function to use the category
 def get_data(data_type, category: str):
@@ -164,56 +162,14 @@ def get_files_data(category: str):
     return incl_data, excl_data
 
 
-# Update the display_filters function to use the category
-def display_filters(key: str, category: str):
-    with st.expander("Filters", expanded=True):
-        col_exclude, col_include = st.columns(2)
-        with col_exclude:
-            st.text_input(
-                "Exclude",
-                key=f"exclude_{key}_{category}",
-                on_change=lambda: update_filter(key, "exclude", category),
-            )
-            st.multiselect(
-                "Filters",
-                options=state.repo.filters[category][f"exclude_{key}"],
-                default=state.repo.filters[category][f"exclude_{key}"],
-                on_change=lambda: update_filter_list(key, "exclude", category),
-                key=f"exclude_{key}_list_{category}",
-            )
-        with col_include:
-            st.text_input(
-                "Include only",
-                key=f"include_{key}_{category}",
-                on_change=lambda: update_filter(key, "include", category),
-            )
-            st.multiselect(
-                "Filters",
-                options=state.repo.filters[category].get(f"include_{key}", []),
-                default=state.repo.filters[category].get(f"include_{key}", []),
-                on_change=lambda: update_filter_list(key, "include", category),
-                key=f"include_{key}_list_{category}",
-            )
-
-
 # Update the update_filter and update_filter_list functions to use the category
-def update_filter(key, filter_type, category: str):
-    current_filters = state.repo.filters[category][f"{filter_type}_{key}"]
-    new_filter = st.session_state.get(f"{filter_type}_{key}_{category}")
-    if new_filter and new_filter not in current_filters:
-        current_filters.append(new_filter)
-        state.repo.apply_filters(category)
 
 
-def update_filter_list(key, filter_type, category: str):
-    state.repo.filters[category].update(
-        {
-            f"{filter_type}_{key}": st.session_state[
-                f"{filter_type}_{key}_list_{category}"
-            ]
-        }
+def update_filter_list(key, filter_type, filters):
+    filters.update(
+        {f"{filter_type}_{key}": st.session_state[f"{filter_type}_{key}_list"]}
     )
-    state.repo.apply_filters(category)
+    state.repo.apply_filters()
 
 
 def display_data_editor(data, key, disable_checks: bool = False):
