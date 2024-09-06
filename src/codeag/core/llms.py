@@ -40,6 +40,8 @@ class LLMClient:
         kwargs.setdefault("top_p", self.top_p)
         kwargs.setdefault("stream", self.stream)
         kwargs.setdefault("timeout", self.timeout)
+        if model == "gpt-4o":
+            model = "gpt-4o-2024-08-06"
         if isinstance(messages, list):
             return self.run_completions(messages, model, **kwargs)
         elif isinstance(messages, dict):

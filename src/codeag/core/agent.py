@@ -7,7 +7,6 @@ from tokencost import (
     count_message_tokens,
 )
 
-from codeag.core.context import Context
 from codeag.core.llms import LLMClient
 
 
@@ -28,40 +27,52 @@ class Agent(BaseModel):
     system_prompt: str
     instructions: str
     model: str
-    context: Context
 
-    def run(self, llm_client: LLMClient, **kwargs) -> AgentOutput:
-        messages = self.get_messages(**kwargs)
+    def run(
+        self, llm_client: LLMClient, context: Union[dict, list, str]
+    ) -> AgentOutput:
+        messages = self.get_messages(context)
         response = llm_client.run(messages, model=self.model)
         tokens, cost = self.calculate_tokens_and_cost(messages, response)
         return AgentOutput(
             messages=messages, response=response, tokens=tokens, cost=cost
         )
 
-    def preview(self, **kwargs) -> AgentPreview:
-        messages = self.get_messages(**kwargs)
+    def preview(self, context: Union[dict, list, str]) -> AgentPreview:
+        messages = self.get_messages(context)
         tokens, cost = self.calculate_tokens_and_cost(messages)
         return AgentPreview(messages=messages, tokens=tokens, cost=cost)
 
-    def get_messages(self, **kwargs):
-        contexts = self.context.retrieve(**kwargs)
-        if isinstance(contexts, dict):
-            return self.get_batch_messages(contexts)
-        else:
-            return self.get_single_messages(contexts)
+    def get_messages(self, context: Union[dict, list, str]):
+        if isinstance(context, dict):
+            return self.get_batch_messages(context)
+        elif isinstance(context, list):
+            return self.get_multi_messages(context)
+        elif isinstance(context, str):
+            return self.get_single_messages(context)
 
     def get_batch_messages(self, batch_contexts: dict):
         messages = {}
-        for key, contexts in batch_contexts.items():
-            messages[key] = self.get_single_messages(contexts)
+        for key, context in batch_contexts.items():
+            if isinstance(context, list):
+                messages[key] = self.get_multi_messages(context)
+            elif isinstance(context, str):
+                messages[key] = self.get_single_messages(context)
         return messages
 
-    def get_single_messages(self, contexts: list):
+    def get_multi_messages(self, contexts: list):
         messages = [{"role": "system", "content": self.system_prompt}]
         for context in contexts:
             messages.append({"role": "user", "content": context})
         messages.append({"role": "user", "content": self.instructions})
         return messages
+
+    def get_single_messages(self, context: str):
+        return [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": context},
+            {"role": "user", "content": self.instructions},
+        ]
 
     def calculate_tokens_and_cost(self, messages: Union[list, dict], response=None):
         if isinstance(messages, dict):
@@ -128,5 +139,8 @@ class Agent(BaseModel):
 if __name__ == "__main__":
     from codeag.configs.agents_configs import AGENTS_CONFIGS
 
-    agent = Agent(**AGENTS_CONFIGS["extract_files_descriptions"])
-    agent.run(llm_client=LLMClient(), files_paths=["requirements.txt"])
+    agent = Agent(**AGENTS_CONFIGS["extract_files_info"])
+    with open("requirements.txt", "r") as f:
+        files_content = {"requirements.txt": f.read()}
+    messages = agent.get_messages(files_content=files_content)
+    print(messages)

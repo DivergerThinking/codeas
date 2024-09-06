@@ -1,5 +1,4 @@
 import glob
-import json
 import os
 from typing import List
 
@@ -15,33 +14,33 @@ class Repo(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**data)
+        self.repo_path = os.path.abspath(self.repo_path)
         self.get_files_paths()
         self.get_folders_paths()
         self.calculate_files_tokens()
         self.calculate_folders_tokens()
 
     def get_files_paths(self):
-        absolute_paths = glob.glob(
-            os.path.join(f"{self.repo_path}", "**"), recursive=True
-        )
+        absolute_paths = glob.glob(os.path.join(self.repo_path, "**"), recursive=True)
         self.files_paths = [
             os.path.relpath(path, self.repo_path)
             for path in absolute_paths
-            if not os.path.isdir(path)
+            if os.path.isfile(path)
         ]
 
     def get_folders_paths(self):
+        absolute_paths = glob.glob(os.path.join(self.repo_path, "**"), recursive=True)
         self.folders_paths = [
             os.path.relpath(path, self.repo_path)
-            for path in glob.glob(os.path.join(self.repo_path, "**"), recursive=True)
+            for path in absolute_paths
             if os.path.isdir(path) and path != self.repo_path
         ]
 
     def calculate_files_tokens(self):
-        for file_path in self.files_paths:
-            rel_file_path = os.path.relpath(file_path, self.repo_path)
+        for rel_file_path in self.files_paths:
+            abs_file_path = os.path.join(self.repo_path, rel_file_path)
             try:
-                content = self._read_file(file_path)
+                content = self._read_file(abs_file_path)
                 self.files_tokens[rel_file_path] = int(len(content) / 4)
             except Exception:
                 self.files_tokens[rel_file_path] = None
@@ -67,28 +66,14 @@ class Filters(BaseModel):
     include_folders: list = []
     exclude_folders: list = []
 
-    def read_from_file(self, repo_path: str):
-        try:
-            with open(f"{repo_path}/.codeas/repo_filters.json", "r") as f:
-                data = json.load(f)
-            self.include_files = data.get("include_files", [])
-            self.exclude_files = data.get("exclude_files", [])
-            self.include_folders = data.get("include_folders", [])
-            self.exclude_folders = data.get("exclude_folders", [])
-        except Exception:
-            pass
-
-    def export(self, repo_path: str):
-        with open(f"{repo_path}/.codeas/repo_filters.json", "w") as f:
-            json.dump(self.model_dump(), f)
-
 
 class RepoSelector(BaseModel):
     repo: Repo
 
     def filter_files(self, filters: Filters) -> List[bool]:
         incl_files = []
-        for file_path, tokens in self.repo.files_tokens.items():
+        for file_path in self.repo.files_paths:
+            tokens = self.repo.files_tokens.get(file_path)
             if tokens is None or tokens == 0:
                 incl_files.append(False)
                 continue

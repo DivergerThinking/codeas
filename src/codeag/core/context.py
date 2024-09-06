@@ -1,153 +1,82 @@
-import json
-from typing import List
-
 from pydantic import BaseModel
 
 
-class FileContent(BaseModel):
-    info_only: bool = False
-    batch: bool = False
-
-    def retrieve(self, paths: List[str]) -> list:
-        if self.batch:
-            return self.retrieve_batches(paths)
-        else:
-            return self.retrieve_single(paths)
-
-    def retrieve_batches(self, paths: List[str]) -> dict:
-        batches = {}
-        for path in paths:
-            batches[path] = self.get_context(path)
-        return batches
-
-    def retrieve_single(self, paths: List[str]) -> str:
-        context = ""
-        for path in paths:
-            context += self.get_context(path)
-            context += "\n"
-        return context
-
-    def get_context(self, path: str) -> str:
-        if self.info_only:
-            file_content = (
-                f"<context-start / file_path = {path} / context_type = file_info >\n"
-            )
-            file_content += self.read_file_info(path)
-            file_content += (
-                f"\n<context-end / file_path = {path} / context_type = file_info >\n"
-            )
-        else:
-            file_content = (
-                f"<context-start / file_path = {path} / context_type = file_content>\n"
-            )
-            file_content += self.read_file(path)
-            file_content += (
-                f"\n<context-end / file_path = {path} / context_type = file_content >\n"
-            )
-        return file_content
-
-    def read_file(self, path: str) -> str:
-        with open(path, "r") as f:
-            return f.read()
-
-    def read_file_info(self, path: str) -> str:
-        with open("./.codeas/outputs/extract_file_info.json", "r") as f:
-            return json.load(f)["response"][path]["content"]
-
-
-class AgentOutput(BaseModel):
-    agent_name: str
-    batch: bool = False
-
-    def retrieve(self):
-        if self.batch:
-            output = self.retrieve_batches()
-        else:
-            output = self.retrieve_single()
-        return self.format_output(output)
-
-    def retrieve_batches(self):
-        output = self.read_output()
-        if isinstance(output, dict):
-            return output
-        else:
-            raise ValueError(
-                f"Context retrieval error: '{self.agent_name}' output is not a dictionary. Set batch = False"
-            )
-
-    def retrieve_single(self):
-        output = self.read_output()
-        if isinstance(output, str):
-            return output
-        else:
-            output_str = ""
-            for key, value in output.items():
-                output_str += f"{key}:\n{value}\n\n"
-            return output_str
-
-    def read_output(self):
-        with open(f"./codeas/agent_outputs/{self.agent_name}.json", "r") as f:
-            return json.load(f)
-
-    def format_output(self, output: str):
-        return f"<context-start / agent_name = {self.agent_name} / context_type = agent_output>\n{output}\n<context-end / agent_name = {self.agent_name} / context_type = agent_output>\n"
-
-
 class Context(BaseModel):
-    file_content: FileContent = None
-    agent_output: AgentOutput = None
+    batch: bool = False
 
-    def retrieve(self, **kwargs) -> List[str]:
-        contexts = self._retrieve_contexts(**kwargs)
-        return self._format_contexts(contexts)
+    def retrieve(self, files_content: dict = None, agents_output: dict = None):
+        if self.batch:
+            return self.retrieve_batches(files_content, agents_output)
+        else:
+            return self.retrieve_single(files_content, agents_output)
 
-    def _retrieve_contexts(self, **kwargs):
+    def retrieve_batches(
+        self, files_content: dict = None, agents_output: dict = None
+    ) -> dict:
+        batch_context = {}
+
+        if files_content:
+            for path, context in files_content.items():
+                batch_context[path] = [self.format_files_context(path, context)]
+
+        if agents_output:
+            for agent_name, context in agents_output.items():
+                if isinstance(context, dict):
+                    for path, ctx in context.items():
+                        if path not in batch_context:
+                            batch_context[path] = []
+                        batch_context[path].append(
+                            self.format_agent_path_context(agent_name, path, ctx)
+                        )
+                elif isinstance(context, str):
+                    if files_content:
+                        for path in batch_context:
+                            batch_context[path].append(
+                                self.format_agent_context(agent_name, context)
+                            )
+                    else:
+                        raise ValueError(
+                            "Batch cannot be retrieved without files_content or batch agents output"
+                        )
+
+        return batch_context
+
+    def retrieve_single(self, files_content: dict = None, agents_output: dict = None):
         contexts = []
-        if self.file_content:
-            contexts.append(self.file_content.retrieve(kwargs["paths"]))
-        if self.agent_output:
-            contexts.append(self.agent_output.retrieve())
+        if files_content:
+            formatted_files_content = ""
+            for path, context in files_content.items():
+                formatted_files_content += self.format_files_context(path, context)
+            contexts.append(formatted_files_content)
+        if agents_output:
+            formatted_agents_output = ""
+            for agent_name, context in agents_output.items():
+                if isinstance(context, dict):
+                    for path, ctx in context.items():
+                        formatted_agents_output += self.format_agent_path_context(
+                            agent_name, path, ctx
+                        )
+                elif isinstance(context, str):
+                    formatted_agents_output += self.format_agent_context(
+                        agent_name, context
+                    )
+            contexts.append(formatted_agents_output)
         return contexts
 
-    def _format_contexts(self, contexts):
-        if any([isinstance(context, dict) for context in contexts]):
-            return self._merge_dicts(contexts)
-        else:
-            return contexts
+    def format_files_context(self, path, context):
+        file_context = f"<context path = {path}>\n"
+        file_context += context
+        file_context += "\n</context>\n"
+        return file_context
 
-    def _merge_dicts(self, contexts):
-        """
-        Merge multiple contexts into a single dictionary.
+    def format_agent_context(self, agent_name, context):
+        agent_context = f"<context agent_name = {agent_name}>\n"
+        agent_context += context
+        agent_context += "\n</context>\n"
+        return agent_context
 
-        This function is designed to handle both dictionary and string contexts,
-        combining them in a way that's compatible with the agent's message structure.
-        It's implemented to support batch processing of contexts while maintaining
-        consistency across different context types.
-
-        The function does the following:
-        1. Merges dictionary contexts by matching keys.
-        2. Appends string contexts to all keys in the merged dictionary.
-        3. Ensures all dictionary contexts have matching keys to prevent inconsistencies.
-
-        """
-        merged = {}
-        dict_contexts = [ctx for ctx in contexts if isinstance(ctx, dict)]
-
-        if not dict_contexts:
-            raise ValueError("No dictionary contexts found to merge")
-
-        keys = set(dict_contexts[0].keys())
-
-        for ctx in dict_contexts[1:]:
-            if set(ctx.keys()) != keys:
-                raise ValueError("Retrieval error: batches keys don't match")
-
-        for key in keys:
-            merged[key] = [ctx[key] for ctx in dict_contexts]
-
-        for ctx in contexts:
-            if isinstance(ctx, str):
-                for key in merged:
-                    merged[key].append(ctx)
-
-        return merged
+    def format_agent_path_context(self, agent_name, path, context):
+        agent_path_context = f"<context agent_name = {agent_name} path = {path}>\n"
+        agent_path_context += context
+        agent_path_context += "\n</context>\n"
+        return agent_path_context
