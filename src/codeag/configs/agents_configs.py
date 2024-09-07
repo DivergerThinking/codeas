@@ -1,6 +1,12 @@
 from codeag.configs import prompts
 
 AGENTS_CONFIGS = {
+    "custom": {
+        "system_prompt": prompts.BASE_SYSTEM_PROMPT,
+        "instructions": "",
+        "model": "gpt-4o",
+        "context": "files_content",
+    },
     "generate_docs_backend": {
         "system_prompt": prompts.BASE_SYSTEM_PROMPT,
         "instructions": prompts.GENERATE_BACKEND_DOCS,
