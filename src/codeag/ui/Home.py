@@ -3,65 +3,86 @@ from typing import Literal
 
 import pyperclip
 import streamlit as st
+import streamlit_nested_layout
 from streamlit_searchbox import st_searchbox
 
 from codeag.configs.agents_configs import AGENTS_CONFIGS
 from codeag.core.agent import Agent
 from codeag.core.context import Context
 from codeag.core.llms import LLMClient
-from codeag.core.repo import Filters, Repo, RepoSelector
+from codeag.core.repo import Repo
+from codeag.ui.state import state
 from codeag.ui.utils import search_dirs
-
-if "filters" not in st.session_state:
-    st.session_state.filters = Filters()
-
-if "files_description" not in st.session_state:
-    st.session_state.files_description = {}
 
 if "llm_client" not in st.session_state:
     st.session_state.llm_client = LLMClient()
 
 
-def display_filters(key: Literal["files", "folders"]):
+def home_page():
+    st.title("Codeas")
+    display_repo_path()
+    display_filters()
+    display_files_editor()
+    display_selected_files_info()
+    display_tasks_to_select()
+    display_steps()
+    st.divider()
+    display_run_tasks()
+
+
+def display_repo_path():
+    st.subheader("Repo")
+    state.repo_path = st_searchbox(
+        search_dirs, placeholder=state.repo_path, default=state.repo_path
+    )
+    st.caption(os.path.abspath(state.repo_path))
+
+
+def display_filters():
     col_include, col_exclude = st.columns(2)
     with col_include:
-        include_value = getattr(st.session_state.filters, f"include_{key}", [])
-        include_value = ", ".join(include_value)
         st.text_input(
             "Include",
-            value=include_value,
-            key=f"include_{key}_input",
-            on_change=lambda: update_filter(key, "include"),
+            value=state.include,
+            key="include_input",
+            on_change=lambda: update_filter("include"),
             placeholder="*.py, src/*, etc.",
         )
     with col_exclude:
-        exclude_value = getattr(st.session_state.filters, f"exclude_{key}", [])
-        exclude_value = ", ".join(exclude_value)
         st.text_input(
             "Exclude",
-            value=exclude_value,
-            key=f"exclude_{key}_input",
-            on_change=lambda: update_filter(key, "exclude"),
+            value=state.exclude,
+            key="exclude_input",
+            on_change=lambda: update_filter("exclude"),
             placeholder="debug/*, *.ipynb, etc.",
         )
 
 
-def update_filter(key: str, filter_type: Literal["include", "exclude"]):
-    input_key = f"{filter_type}_{key}_input"
-    state_key = f"{filter_type}_{key}"
+def update_filter(filter_type: Literal["include", "exclude"]):
+    input_key = f"{filter_type}_input"
+    state_key = f"{filter_type}"
 
     if input_key in st.session_state:
-        input_value = st.session_state[input_key]
-        filters_list = [
-            filter_.strip() for filter_ in input_value.split(",") if filter_.strip()
-        ]
-        setattr(st.session_state.filters, state_key, filters_list)
+        setattr(state, state_key, st.session_state[input_key])
 
 
-def display_data_editor(key: str, data: dict):
+def display_files_editor():
+    repo = Repo(repo_path=state.repo_path)
+    include_patterns = [
+        include.strip() for include in state.include.split(",") if include.strip()
+    ]
+    exclude_patterns = [
+        exclude.strip() for exclude in state.exclude.split(",") if exclude.strip()
+    ]
+    incl_files = repo.filter_files(include_patterns, exclude_patterns)
+    st.session_state.files_data = {
+        "Incl.": incl_files,
+        "Path": repo.files_paths,
+        "Tokens": list(repo.files_tokens.values()),
+    }
+    sort_files_data()
     st.data_editor(
-        data,
-        key=key,
+        st.session_state.files_data,
         use_container_width=True,
         column_config={
             "Incl.": st.column_config.CheckboxColumn(width=10),
@@ -72,51 +93,47 @@ def display_data_editor(key: str, data: dict):
     )
 
 
-def chain_page():
-    st.title("Codeas")
-    st.subheader("Repo")
-    repo_path = st_searchbox(search_dirs, placeholder=".", default=".")
-    st.caption(os.path.abspath(repo_path))
-
-    st.session_state.repo_path = repo_path
-
-    # Load repository data
-    repo = Repo(repo_path=repo_path)
-    selector = RepoSelector(repo=repo)
-
-    # Context section
-    display_filters("files")
-    files_to_include = selector.filter_files(st.session_state.filters)
-    files_data = {
-        "Incl.": files_to_include,
-        "Path": repo.files_paths,
-        "Tokens": list(repo.files_tokens.values()),
-    }
+def sort_files_data():
     # Sort by Incl. = True first, then by Path
-    sorted_files_data = sorted(
-        zip(files_data["Incl."], files_data["Path"], files_data["Tokens"]),
-        key=lambda x: (not x[0], x[1]),
+    sorted_data = sorted(
+        zip(
+            st.session_state.files_data["Incl."],
+            st.session_state.files_data["Path"],
+            st.session_state.files_data["Tokens"],
+        ),
+        key=lambda x: (not x[0], x[1]),  # Sort by Incl. (True first) then by Path
     )
-    # Unzip the sorted data
-    files_data["Incl."], files_data["Path"], files_data["Tokens"] = map(
-        list, zip(*sorted_files_data)
-    )
-    display_data_editor("files_editor", files_data)
+    # Unzip the sorted data back into separate lists
+    (
+        st.session_state.files_data["Incl."],
+        st.session_state.files_data["Path"],
+        st.session_state.files_data["Tokens"],
+    ) = zip(*sorted_data)
 
-    # Add st.info() to show selected files / total files
-    num_selected_files = sum(files_data["Incl."])
-    total_files = len(files_data["Incl."])
+
+def display_selected_files_info():
+    num_selected_files = sum(st.session_state.files_data["Incl."])
+    total_files = len(st.session_state.files_data["Incl."])
     selected_tokens = sum(
-        token for incl, token in zip(files_data["Incl."], files_data["Tokens"]) if incl
+        token
+        for incl, token in zip(
+            st.session_state.files_data["Incl."], st.session_state.files_data["Tokens"]
+        )
+        if incl
     )
     st.info(
         f"{num_selected_files} / {total_files} files selected | {selected_tokens:,} tokens"
     )
-
     st.session_state.selected_files_path = [
-        path for path, incl in zip(files_data["Path"], files_data["Incl."]) if incl
+        path
+        for path, incl in zip(
+            st.session_state.files_data["Path"], st.session_state.files_data["Incl."]
+        )
+        if incl
     ]
 
+
+def display_tasks_to_select():
     st.subheader("Tasks")
     if "steps" not in st.session_state:
         st.session_state.steps = []
@@ -138,7 +155,8 @@ def chain_page():
                     )
                 st.rerun()
 
-    # Display steps below the select box
+
+def display_steps():
     for i, step in enumerate(st.session_state.steps):
         col_step, col_remove = st.columns([11, 1])
         with col_step:
@@ -153,8 +171,8 @@ def chain_page():
                 st.session_state.steps.pop(i)
                 st.rerun()
 
-    # Add "Run tasks" button and "Sequential" toggle
-    st.divider()
+
+def display_run_tasks():
     if st.button(
         "Run tasks", type="primary", disabled=len(st.session_state.steps) == 0
     ):
@@ -459,9 +477,9 @@ def get_files_content(
     files_content = {}
     for file_path in files_path:
         if info_only:
-            files_content[file_path] = st.session_state.files_description[file_path]
+            files_content[file_path] = state.files_description[file_path]
         elif compressed:
-            files_content[file_path] = st.session_state.files_detail[file_path]
+            files_content[file_path] = state.files_detail[file_path]
         else:
             files_content[file_path] = read_file(file_path)
     return files_content
@@ -471,7 +489,7 @@ def generate_files_description(files_path: list[str]):
     files_to_generate = [
         file_path
         for file_path in files_path
-        if file_path not in st.session_state.files_description
+        if file_path not in state.files_description
     ]
     if files_to_generate:
         # Preview the agent to get input tokens and cost
@@ -493,7 +511,7 @@ def generate_files_description(files_path: list[str]):
                 with st.spinner("Generating files description..."):
                     output = run_agent("extract_files_description")
                 for file_path, response in output.response.items():
-                    st.session_state.files_description[file_path] = response["content"]
+                    state.files_description[file_path] = response["content"]
                 st.session_state.files_description_generated = True
 
                 # Display the generated description immediately
@@ -508,7 +526,7 @@ def generate_files_description(files_path: list[str]):
                 )
 
                 st.write("Files Description:")
-                st.json(st.session_state.files_description, expanded=False)
+                st.json(state.files_description, expanded=False)
 
                 # Use a button to trigger the rerun
                 if st.button("Continue"):
@@ -516,18 +534,13 @@ def generate_files_description(files_path: list[str]):
             return False  # Return False instead of st.stop()
         else:
             st.write("Generated Files Description:")
-            st.json(st.session_state.files_description, expanded=False)
+            st.json(state.files_description, expanded=False)
     return True
 
 
 def generate_files_details(files_path: list[str]):
-    if "files_detail" not in st.session_state:
-        st.session_state.files_detail = {}
-
     files_to_detail = [
-        file_path
-        for file_path in files_path
-        if file_path not in st.session_state.files_detail
+        file_path for file_path in files_path if file_path not in state.files_detail
     ]
     if files_to_detail:
         # Preview the agent to get input tokens and cost
@@ -549,7 +562,7 @@ def generate_files_details(files_path: list[str]):
                 with st.spinner("Generating files detail..."):
                     output = run_agent("extract_files_detail")
                 for file_path, response in output.response.items():
-                    st.session_state.files_detail[file_path] = response["content"]
+                    state.files_detail[file_path] = response["content"]
                 st.session_state.files_detail_generated = True
 
                 # Display the generated detailed content immediately
@@ -564,7 +577,7 @@ def generate_files_details(files_path: list[str]):
                 )
 
                 st.write("Files Detail:")
-                st.json(st.session_state.files_detail, expanded=False)
+                st.json(state.files_detail, expanded=False)
 
                 # Use a button to trigger the rerun
                 if st.button("Continue"):
@@ -572,12 +585,12 @@ def generate_files_details(files_path: list[str]):
             return False
         else:
             st.write("Generated Files Detail:")
-            st.json(st.session_state.files_detail, expanded=False)
+            st.json(state.files_detail, expanded=False)
     return True
 
 
 def read_file(file_path: str):
-    with open(f"{st.session_state.repo_path}/{file_path}", "r") as f:
+    with open(f"{state.repo_path}/{file_path}", "r") as f:
         return f.read()
 
 
@@ -667,4 +680,4 @@ def update_step_type(agent_name, new_type, data):
 
 
 if __name__ == "__main__":
-    chain_page()
+    home_page()

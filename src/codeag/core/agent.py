@@ -134,13 +134,3 @@ class Agent(BaseModel):
                     ),
                 },
             )
-
-
-if __name__ == "__main__":
-    from codeag.configs.agents_configs import AGENTS_CONFIGS
-
-    agent = Agent(**AGENTS_CONFIGS["extract_files_info"])
-    with open("requirements.txt", "r") as f:
-        files_content = {"requirements.txt": f.read()}
-    messages = agent.get_messages(files_content=files_content)
-    print(messages)
