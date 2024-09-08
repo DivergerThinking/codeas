@@ -37,11 +37,15 @@ class Repo(BaseModel):
         ]
 
     def calculate_files_tokens(self):
+        import tokencost
+
         for rel_file_path in self.files_paths:
             abs_file_path = os.path.join(self.repo_path, rel_file_path)
             try:
                 content = self._read_file(abs_file_path)
-                self.files_tokens[rel_file_path] = int(len(content) / 4)
+                self.files_tokens[rel_file_path] = tokencost.count_string_tokens(
+                    content, "gpt-4o-mini"
+                )
             except Exception:
                 self.files_tokens[rel_file_path] = None
 

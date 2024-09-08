@@ -15,8 +15,8 @@ from codeag.ui.utils import search_dirs
 if "filters" not in st.session_state:
     st.session_state.filters = Filters()
 
-if "files_info" not in st.session_state:
-    st.session_state.files_info = {}
+if "files_description" not in st.session_state:
+    st.session_state.files_description = {}
 
 if "llm_client" not in st.session_state:
     st.session_state.llm_client = LLMClient()
@@ -121,7 +121,24 @@ def chain_page():
     if "steps" not in st.session_state:
         st.session_state.steps = []
 
-    # Display steps above the select box
+    available_steps = list(AGENTS_CONFIGS.keys())
+
+    col, _ = st.columns(2)
+    with col:
+        selected_agent = st.selectbox(
+            "Select instructions to add:", [""] + available_steps
+        )
+        if st.button("Add"):
+            if selected_agent:
+                if selected_agent not in [
+                    step["name"] for step in st.session_state.steps
+                ]:
+                    st.session_state.steps.append(
+                        {"type": "agent", "name": selected_agent}
+                    )
+                st.rerun()
+
+    # Display steps below the select box
     for i, step in enumerate(st.session_state.steps):
         col_step, col_remove = st.columns([11, 1])
         with col_step:
@@ -136,22 +153,21 @@ def chain_page():
                 st.session_state.steps.pop(i)
                 st.rerun()
 
-    available_steps = list(AGENTS_CONFIGS.keys())
+    # Add "Run tasks" button and "Sequential" toggle
+    st.divider()
+    if st.button(
+        "Run tasks", type="primary", disabled=len(st.session_state.steps) == 0
+    ):
+        run_tasks()
 
-    col, _ = st.columns(2)
-    with col:
-        selected_agent = st.selectbox(
-            "Select instructions to add:", available_steps, index=0
-        )
-        if st.button("Add"):
-            if selected_agent:
-                if selected_agent not in [
-                    step["name"] for step in st.session_state.steps
-                ]:
-                    st.session_state.steps.append(
-                        {"type": "agent", "name": selected_agent}
-                    )
-                st.rerun()
+
+def run_tasks():
+    for step in st.session_state.steps:
+        if step["type"] == "agent":
+            agent_name = step["name"]
+            run_agent_callback(agent_name)
+    # Rerun once after all tasks are completed
+    st.rerun()
 
 
 def display_step(step, index):
@@ -164,41 +180,55 @@ def display_step(step, index):
 
 
 def display_agent_step(agent_name, index):
-    with st.expander(f"{agent_name}", expanded=True):
+    with st.expander(
+        f"{agent_name}", expanded=True if agent_name == "custom" else False
+    ):
         buttons_disabled = display_agent_config(agent_name)
         col_run, col_preview, _ = st.columns([1, 2, 6])
         with col_run:
-            st.button(
+            if st.button(
                 "Run",
                 key=f"run_{agent_name}_{index}",
                 type="primary",
                 disabled=buttons_disabled,
                 on_click=lambda: run_agent_callback(agent_name),
-            )
+            ):
+                st.rerun()
         with col_preview:
-            st.button(
+            if st.button(
                 "Preview",
                 key=f"preview_{agent_name}_{index}",
                 disabled=buttons_disabled,
                 on_click=lambda: preview_agent_callback(agent_name),
-            )
+            ):
+                st.rerun()
 
 
 def run_agent_callback(agent_name):
     remove_agent_steps(agent_name)
     add_output_step_with_spinner(agent_name)
-    st.rerun()
 
 
 def preview_agent_callback(agent_name):
     remove_agent_steps(agent_name)
     add_preview_step_with_spinner(agent_name)
-    st.rerun()
+    # Clear the previous preview state
+    if f"preview_{agent_name}" in st.session_state:
+        del st.session_state[f"preview_{agent_name}"]
+    if f"preview_{agent_name}_complete" in st.session_state:
+        del st.session_state[f"preview_{agent_name}_complete"]
 
 
 def remove_agent_steps(agent_name):
-    remove_preview_step(agent_name)
-    remove_output_step(agent_name)
+    st.session_state.steps = [
+        step
+        for step in st.session_state.steps
+        if not (
+            step["name"] == agent_name
+            and step["type"]
+            in ["preview", "output", "preview_with_spinner", "output_with_spinner"]
+        )
+    ]
 
 
 def add_output_step_with_spinner(agent_name):
@@ -221,7 +251,7 @@ def add_preview_step_with_spinner(agent_name):
 
 def display_output_step(agent_name, output):
     with st.expander(f"[Output] {agent_name}", expanded=True):
-        with st.expander("Context", expanded=False):
+        with st.expander("Context", expanded=True):
             display_context(get_context(**AGENTS_CONFIGS[agent_name]))
 
         total_tokens = output.tokens["input_tokens"] + output.tokens["output_tokens"]
@@ -235,15 +265,15 @@ def display_output_step(agent_name, output):
 
 def display_output_step_with_spinner(agent_name):
     with st.expander(f"[Output] {agent_name}", expanded=True):
-        # Generate files info if needed
+        # Generate files description if needed
         if (
-            agent_name != "extract_files_info"
-            and AGENTS_CONFIGS[agent_name].get("context") == "files_info"
+            agent_name != "extract_files_description"
+            and AGENTS_CONFIGS[agent_name].get("context") == "files_description"
         ):
-            if not generate_files_info(st.session_state.selected_files_path):
+            if not generate_files_description(st.session_state.selected_files_path):
                 st.stop()
 
-        with st.expander("Context", expanded=False):
+        with st.expander("Context", expanded=True):
             display_context(get_context(**AGENTS_CONFIGS[agent_name]))
 
         with st.spinner(f"Running {agent_name}..."):
@@ -266,13 +296,13 @@ def display_output_step_with_spinner(agent_name):
 
 
 def display_preview_step(agent_name, preview):
-    with st.expander(f"[Preview] {agent_name}", expanded=False):
-        with st.expander("Context", expanded=False):
+    with st.expander(f"[Preview] {agent_name}", expanded=True):
+        with st.expander("Context", expanded=True):
             display_context(get_context(**AGENTS_CONFIGS[agent_name]))
 
         st.info(
             f"Input cost: **${preview.cost['input_cost']:.4f}** | "
-            f"Input tokens: **{preview.tokens['input_tokens']}**"
+            f"Input tokens: **{preview.tokens['input_tokens']:,}**"
         )
 
         st.write("Messages:")
@@ -281,37 +311,35 @@ def display_preview_step(agent_name, preview):
 
 def display_preview_step_with_spinner(agent_name):
     with st.expander(f"[Preview] {agent_name}", expanded=True):
-        # Generate files info if needed
-        if (
-            agent_name != "extract_files_info"
-            and AGENTS_CONFIGS[agent_name].get("context") == "files_info"
-        ):
-            files_info_generated = generate_files_info(
-                st.session_state.selected_files_path
-            )
-            if not files_info_generated:
-                return  # Return instead of st.stop()
+        context_type = AGENTS_CONFIGS[agent_name].get("context")
+        if context_type in ["files_description", "files_detail"] and agent_name not in [
+            "extract_files_description",
+            "extract_files_detail",
+        ]:
+            if not ensure_context_data(
+                context_type, st.session_state.selected_files_path
+            ):
+                return
 
-        with st.expander("Context", expanded=False):
+        with st.expander("Context", expanded=True):
             display_context(get_context(**AGENTS_CONFIGS[agent_name]))
 
+        # Remove the check for existing preview and always generate a new one
         with st.spinner(f"Previewing {agent_name}..."):
             preview = preview_agent(agent_name)
+            st.session_state[f"preview_{agent_name}"] = preview
+            st.session_state[f"preview_{agent_name}_complete"] = True
 
         st.info(
             f"Input cost: **${preview.cost['input_cost']:.4f}** | "
-            f"Input tokens: **{preview.tokens['input_tokens']}**"
+            f"Input tokens: **{preview.tokens['input_tokens']:,}**"
         )
 
         st.write("Messages:")
         st.json(preview.messages, expanded=False)
 
         # Update the step to remove the spinner for future renders
-        for step in st.session_state.steps:
-            if step["type"] == "preview_with_spinner" and step["name"] == agent_name:
-                step["type"] = "preview"
-                step["preview"] = preview
-                break
+        update_step_type(agent_name, "preview", preview)
 
 
 def remove_preview_step(agent_name):
@@ -354,8 +382,7 @@ def display_output(output):
     with st.expander("Output", expanded=True):
         if "content" in output.response:
             container = st.container()
-            # Add Copy button
-            if container.button("Copy", key="copy_single_output"):
+            if container.button("Copy", key=f"copy_single_output_{id(output)}"):
                 pyperclip.copy(output.response["content"])
                 container.success("Copied to clipboard!")
             container.markdown(output.response["content"])
@@ -363,39 +390,49 @@ def display_output(output):
             for key, value in output.response.items():
                 with st.expander(f"{key}", expanded=True):
                     container = st.container()
-                    # Add Copy button for each item
-                    if container.button("Copy", key=f"copy_{key}"):
+                    if container.button("Copy", key=f"copy_{key}_{id(output)}"):
                         pyperclip.copy(value["content"])
                         container.success("Copied to clipboard!")
                     container.markdown(value["content"])
 
 
+def ensure_context_data(
+    context_type: Literal["files_description", "files_detail"], files_path: list[str]
+):
+    if context_type == "files_description":
+        return generate_files_description(files_path)
+    elif context_type == "files_detail":
+        return generate_files_details(files_path)
+    return True
+
+
 def get_context(
-    context: Literal["files_content", "files_info", "files_reduced", None],
+    context: Literal["files_content", "files_description", "files_detail", None],
     batch: bool = False,
     auto_select: bool = False,
+    use_previous_outputs: bool = False,
     **_,
 ):
     files_content = None
     if context is not None:
-        if auto_select:
-            files_path = auto_select_files()
-        else:
-            files_path = st.session_state.selected_files_path
+        files_path = (
+            auto_select_files() if auto_select else st.session_state.selected_files_path
+        )
+
+        if context in ["files_description", "files_detail"]:
+            if not ensure_context_data(context, files_path):
+                st.stop()
 
         if context == "files_content":
             files_content = get_files_content(files_path, info_only=False)
-        elif context == "files_info":
-            if generate_files_info(files_path):
-                files_content = get_files_content(files_path, info_only=True)
-            else:
-                st.stop()
-        elif context == "files_reduced":
-            raise NotImplementedError("Not implemented yet")
+        elif context == "files_description":
+            files_content = get_files_content(files_path, info_only=True)
+        elif context == "files_detail":
+            files_content = get_files_content(files_path, compressed=True)
 
-    agents_outputs = get_previous_outputs()
+    agents_output = get_previous_outputs() if use_previous_outputs else {}
     ctx = Context(batch=batch)
-    return ctx.retrieve(files_content=files_content, agents_output=agents_outputs)
+    return ctx.retrieve(files_content=files_content, agents_output=agents_output)
 
 
 def auto_select_files():
@@ -403,50 +440,64 @@ def auto_select_files():
 
 
 def get_previous_outputs():
-    return []
+    outputs = {}
+    for step in st.session_state.steps:
+        if step["type"] == "output" and "output" in step:
+            output = step["output"]
+            agent_name = step["name"]
+            if "content" in output.response:
+                outputs[agent_name] = output.response["content"]
+            elif isinstance(output.response, dict):
+                st.error("Adding batch outputs is not implemented yet.")
+                return {}
+    return outputs
 
 
-def get_files_content(files_path: list[str], info_only: bool = False):
+def get_files_content(
+    files_path: list[str], info_only: bool = False, compressed: bool = False
+):
     files_content = {}
     for file_path in files_path:
         if info_only:
-            files_content[file_path] = st.session_state.files_info[file_path]
+            files_content[file_path] = st.session_state.files_description[file_path]
+        elif compressed:
+            files_content[file_path] = st.session_state.files_detail[file_path]
         else:
             files_content[file_path] = read_file(file_path)
     return files_content
 
 
-def generate_files_info(files_path: list[str]):
+def generate_files_description(files_path: list[str]):
     files_to_generate = [
         file_path
         for file_path in files_path
-        if file_path not in st.session_state.files_info
+        if file_path not in st.session_state.files_description
     ]
     if files_to_generate:
         # Preview the agent to get input tokens and cost
-        preview = preview_agent("extract_files_info")
+        preview = preview_agent("extract_files_description")
 
         st.warning(
-            f"Files info needs to be generated for {len(files_to_generate)} files."
+            f"Files description needs to be generated for {len(files_to_generate)} files."
         )
         st.info(
             f"Input cost: **${preview.cost['input_cost']:.4f}** | "
             f"Input tokens: **{preview.tokens['input_tokens']:,}**"
         )
 
-        if "files_info_generated" not in st.session_state:
-            st.session_state.files_info_generated = False
+        if "files_description_generated" not in st.session_state:
+            st.session_state.files_description_generated = False
 
-        if not st.session_state.files_info_generated:
-            if st.button("Generate Files Info"):
-                with st.spinner("Generating files info..."):
-                    output = run_agent("extract_files_info")
+        if not st.session_state.files_description_generated:
+            if st.button("Generate Files Description"):
+                with st.spinner("Generating files description..."):
+                    output = run_agent("extract_files_description")
                 for file_path, response in output.response.items():
-                    st.session_state.files_info[file_path] = response["content"]
-                st.session_state.files_info_generated = True
+                    st.session_state.files_description[file_path] = response["content"]
+                st.session_state.files_description_generated = True
 
-                # Display the generated info immediately
-                st.success("Files info generated successfully!")
+                # Display the generated description immediately
+                st.success("Files description generated successfully!")
 
                 total_tokens = (
                     output.tokens["input_tokens"] + output.tokens["output_tokens"]
@@ -456,16 +507,72 @@ def generate_files_info(files_path: list[str]):
                     f"Tokens: **{total_tokens:,}** (**{output.tokens['input_tokens']:,}** + **{output.tokens['output_tokens']:,}**)"
                 )
 
-                st.write("Files Info:")
-                st.json(st.session_state.files_info, expanded=False)
+                st.write("Files Description:")
+                st.json(st.session_state.files_description, expanded=False)
 
                 # Use a button to trigger the rerun
                 if st.button("Continue"):
                     st.rerun()
             return False  # Return False instead of st.stop()
         else:
-            st.write("Generated Files Info:")
-            st.json(st.session_state.files_info, expanded=False)
+            st.write("Generated Files Description:")
+            st.json(st.session_state.files_description, expanded=False)
+    return True
+
+
+def generate_files_details(files_path: list[str]):
+    if "files_detail" not in st.session_state:
+        st.session_state.files_detail = {}
+
+    files_to_detail = [
+        file_path
+        for file_path in files_path
+        if file_path not in st.session_state.files_detail
+    ]
+    if files_to_detail:
+        # Preview the agent to get input tokens and cost
+        preview = preview_agent("extract_files_detail")
+
+        st.warning(
+            f"Detailed content needs to be generated for {len(files_to_detail)} files."
+        )
+        st.info(
+            f"Input cost: **${preview.cost['input_cost']:.4f}** | "
+            f"Input tokens: **{preview.tokens['input_tokens']:,}**"
+        )
+
+        if "files_detail_generated" not in st.session_state:
+            st.session_state.files_detail_generated = False
+
+        if not st.session_state.files_detail_generated:
+            if st.button("Generate Files Detail"):
+                with st.spinner("Generating files detail..."):
+                    output = run_agent("extract_files_detail")
+                for file_path, response in output.response.items():
+                    st.session_state.files_detail[file_path] = response["content"]
+                st.session_state.files_detail_generated = True
+
+                # Display the generated detailed content immediately
+                st.success("Files detail generated successfully!")
+
+                total_tokens = (
+                    output.tokens["input_tokens"] + output.tokens["output_tokens"]
+                )
+                st.info(
+                    f"Cost: $**{output.cost['total_cost']:.4f}** (**{output.cost['input_cost']:.4f}** + **{output.cost['output_cost']:.4f}**) | "
+                    f"Tokens: **{total_tokens:,}** (**{output.tokens['input_tokens']:,}** + **{output.tokens['output_tokens']:,}**)"
+                )
+
+                st.write("Files Detail:")
+                st.json(st.session_state.files_detail, expanded=False)
+
+                # Use a button to trigger the rerun
+                if st.button("Continue"):
+                    st.rerun()
+            return False
+        else:
+            st.write("Generated Files Detail:")
+            st.json(st.session_state.files_detail, expanded=False)
     return True
 
 
@@ -477,9 +584,9 @@ def read_file(file_path: str):
 def display_agent_config(agent_name: str):
     agent_config = AGENTS_CONFIGS[agent_name]
 
-    col_model, col_context = st.columns([2, 2])
+    col_context, col_model = st.columns([2, 2])
     with col_context:
-        context_options = ["files_content", "files_info", "files_reduced"]
+        context_options = ["files_content", "files_description", "files_detail"]
         selected_context = st.selectbox(
             "Context",
             options=context_options,
@@ -503,12 +610,17 @@ def display_agent_config(agent_name: str):
             )
 
     with col_model:
-        model_options = ["gpt-4o", "gpt-4o-mini"]
+        model_options = ["gpt-4o-2024-08-06", "gpt-4o-mini"]
         agent_config["model"] = st.selectbox(
             "Model",
             options=model_options,
             index=model_options.index(agent_config["model"]),
             key=f"{agent_name}_model",
+        )
+        st.toggle(
+            "Use previous outputs",
+            value=agent_config.get("use_previous_outputs", False),
+            key=f"{agent_name}_use_previous_outputs",
         )
 
     is_custom = agent_name == "custom"
@@ -536,25 +648,22 @@ def display_agent_config(agent_name: str):
     return buttons_disabled
 
 
-def display_generate_files_info_step():
-    with st.expander("Generate Files Info", expanded=True):
-        files_to_generate = [
-            file_path
-            for file_path in st.session_state.selected_files_path
-            if file_path not in st.session_state.files_info
-        ]
-        if files_to_generate:
-            st.warning(
-                f"Files info needs to be generated for {len(files_to_generate)} files."
-            )
-            if st.button("Generate Files Info"):
-                with st.spinner("Generating files info..."):
-                    output = run_agent("extract_files_info")
-                for file_path, response in output.response.items():
-                    st.session_state.files_info[file_path] = response["content"]
-                st.success("Files info generated successfully!")
-        else:
-            st.success("Files info is up to date for all selected files.")
+def update_step_type(agent_name, new_type, data):
+    # Remove any existing preview or output steps for this agent
+    st.session_state.steps = [
+        step
+        for step in st.session_state.steps
+        if not (
+            step["name"] == agent_name
+            and step["type"]
+            in ["preview", "output", "preview_with_spinner", "output_with_spinner"]
+        )
+    ]
+
+    # Add the new step
+    st.session_state.steps.append(
+        {"type": new_type, "name": agent_name, new_type: data}
+    )
 
 
 if __name__ == "__main__":
