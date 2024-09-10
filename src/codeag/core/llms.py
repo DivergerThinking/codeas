@@ -42,6 +42,7 @@ class LLMClient:
         kwargs.setdefault("timeout", self.timeout)
         if model == "gpt-4o":
             model = "gpt-4o-2024-08-06"
+            logging.info("Using gpt-4o-2024-08-06 model")
         if isinstance(messages, list):
             return self.run_completions(messages, model, **kwargs)
         elif isinstance(messages, dict):
@@ -49,10 +50,16 @@ class LLMClient:
 
     def run_completions(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         """runs completions synchronously"""
-        response = self._client.chat.completions.create(
-            messages=messages, model=model, **kwargs
-        )
-        if kwargs["stream"]:
+        if kwargs.get("response_format"):
+            kwargs.pop("stream")
+            response = self._client.beta.chat.completions.parse(
+                messages=messages, model=model, **kwargs
+            )
+        else:
+            response = self._client.chat.completions.create(
+                messages=messages, model=model, **kwargs
+            )
+        if kwargs.get("stream"):
             response = self._parse_stream(response)
         return response
 

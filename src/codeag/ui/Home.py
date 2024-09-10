@@ -7,7 +7,7 @@ import streamlit_nested_layout
 from streamlit_searchbox import st_searchbox
 
 from codeag.configs.agents_configs import AGENTS_CONFIGS
-from codeag.core.agent import Agent
+from codeag.core.agent import Agent, FilePathsOutput
 from codeag.core.context import Context
 from codeag.core.llms import LLMClient
 from codeag.core.repo import Repo
@@ -329,7 +329,12 @@ def display_preview_step(agent_name, preview):
 
 def display_preview_step_with_spinner(agent_name):
     with st.expander(f"[Preview] {agent_name}", expanded=True):
-        context_type = AGENTS_CONFIGS[agent_name].get("context")
+        # Use the updated config from session state
+        agent_config = st.session_state.get(
+            f"{agent_name}_config", AGENTS_CONFIGS[agent_name]
+        )
+        context_type = agent_config.get("context")
+
         if context_type in ["files_description", "files_detail"] and agent_name not in [
             "extract_files_description",
             "extract_files_detail",
@@ -340,7 +345,7 @@ def display_preview_step_with_spinner(agent_name):
                 return
 
         with st.expander("Context", expanded=True):
-            display_context(get_context(**AGENTS_CONFIGS[agent_name]))
+            display_context(get_context(**agent_config))
 
         # Remove the check for existing preview and always generate a new one
         with st.spinner(f"Previewing {agent_name}..."):
@@ -377,14 +382,22 @@ def remove_output_step(agent_name):
 
 
 def run_agent(agent_name: str):
-    agent = Agent(**AGENTS_CONFIGS[agent_name])
-    context = get_context(**AGENTS_CONFIGS[agent_name])
+    # Use the updated config from session state
+    agent_config = st.session_state.get(
+        f"{agent_name}_config", AGENTS_CONFIGS[agent_name]
+    )
+    agent = Agent(**agent_config)
+    context = get_context(**agent_config)
     return agent.run(llm_client=st.session_state.llm_client, context=context)
 
 
 def preview_agent(agent_name: str):
-    agent = Agent(**AGENTS_CONFIGS[agent_name])
-    context = get_context(**AGENTS_CONFIGS[agent_name])
+    # Use the updated config from session state
+    agent_config = st.session_state.get(
+        f"{agent_name}_config", AGENTS_CONFIGS[agent_name]
+    )
+    agent = Agent(**agent_config)
+    context = get_context(**agent_config)
     return agent.preview(context)
 
 
@@ -433,9 +446,12 @@ def get_context(
 ):
     files_content = None
     if context is not None:
-        files_path = (
-            auto_select_files() if auto_select else st.session_state.selected_files_path
-        )
+        if auto_select:
+            if not run_auto_select():
+                st.stop()
+            files_path = st.session_state.auto_selected_files
+        else:
+            files_path = st.session_state.selected_files_path
 
         if context in ["files_description", "files_detail"]:
             if not ensure_context_data(context, files_path):
@@ -446,15 +462,71 @@ def get_context(
         elif context == "files_description":
             files_content = get_files_content(files_path, info_only=True)
         elif context == "files_detail":
-            files_content = get_files_content(files_path, compressed=True)
+            files_content = get_files_content(files_path, detail_only=True)
 
     agents_output = get_previous_outputs() if use_previous_outputs else {}
     ctx = Context(batch=batch)
     return ctx.retrieve(files_content=files_content, agents_output=agents_output)
 
 
+def run_auto_select():
+    agent_name = "auto_select_files"
+
+    if "auto_select_files_run" not in st.session_state:
+        st.session_state.auto_select_files_run = False
+
+    if not st.session_state.auto_select_files_run:
+        # Preview the agent to get input tokens and cost
+        preview = preview_agent(agent_name)
+
+        st.warning("Auto-select files needs to be run.")
+        st.info(
+            f"Input cost: **${preview.cost['input_cost']:.4f}** | "
+            f"Input tokens: **{preview.tokens['input_tokens']:,}**"
+        )
+
+        if st.button("Run Auto-Select Files"):
+            with st.spinner("Running auto-select files..."):
+                output = run_agent(agent_name)
+
+            if isinstance(output.response, FilePathsOutput):
+                st.session_state.auto_selected_files = output.response.paths
+                st.session_state.auto_select_files_run = True
+
+                st.success("Auto-select files completed successfully!")
+
+                total_tokens = (
+                    output.tokens["input_tokens"] + output.tokens["output_tokens"]
+                )
+                st.info(
+                    f"Cost: $**{output.cost['total_cost']:.4f}** (**{output.cost['input_cost']:.4f}** + **{output.cost['output_cost']:.4f}**) | "
+                    f"Tokens: **{total_tokens:,}** (**{output.tokens['input_tokens']:,}** + **{output.tokens['output_tokens']:,}**)"
+                )
+
+                st.write("Auto-selected Files:")
+                st.json(st.session_state.auto_selected_files, expanded=False)
+
+                if st.button("Continue"):
+                    st.rerun()
+            else:
+                st.error(f"Unexpected response from {agent_name} agent")
+
+        return False
+    else:
+        st.write("Auto-selected Files:")
+        st.json(st.session_state.auto_selected_files, expanded=False)
+
+    return True
+
+
 def auto_select_files():
-    return []
+    agent_name = "auto_select_files"
+    output = run_agent(agent_name)
+    if isinstance(output.response, FilePathsOutput):
+        return output.response.paths
+    else:
+        st.error(f"Unexpected response from {agent_name} agent")
+        return []
 
 
 def get_previous_outputs():
@@ -472,13 +544,13 @@ def get_previous_outputs():
 
 
 def get_files_content(
-    files_path: list[str], info_only: bool = False, compressed: bool = False
+    files_path: list[str], info_only: bool = False, detail_only: bool = False
 ):
     files_content = {}
     for file_path in files_path:
         if info_only:
             files_content[file_path] = state.files_description[file_path]
-        elif compressed:
+        elif detail_only:
             files_content[file_path] = state.files_detail[file_path]
         else:
             files_content[file_path] = read_file(file_path)
@@ -595,28 +667,34 @@ def read_file(file_path: str):
 
 
 def display_agent_config(agent_name: str):
-    agent_config = AGENTS_CONFIGS[agent_name]
+    # Initialize the config in session state if it doesn't exist
+    if f"{agent_name}_config" not in st.session_state:
+        st.session_state[f"{agent_name}_config"] = AGENTS_CONFIGS[agent_name].copy()
+
+    # Always use the config from session state
+    agent_config = st.session_state[f"{agent_name}_config"]
 
     col_context, col_model = st.columns([2, 2])
     with col_context:
-        context_options = ["files_content", "files_description", "files_detail"]
+        context_options = [None, "files_content", "files_description", "files_detail"]
         selected_context = st.selectbox(
             "Context",
             options=context_options,
             index=context_options.index(agent_config.get("context", "files_content")),
             key=f"{agent_name}_context",
+            format_func=lambda x: "None" if x is None else x,
         )
         agent_config["context"] = selected_context
 
         col_batch, col_auto = st.columns([1, 1])
         with col_batch:
-            st.toggle(
+            agent_config["batch"] = st.toggle(
                 "Batch",
                 value=agent_config.get("batch", False),
                 key=f"{agent_name}_batch",
             )
         with col_auto:
-            st.toggle(
+            agent_config["auto_select"] = st.toggle(
                 "Auto select",
                 value=agent_config.get("auto_select", False),
                 key=f"{agent_name}_auto_select",
@@ -630,7 +708,7 @@ def display_agent_config(agent_name: str):
             index=model_options.index(agent_config["model"]),
             key=f"{agent_name}_model",
         )
-        st.toggle(
+        agent_config["use_previous_outputs"] = st.toggle(
             "Use previous outputs",
             value=agent_config.get("use_previous_outputs", False),
             key=f"{agent_name}_use_previous_outputs",
@@ -640,7 +718,7 @@ def display_agent_config(agent_name: str):
     instructions_expanded = is_custom or agent_config["instructions"].strip() == ""
 
     if is_custom:
-        instructions = st.text_area(
+        agent_config["instructions"] = st.text_area(
             "Instructions",
             agent_config["instructions"],
             height=200,
@@ -648,15 +726,18 @@ def display_agent_config(agent_name: str):
         )
     else:
         with st.expander("Instructions", expanded=instructions_expanded):
-            instructions = st.text_area(
+            agent_config["instructions"] = st.text_area(
                 "prompt",
                 agent_config["instructions"],
                 height=300,
                 key=f"{agent_name}_instructions",
             )
 
+    # Store the updated config in session state
+    st.session_state[f"{agent_name}_config"] = agent_config
+
     # Disable buttons if instructions are empty
-    buttons_disabled = instructions.strip() == ""
+    buttons_disabled = agent_config["instructions"].strip() == ""
 
     return buttons_disabled
 

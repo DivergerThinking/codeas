@@ -3,6 +3,7 @@ from typing import Union
 from pydantic import BaseModel
 from tokencost import (
     calculate_all_costs_and_tokens,
+    calculate_cost_by_tokens,
     calculate_prompt_cost,
     count_message_tokens,
 )
@@ -10,11 +11,15 @@ from tokencost import (
 from codeag.core.llms import LLMClient
 
 
+class FilePathsOutput(BaseModel):
+    paths: list[str]
+
+
 class AgentOutput(BaseModel):
     tokens: dict
     cost: dict
     messages: Union[list, dict]
-    response: Union[str, dict]
+    response: Union[str, dict, object]
 
 
 class AgentPreview(BaseModel):
@@ -27,16 +32,47 @@ class Agent(BaseModel):
     system_prompt: str
     instructions: str
     model: str
+    response_format: object = None
 
     def run(
-        self, llm_client: LLMClient, context: Union[dict, list, str]
+        self,
+        llm_client: LLMClient,
+        context: Union[dict, list, str] = [],
     ) -> AgentOutput:
         messages = self.get_messages(context)
-        response = llm_client.run(messages, model=self.model)
-        tokens, cost = self.calculate_tokens_and_cost(messages, response)
+        completion = llm_client.run(
+            messages, model=self.model, response_format=self.response_format
+        )
+        response, tokens, cost = self.parse_completion(messages, completion)
         return AgentOutput(
             messages=messages, response=response, tokens=tokens, cost=cost
         )
+
+    def parse_completion(self, messages, completion):
+        if self.response_format:
+            response = completion.choices[0].message.parsed
+            tokens = {
+                "input_tokens": completion.usage.prompt_tokens,
+                "output_tokens": completion.usage.completion_tokens,
+                "total_tokens": completion.usage.total_tokens,
+            }
+            cost = {
+                "input_cost": float(
+                    calculate_cost_by_tokens(
+                        completion.usage.prompt_tokens, self.model, "input"
+                    )
+                ),
+                "output_cost": float(
+                    calculate_cost_by_tokens(
+                        completion.usage.completion_tokens, self.model, "output"
+                    )
+                ),
+            }
+            cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
+            return response, tokens, cost
+        else:
+            tokens, cost = self.calculate_tokens_and_cost(messages, completion)
+            return completion, tokens, cost
 
     def preview(self, context: Union[dict, list, str]) -> AgentPreview:
         messages = self.get_messages(context)
@@ -134,3 +170,23 @@ class Agent(BaseModel):
                     ),
                 },
             )
+
+
+if __name__ == "__main__":
+    from codeag.configs.agents_configs import AGENTS_CONFIGS
+    from codeag.core.context import Context
+    from codeag.core.llms import LLMClient
+    from codeag.ui.Home import get_files_content
+
+    llm_client = LLMClient()
+    agent = Agent(**AGENTS_CONFIGS["auto_select_files"])
+    files_content = get_files_content(["requirements.txt", "Makefile", "LICENSE"])
+    ctx = Context()
+    context = ctx.retrieve(
+        files_content=files_content,
+        agents_output={
+            "document_configs": "document all of the configurations of the project"
+        },
+    )
+    response = agent.run(llm_client, context=context)
+    print(response)

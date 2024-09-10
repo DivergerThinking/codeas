@@ -2,7 +2,7 @@ BASE_SYSTEM_PROMPT = """
 You are an LLM agent specialized in software engineering tasks.
 You will be given some context about a respository, which would be either:
 - the content of files inside the repository with their corresponding path (instead of the full content, only a description of the file might be provided)
-- the output from other LLMs who performed a task on the repository
+- some additional context needed to complete the task, such as another agent's output, or additional information about the task or repository.
 Each bits of context will be passed through <context> ... </context> tags.
 
 After receiving the context, you will be given some instructions to follow based on that context.
@@ -29,6 +29,19 @@ For non-code files, provide a detailed description of the file.
 
 If the file is relatively simple and short, your answer SHOULD NOT EXCEED 50 tokens.
 If the file is more complex and longer, your answer SHOULD NOT EXCEED 200 tokens.
+""".strip()
+
+AUTO_SELECT_FILES = """
+Based on the provided context, which includes descriptions of files in the repository and a set of instructions given to another agent, select the most relevant files for this given task. 
+
+Consider the following:
+1. The content and purpose of each file as described
+2. The specific requirements outlined in the instructions
+3. Any technologies, frameworks, or libraries mentioned in both the file descriptions and instructions
+4. The potential impact or importance of each file to the task at hand
+
+The content of the files you select will be passed to the next agent which only has a limited context, so make sure to select the most relevant files only.
+Return only the file paths.
 """.strip()
 
 GENERATE_BACKEND_DOCS = """
@@ -255,6 +268,29 @@ Based on the context provided, add or remove sections as necessary to create the
 IT IS IMPORTANT THAT YOU DO NOT INVENT THINGS. ONLY USE THE INFORMATION PROVIDED TO YOU, AND ONLY ADD SECTIONS WHICH ARE RELEVANT BASED ON THAT INFORMATION.
 DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
 """.strip()
+
+GENERATE_CONFIG_DOCS = """
+Generate comprehensive documentation for the configuration files of the software project based on the provided context. Create detailed markdown documentation that covers all relevant aspects of the project's configuration system.
+
+Your documentation should include (when relevant):
+
+1. An overview of the project's configuration system
+2. Description of each configuration file and its purpose
+3. Key configuration parameters and their impacts
+4. How configurations are managed across different environments
+5. Instructions for modifying and troubleshooting configurations
+
+Additionally, include any other relevant sections based on the specific context of the project, such as:
+
+- Sensitive information handling
+- Configuration loading process
+- Version control practices for config files
+- Any unique or project-specific configuration aspects
+
+IMPORTANT: 
+- Only use the information provided in the context. Do not invent or assume details not explicitly given. Add or remove sections as necessary based on the available information.
+- DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
+"""
 
 GENERATE_UNIT_TESTS_PYTHON = """
 You are tasked with generating unit tests for the Python file provided as context. 

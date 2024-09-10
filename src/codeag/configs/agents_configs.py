@@ -1,4 +1,5 @@
 from codeag.configs import prompts
+from codeag.core.agent import FilePathsOutput
 
 AGENTS_CONFIGS = {
     "custom": {
@@ -25,6 +26,13 @@ AGENTS_CONFIGS = {
         "model": "gpt-4o-2024-08-06",
         "context": "files_description",
     },
+    "generate_config_docs": {
+        "system_prompt": prompts.BASE_SYSTEM_PROMPT,
+        "instructions": prompts.GENERATE_CONFIG_DOCS,
+        "model": "gpt-4o-2024-08-06",
+        "context": "files_content",
+        "auto_select": True,
+    },
     "generate_unit_tests_python": {
         "system_prompt": prompts.BASE_SYSTEM_PROMPT,
         "instructions": prompts.GENERATE_UNIT_TESTS_PYTHON,
@@ -37,7 +45,6 @@ AGENTS_CONFIGS = {
         "instructions": prompts.GENERATE_FUNCTIONAL_TESTS_PYTHON,
         "model": "gpt-4o-2024-08-06",
         "context": "files_content",
-        "batch": True,
     },
     "generate_file_refactor": {
         "system_prompt": prompts.BASE_SYSTEM_PROMPT,
@@ -78,5 +85,12 @@ AGENTS_CONFIGS = {
         "model": "gpt-4o-mini",
         "context": "files_content",
         "batch": True,
+    },
+    "auto_select_files": {
+        "system_prompt": prompts.BASE_SYSTEM_PROMPT,
+        "instructions": prompts.AUTO_SELECT_FILES,
+        "model": "gpt-4o-2024-08-06",
+        "context": "files_description",
+        "response_format": FilePathsOutput,
     },
 }
