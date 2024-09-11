@@ -14,29 +14,56 @@ if "generated_context" not in st.session_state:
     st.session_state.generated_context = {}
 
 
-def get_context(context_config, preview: bool):
-    if "context_generator" in context_config:
-        display_context_generator(context_config, preview)
+def display_context(context_config, preview: bool):
+    if "context" in context_config and context_config["context"] != "files_content":
+        display_generated_context(context_config, preview)
+        display_retrieved_context(context_config)
     else:
-        return ...
+        display_retrieved_context(context_config)
 
 
-def display_context_generator(context_config, preview: bool):
-    agent_name = context_config["context_generator"]
-    agent_config = AGENTS_CONFIGS[agent_name]
-    files_paths = get_files_to_generate()
+def display_generated_context(context_config, preview: bool):
+    generator_name = context_config["context"]
+
+    files_paths = get_files_to_generate(generator_name)
     if any(files_paths):
+        generator_config = AGENTS_CONFIGS[generator_name]
+
         files_content = get_files_content(files_paths)
         context = Context(batch=True).retrieve(files_content)
+
         if preview:
-            preview = preview_agent(agent_config, context)
-            st.json(preview)
-            if st.button("Run", key=f"run_{context_config['context_generator']}"):
-                output = run_agent(agent_config, context)
-                save_generated_context(agent_name, output)
-                st.json(output)
+            preview = preview_agent(generator_config, context)
+            display_preview(preview)
+            if st.button("Run", key=f"run_{generator_name}"):
+                output = run_agent(generator_config, context)
+                save_generated_context(generator_name, output)
+                display_output(output)
         else:
-            output = run_agent(agent_config, context)
+            output = run_agent(generator_config, context)
+            save_generated_context(generator_name, output)
+            display_output(output)
+
+
+def display_preview(preview):
+    st.json(preview)
+
+
+def display_output(output):
+    st.json(output)
+
+
+def display_retrieved_context(context_config):
+    if "context" in context_config and context_config["context"] == "files_content":
+        files_paths = get_files_content(st.session_state.files_paths)
+        if any(files_paths):
+            files_content = get_files_content(files_paths)
+            context = Context(batch=True).retrieve(files_content)
+            st.json(context)
+        else:
+            st.json(context_config)
+    else:
+        display_context_config(context_config)
 
 
 def get_files_to_generate():
@@ -185,8 +212,7 @@ def display_context_step(agent_name, _):
     is_preview = result_step["type"] == "preview" if result_step else False
 
     with st.expander(f"[Context] {agent_name}", expanded=True):
-        context_output = get_context(context_step["context_config"], preview=is_preview)
-        st.json(context_output)
+        display_context(context_step["context_config"], preview=is_preview)
 
 
 def display_preview_step(agent_name, _):
