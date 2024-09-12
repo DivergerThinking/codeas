@@ -38,11 +38,14 @@ class LLMClient:
     def run(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         kwargs.setdefault("temperature", self.temperature)
         kwargs.setdefault("top_p", self.top_p)
-        kwargs.setdefault("stream", self.stream)
         kwargs.setdefault("timeout", self.timeout)
+        if not kwargs.get("response_format"):
+            kwargs.setdefault("stream", self.stream)
+
         if model == "gpt-4o":
             model = "gpt-4o-2024-08-06"
             logging.info("Using gpt-4o-2024-08-06 model")
+
         if isinstance(messages, list):
             return self.run_completions(messages, model, **kwargs)
         elif isinstance(messages, dict):
@@ -51,7 +54,6 @@ class LLMClient:
     def run_completions(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         """runs completions synchronously"""
         if kwargs.get("response_format"):
-            kwargs.pop("stream")
             response = self._client.beta.chat.completions.parse(
                 messages=messages, model=model, **kwargs
             )
@@ -97,9 +99,14 @@ class LLMClient:
     @retry(stop=stop_after_attempt(3), after=log_retry)
     async def _run_async_completions(self, client, messages, model: str, **kwargs):
         """runs completions asynchronously"""
-        response = await client.chat.completions.create(
-            messages=messages, model=model, **kwargs
-        )
+        if kwargs.get("response_format"):
+            response = await client.beta.chat.completions.parse(
+                messages=messages, model=model, **kwargs
+            )
+        else:
+            response = await client.chat.completions.create(
+                messages=messages, model=model, **kwargs
+            )
         if "stream" in kwargs and kwargs["stream"]:
             response = await self._parse_async_stream(response)
         return response

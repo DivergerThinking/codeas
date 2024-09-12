@@ -15,6 +15,20 @@ class FilePathsOutput(BaseModel):
     paths: list[str]
 
 
+class ApplicableResponse(BaseModel):
+    applicable: bool
+    response: str
+
+
+class FileDetailsOutput(BaseModel):
+    technologies_and_dependencies: ApplicableResponse
+    architectural_insights: ApplicableResponse
+    application_layer: ApplicableResponse
+    design_patterns: ApplicableResponse
+    data_models: ApplicableResponse
+    key_components: ApplicableResponse
+
+
 class AgentOutput(BaseModel):
     tokens: dict
     cost: dict
@@ -40,39 +54,13 @@ class Agent(BaseModel):
         context: Union[dict, list, str] = [],
     ) -> AgentOutput:
         messages = self.get_messages(context)
-        completion = llm_client.run(
+        response = llm_client.run(
             messages, model=self.model, response_format=self.response_format
         )
-        response, tokens, cost = self.parse_completion(messages, completion)
+        tokens, cost = self.calculate_tokens_and_cost(messages, response)
         return AgentOutput(
             messages=messages, response=response, tokens=tokens, cost=cost
         )
-
-    def parse_completion(self, messages, completion):
-        if self.response_format:
-            response = completion.choices[0].message.parsed
-            tokens = {
-                "input_tokens": completion.usage.prompt_tokens,
-                "output_tokens": completion.usage.completion_tokens,
-                "total_tokens": completion.usage.total_tokens,
-            }
-            cost = {
-                "input_cost": float(
-                    calculate_cost_by_tokens(
-                        completion.usage.prompt_tokens, self.model, "input"
-                    )
-                ),
-                "output_cost": float(
-                    calculate_cost_by_tokens(
-                        completion.usage.completion_tokens, self.model, "output"
-                    )
-                ),
-            }
-            cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
-            return response, tokens, cost
-        else:
-            tokens, cost = self.calculate_tokens_and_cost(messages, completion)
-            return completion, tokens, cost
 
     def preview(self, context: Union[dict, list, str]) -> AgentPreview:
         messages = self.get_messages(context)
@@ -112,9 +100,53 @@ class Agent(BaseModel):
 
     def calculate_tokens_and_cost(self, messages: Union[list, dict], response=None):
         if isinstance(messages, dict):
-            return self._sum_calculate_tokens_and_cost(messages, response)
+            if self.response_format and response is not None:
+                return self._sum_get_request_tokens_and_cost(response)
+            else:
+                return self._sum_calculate_tokens_and_cost(messages, response)
         else:
-            return self._calculate_tokens_and_cost(messages, response)
+            if self.response_format and response is not None:
+                return self._get_request_tokens_and_cost(response)
+            else:
+                return self._calculate_tokens_and_cost(messages, response)
+
+    def _sum_get_request_tokens_and_cost(self, responses: dict):
+        results = []
+        for response in responses.values():
+            results.append(self._get_request_tokens_and_cost(response))
+
+        tokens = {
+            "input_tokens": sum(result[0]["input_tokens"] for result in results),
+            "output_tokens": sum(result[0]["output_tokens"] for result in results),
+            "total_tokens": sum(result[0]["total_tokens"] for result in results),
+        }
+        cost = {
+            "input_cost": sum(result[1]["input_cost"] for result in results),
+            "output_cost": sum(result[1]["output_cost"] for result in results),
+            "total_cost": sum(result[1]["total_cost"] for result in results),
+        }
+        return tokens, cost
+
+    def _get_request_tokens_and_cost(self, response):
+        tokens = {
+            "input_tokens": response.usage.prompt_tokens,
+            "output_tokens": response.usage.completion_tokens,
+            "total_tokens": response.usage.total_tokens,
+        }
+        cost = {
+            "input_cost": float(
+                calculate_cost_by_tokens(
+                    response.usage.prompt_tokens, self.model, "input"
+                )
+            ),
+            "output_cost": float(
+                calculate_cost_by_tokens(
+                    response.usage.completion_tokens, self.model, "output"
+                )
+            ),
+        }
+        cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
+        return tokens, cost
 
     def _sum_calculate_tokens_and_cost(self, batch_messages: dict, batch_response=None):
         results = []
@@ -176,17 +208,22 @@ if __name__ == "__main__":
     from codeag.configs.agents_configs import AGENTS_CONFIGS
     from codeag.core.context import Context
     from codeag.core.llms import LLMClient
+    from codeag.core.repo import Repo
     from codeag.ui.Home import get_files_content
 
     llm_client = LLMClient()
-    agent = Agent(**AGENTS_CONFIGS["auto_select_files"])
-    files_content = get_files_content(["requirements.txt", "Makefile", "LICENSE"])
-    ctx = Context()
+    agent = Agent(**AGENTS_CONFIGS["extract_files_detail"])
+    repo = Repo(repo_path=".")
+    incl_files = repo.filter_files()
+    files_paths = [path for path, incl in zip(repo.files_paths, incl_files) if incl]
+
+    files_content = get_files_content(files_paths)
+    ctx = Context(batch=True)
     context = ctx.retrieve(
         files_content=files_content,
-        agents_output={
-            "document_configs": "document all of the configurations of the project"
-        },
+        # agents_output={
+        #     "document_configs": "document all of the configurations of the project"
+        # },
     )
     response = agent.run(llm_client, context=context)
-    print(response)
+    ...

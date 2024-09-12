@@ -41,7 +41,7 @@ class Repo(BaseModel):
             return f.read()
 
     def filter_files(
-        self, include_patterns: List[str], exclude_patterns: List[str]
+        self, include_patterns: List[str] = [], exclude_patterns: List[str] = []
     ) -> List[bool]:
         incl_files = []
         for file_path in self.files_paths:

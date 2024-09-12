@@ -18,17 +18,41 @@ If the file is more complex and longer, your answer SHOULD NOT EXCEED 50 tokens.
 """.strip()
 
 EXTRACT_FILE_DETAIL = """
-Write a detailed description of what the file does.
-For code files, include the following:
-- Main libraries and frameworks used (external dependencies)
-- Names of the classes found inside the file (or key functions if classes are not used)
-- Key functionalities of each class (or functions)
-- Classes from other files that are used in this file (internal dependencies)
+Analyze the provided file and extract information relevant for generating technical documentation. 
+Focus on details related to architecture, technologies, layers, patterns, and data models. 
+Structure your response with the following sections:
 
-For non-code files, provide a detailed description of the file.
+Architectural Insights:
+   - Identify any architectural components or patterns implemented in this file.
+   - Describe how this file fits into the overall system architecture.
 
-If the file is relatively simple and short, your answer SHOULD NOT EXCEED 50 tokens.
-If the file is more complex and longer, your answer SHOULD NOT EXCEED 200 tokens.
+Technologies and Dependencies:
+   - List main libraries, frameworks, or technologies used in this file.
+   - Mention any significant internal or external dependencies.
+
+Application Layer:
+   - Identify which application layer(s) this file belongs to (e.g., presentation, business logic, data access).
+   - Describe the file's role within its layer.
+
+Design Patterns:
+   - List any design patterns implemented or utilized in this file.
+   - Briefly explain how these patterns are applied.
+
+Data Model Elements:
+   - Identify any data structures, models, or schemas defined in this file.
+   - Describe key entities and their relationships, if applicable.
+
+Key Components:
+   - List main classes, functions, or modules defined in the file.
+   - Provide a brief description of their purposes.
+
+Provide concise, factual information based solely on the file's content. 
+Do not make assumptions or add details not present in the file. 
+
+**IMPORTANT**:
+- If information for a section is not applicable or not present, set applicable to false and return an empty string for that section.
+- Limit your response to the most relevant details for technical documentation. 
+- The total response should not exceed 50 tokens for simple files and 200 tokens for complex files.
 """.strip()
 
 AUTO_SELECT_FILES = """
@@ -42,6 +66,46 @@ Consider the following:
 
 The content of the files you select will be passed to the next agent which only has a limited context, so make sure to select the most relevant files only.
 Return only the file paths.
+""".strip()
+
+GENERATE_DETAILED_TECHNICAL_DOCS = """
+Generate comprehensive and technically detailed documentation for the software project based on the provided context. Create markdown documentation that focuses on the architecture, technologies, layers, patterns, and data models of the system. This documentation should be applicable to backend, frontend, or mobile development, depending on the context provided.
+
+Your documentation should include the following sections:
+
+1. Architecture
+   - Detailed architectural diagram (describe it textually if image generation is not possible)
+   - Explanation of the overall system architecture
+   - Description of major components and their interactions
+   - Discussion of architectural decisions and trade-offs
+
+2. Technology Stack
+   - Comprehensive list of all technologies, frameworks, and libraries used
+   - Version information for key technologies
+   - Justification for technology choices where relevant
+
+3. Application Layers
+   - Detailed breakdown of the application's layers (e.g., presentation, business logic, data access for backend; or UI, state management, API integration for frontend/mobile)
+   - Responsibilities of each layer
+   - Inter-layer communication and dependencies
+
+4. Design Patterns and Principles
+   - List and explanation of design patterns used in the project
+   - Description of how these patterns are implemented
+   - Key software design principles followed (e.g., SOLID principles, component-based architecture)
+
+5. Data Model
+   - Detailed entity-relationship diagram or component state structure (describe it textually if image generation is not possible)
+   - Explanation of key entities/components and their relationships
+   - Data flow and state management strategies
+
+Format your response in markdown, using appropriate headers, code blocks, and formatting for readability. Be as detailed and technical as possible, assuming the reader has advanced knowledge of software development.
+
+Based on the context provided, adjust the focus and terminology of each section to be relevant to either backend, frontend, or mobile development as appropriate. Include code snippets, configuration examples, and textual representations of diagrams where appropriate to illustrate complex concepts.
+
+IT IS CRUCIAL THAT YOU DO NOT INVENT OR ASSUME INFORMATION. ONLY USE THE DETAILS PROVIDED IN THE CONTEXT. IF CERTAIN INFORMATION IS NOT AVAILABLE, CLEARLY STATE THAT IT'S NOT SPECIFIED IN THE GIVEN CONTEXT.
+
+DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
 """.strip()
 
 GENERATE_BACKEND_DOCS = """

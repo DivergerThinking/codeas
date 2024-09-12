@@ -17,6 +17,8 @@ from codeag.ui.utils import search_dirs
 if "llm_client" not in st.session_state:
     st.session_state.llm_client = LLMClient()
 
+st.set_page_config(layout="wide")
+
 
 def home_page():
     st.title("Codeas")
@@ -634,7 +636,8 @@ def generate_files_details(files_path: list[str]):
                 with st.spinner("Generating files detail..."):
                     output = run_agent("extract_files_detail")
                 for file_path, response in output.response.items():
-                    state.files_detail[file_path] = response["content"]
+                    file_detail = process_file_detail(response)
+                    state.files_detail[file_path] = file_detail
                 st.session_state.files_detail_generated = True
 
                 # Display the generated detailed content immediately
@@ -659,6 +662,15 @@ def generate_files_details(files_path: list[str]):
             st.write("Generated Files Detail:")
             st.json(state.files_detail, expanded=False)
     return True
+
+
+def process_file_detail(response):
+    files_detail_output = response.choices[0].message.parsed
+    files_detail = ""
+    for section_name, section_content in files_detail_output.model_dump().items():
+        if section_content["applicable"]:
+            files_detail += f"{section_name.replace('_', ' ').title()}:\n\t{section_content['response']}\n\n"
+    return files_detail.strip()
 
 
 def read_file(file_path: str):
