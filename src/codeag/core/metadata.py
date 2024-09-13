@@ -1,10 +1,11 @@
-from typing import List
+import json
+import os
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 from codeag.core.agent import Agent
 from codeag.core.llms import LLMClient
-from codeag.core.repo import Repo
 
 
 class FileUsage(BaseModel):
@@ -43,9 +44,20 @@ class RepoMetadata(BaseModel):
 
     def generate_repo_metadata(self, llm_client: LLMClient, files_paths: list[str]):
         self.generate_files_usage(llm_client, files_paths)
-        self.generate_descriptions(llm_client)
-        self.generate_code_details(llm_client)
-        self.generate_testing_details(llm_client)
+        self.generate_descriptions(llm_client, files_paths)
+        self.generate_code_details(llm_client, files_paths)
+        self.generate_testing_details(llm_client, files_paths)
+
+    def generate_missing_repo_metadata(
+        self, llm_client: LLMClient, files_paths: list[str]
+    ):
+        missing_files_paths = [
+            file_path for file_path in files_paths if file_path not in self.files_usage
+        ]
+        self.generate_files_usage(llm_client, missing_files_paths)
+        self.generate_descriptions(llm_client, missing_files_paths)
+        self.generate_code_details(llm_client, missing_files_paths)
+        self.generate_testing_details(llm_client, missing_files_paths)
 
     def generate_files_usage(self, llm_client: LLMClient, files_paths: list[str]):
         context = get_files_contents(files_paths)
@@ -55,30 +67,36 @@ class RepoMetadata(BaseModel):
             response_format=FileUsage,
         )
         output = agent.run(llm_client, context)
-        self.files_usage = {
-            file_path: parse_response(output.response[file_path])
-            for file_path in files_paths
-        }
+        self.files_usage.update(
+            {
+                file_path: parse_response(output.response[file_path])
+                for file_path in files_paths
+            }
+        )
 
-    def generate_descriptions(self, llm_client: LLMClient):
+    def generate_descriptions(self, llm_client: LLMClient, files_paths: list[str]):
         files_to_generate_descriptions = [
             file_path
-            for file_path, usage in self.files_usage.items()
-            if not usage.is_code
+            for file_path in files_paths
+            if file_path in self.files_usage and not self.files_usage[file_path].is_code
         ]
         context = get_files_contents(files_to_generate_descriptions)
         agent = Agent(instructions=prompt_generate_descriptions, model="gpt-4o-mini")
         output = agent.run(llm_client, context)
-        self.descriptions = {
-            file_path: output.response[file_path]["content"]
-            for file_path in files_to_generate_descriptions
-        }
+        self.descriptions.update(
+            {
+                file_path: output.response[file_path]["content"]
+                for file_path in files_to_generate_descriptions
+            }
+        )
 
-    def generate_code_details(self, llm_client: LLMClient):
+    def generate_code_details(self, llm_client: LLMClient, files_paths: list[str]):
         files_to_generate_code_details = [
             file_path
-            for file_path, usage in self.files_usage.items()
-            if usage.is_code and not usage.testing_related
+            for file_path in files_paths
+            if file_path in self.files_usage
+            and self.files_usage[file_path].is_code
+            and not self.files_usage[file_path].testing_related
         ]
         context = get_files_contents(files_to_generate_code_details)
         agent = Agent(
@@ -87,16 +105,20 @@ class RepoMetadata(BaseModel):
             response_format=CodeDetails,
         )
         output = agent.run(llm_client, context)
-        self.code_details = {
-            file_path: parse_response(output.response[file_path])
-            for file_path in files_to_generate_code_details
-        }
+        self.code_details.update(
+            {
+                file_path: parse_response(output.response[file_path])
+                for file_path in files_to_generate_code_details
+            }
+        )
 
-    def generate_testing_details(self, llm_client: LLMClient):
+    def generate_testing_details(self, llm_client: LLMClient, files_paths: list[str]):
         files_to_generate_testing_details = [
             file_path
-            for file_path, usage in self.files_usage.items()
-            if usage.is_code and usage.testing_related
+            for file_path in files_paths
+            if file_path in self.files_usage
+            and self.files_usage[file_path].is_code
+            and self.files_usage[file_path].testing_related
         ]
         context = get_files_contents(files_to_generate_testing_details)
         agent = Agent(
@@ -105,10 +127,12 @@ class RepoMetadata(BaseModel):
             response_format=TestingDetails,
         )
         output = agent.run(llm_client, context)
-        self.testing_details = {
-            file_path: parse_response(output.response[file_path])
-            for file_path in files_to_generate_testing_details
-        }
+        self.testing_details.update(
+            {
+                file_path: parse_response(output.response[file_path])
+                for file_path in files_to_generate_testing_details
+            }
+        )
 
     def get_file_metadata(self, file_path: str):
         return {
@@ -129,6 +153,23 @@ class RepoMetadata(BaseModel):
 
     def get_testing_details(self, file_path: str) -> TestingDetails:
         return self.testing_details.get(file_path)
+
+    def export_metadata(self, repo_path: str):
+        """Export the metadata to a JSON file."""
+        metadata_path = os.path.join(repo_path, ".codeas", "metadata.json")
+        os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+        with open(metadata_path, "w") as f:
+            json.dump(self.model_dump(), f, indent=2)
+
+    @classmethod
+    def load_metadata(cls, repo_path: str) -> Optional["RepoMetadata"]:
+        """Load metadata from a JSON file. Returns None if the file doesn't exist."""
+        metadata_path = os.path.join(repo_path, ".codeas", "metadata.json")
+        if not os.path.exists(metadata_path):
+            return None
+        with open(metadata_path, "r") as f:
+            data = json.load(f)
+        return cls(**data)
 
 
 def get_files_contents(file_paths: list[str]) -> str:
@@ -210,11 +251,13 @@ Add the technologies mentioned inside that file (and their versions if present) 
 
 if __name__ == "__main__":
     llm_client = LLMClient()
-    repo = Repo(repo_path=".")
-    incl = repo.filter_files()
-    files_paths = [file_path for file_path, incl in zip(repo.files_paths, incl) if incl]
+    repo_path = "."
+    files_paths = ["src/codeag/core/repo.py", "requirements.txt"]
 
     metadata = RepoMetadata()
-    metadata.generate_repo_metadata(llm_client, files_paths)
-
-    print(metadata.get_file_metadata("src/codeag/core/agents.py"))
+    # metadata.generate_repo_metadata(llm_client, files_paths)
+    # metadata.export_metadata(repo_path)
+    loaded_metadata = RepoMetadata.load_metadata(repo_path)
+    # loaded_metadata.generate_missing_repo_metadata(llm_client, files_paths)
+    # loaded_metadata.export_metadata(repo.repo_path)
+    ...
