@@ -1,58 +1,6 @@
-from typing import List
-
 from pydantic import BaseModel, PrivateAttr
 
-
-class FileUsage(BaseModel):
-    is_code: bool
-    db_related: bool
-    ai_related: bool
-    ui_related: bool
-    api_related: bool
-    config_related: bool
-    testing_related: bool
-    security_related: bool
-    deployment_related: bool
-
-
-prompt_identify_file_usage = """
-
-"""
-
-
-def identify_file_usage(file_path: str) -> FileUsage:
-    ...
-
-
-class CodeDetails(BaseModel):
-    external_imports: List[str]
-    internal_imports: List[str]
-    classes: List[str]
-    relationships: List[str]
-    functionalities: List[str]
-
-
-def generate_code_details(file_path: str) -> CodeDetails:
-    ...
-
-
-# if file_usage.code_related and not file_usage.testing_related:
-
-
-class TestingDetails(BaseModel):
-    imports: List[str]
-    test_cases: List[str]
-
-
-def generate_testing_details() -> TestingDetails:
-    ...
-
-
-# if file_usage.code_related and file_usage.testing_related:
-
-
-def generate_descriptions() -> list[str]:
-    ...
+from codeag.core.metadata import Metadata
 
 
 class ContextRetriever(BaseModel):
@@ -61,15 +9,14 @@ class ContextRetriever(BaseModel):
     include_testing_files: bool = False
     include_config_files: bool = False
     include_deployment_files: bool = False
+    include_security_files: bool = False
+    include_ui_files: bool = False
+    include_api_files: bool = False
     previous_outputs: list[str] = PrivateAttr(default=[])
     use_descriptions: bool = False
     use_details: bool = False
-    _descriptions: list[str] = PrivateAttr(default=[])
-    _files_types: list[FileUsage] = PrivateAttr(default=[])
-    _code_details: list[CodeDetails] = PrivateAttr(default=[])
-    _testing_details: list[TestingDetails] = PrivateAttr(default=[])
 
-    def retrieve() -> str:
+    def retrieve(self, metadata: Metadata) -> str:
         ...
 
 
@@ -302,25 +249,6 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 - Compliance and Regulations
 
 Provide detailed explanations of security measures, implementation details, and compliance requirements.
-
-IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
-
-prompt_generate_docs_ai = """
-Generate a comprehensive AI documentation section.
-
-Start with the title '## AI'.
-
-Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
-- AI/ML Model Architecture
-- Training Process
-- Data Preprocessing
-- Feature Engineering
-- Model Evaluation Metrics
-- AI Integration Points
-- Ethical AI Considerations
-
-Provide detailed technical information about AI/ML components, methodologies, and integration within the project.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
 """

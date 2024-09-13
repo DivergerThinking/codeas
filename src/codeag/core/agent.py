@@ -43,10 +43,10 @@ class AgentPreview(BaseModel):
 
 
 class Agent(BaseModel):
-    system_prompt: str
     instructions: str
     model: str
     response_format: object = None
+    system_prompt: str = None
 
     def run(
         self,
@@ -76,27 +76,31 @@ class Agent(BaseModel):
             return self.get_single_messages(context)
 
     def get_batch_messages(self, batch_contexts: dict):
-        messages = {}
-        for key, context in batch_contexts.items():
-            if isinstance(context, list):
-                messages[key] = self.get_multi_messages(context)
-            elif isinstance(context, str):
-                messages[key] = self.get_single_messages(context)
-        return messages
+        return {
+            key: self._create_messages(context)
+            for key, context in batch_contexts.items()
+        }
 
     def get_multi_messages(self, contexts: list):
-        messages = [{"role": "system", "content": self.system_prompt}]
-        for context in contexts:
-            messages.append({"role": "user", "content": context})
-        messages.append({"role": "user", "content": self.instructions})
-        return messages
+        return self._create_messages(contexts)
 
     def get_single_messages(self, context: str):
-        return [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": context},
-            {"role": "user", "content": self.instructions},
-        ]
+        return self._create_messages(context)
+
+    def _create_messages(self, context):
+        messages = (
+            [{"role": "system", "content": self.system_prompt}]
+            if self.system_prompt
+            else []
+        )
+
+        if isinstance(context, list):
+            messages.extend({"role": "user", "content": c} for c in context)
+        elif isinstance(context, str):
+            messages.append({"role": "user", "content": context})
+
+        messages.append({"role": "user", "content": self.instructions})
+        return messages
 
     def calculate_tokens_and_cost(self, messages: Union[list, dict], response=None):
         if isinstance(messages, dict):
