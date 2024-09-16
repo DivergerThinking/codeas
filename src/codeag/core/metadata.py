@@ -5,7 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from codeag.core.agent import Agent
-from codeag.core.llms import LLMClient
+from codeag.core.llm import LLMClient
 
 
 class FileUsage(BaseModel):
@@ -42,30 +42,44 @@ class RepoMetadata(BaseModel):
     code_details: dict[str, CodeDetails] = Field(default={})
     testing_details: dict[str, TestingDetails] = Field(default={})
 
-    def generate_repo_metadata(self, llm_client: LLMClient, files_paths: list[str]):
-        self.generate_files_usage(llm_client, files_paths)
+    def generate_repo_metadata(
+        self, llm_client: LLMClient, files_paths: list[str], preview: bool = False
+    ):
+        files_usage_preview = self.generate_files_usage(
+            llm_client, files_paths, preview
+        )
+        if preview:
+            return files_usage_preview
         self.generate_descriptions(llm_client, files_paths)
         self.generate_code_details(llm_client, files_paths)
         self.generate_testing_details(llm_client, files_paths)
 
     def generate_missing_repo_metadata(
-        self, llm_client: LLMClient, files_paths: list[str]
+        self, llm_client: LLMClient, files_paths: list[str], preview: bool = False
     ):
         missing_files_paths = [
             file_path for file_path in files_paths if file_path not in self.files_usage
         ]
-        self.generate_files_usage(llm_client, missing_files_paths)
+        files_usage_preview = self.generate_files_usage(
+            llm_client, missing_files_paths, preview
+        )
+        if preview:
+            return files_usage_preview
         self.generate_descriptions(llm_client, missing_files_paths)
         self.generate_code_details(llm_client, missing_files_paths)
         self.generate_testing_details(llm_client, missing_files_paths)
 
-    def generate_files_usage(self, llm_client: LLMClient, files_paths: list[str]):
+    def generate_files_usage(
+        self, llm_client: LLMClient, files_paths: list[str], preview: bool = False
+    ):
         context = get_files_contents(files_paths)
         agent = Agent(
             instructions=prompt_identify_file_usage,
             model="gpt-4o-mini",
             response_format=FileUsage,
         )
+        if preview:
+            return agent.preview(context)
         output = agent.run(llm_client, context)
         self.files_usage.update(
             {
@@ -166,7 +180,7 @@ class RepoMetadata(BaseModel):
         """Load metadata from a JSON file. Returns None if the file doesn't exist."""
         metadata_path = os.path.join(repo_path, ".codeas", "metadata.json")
         if not os.path.exists(metadata_path):
-            return None
+            return cls()
         with open(metadata_path, "r") as f:
             data = json.load(f)
         return cls(**data)

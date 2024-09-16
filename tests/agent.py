@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from codeag.core.agent import Agent, AgentOutput, AgentPreview
-from codeag.core.llms import LLMClient
+from codeag.core.llm import LLMClient
 
 
 @pytest.fixture

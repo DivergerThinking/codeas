@@ -8,7 +8,7 @@ from tokencost import (
     count_message_tokens,
 )
 
-from codeag.core.llms import LLMClient
+from codeag.core.llm import LLMClient
 
 
 class FilePathsOutput(BaseModel):
@@ -210,10 +210,8 @@ class Agent(BaseModel):
 
 if __name__ == "__main__":
     from codeag.configs.agents_configs import AGENTS_CONFIGS
-    from codeag.core.context import Context
-    from codeag.core.llms import LLMClient
+    from codeag.core.llm import LLMClient
     from codeag.core.repo import Repo
-    from codeag.ui.Home import get_files_content
 
     llm_client = LLMClient()
     agent = Agent(**AGENTS_CONFIGS["extract_files_detail"])
@@ -221,13 +219,6 @@ if __name__ == "__main__":
     incl_files = repo.filter_files()
     files_paths = [path for path, incl in zip(repo.files_paths, incl_files) if incl]
 
-    files_content = get_files_content(files_paths)
-    ctx = Context(batch=True)
-    context = ctx.retrieve(
-        files_content=files_content,
-        # agents_output={
-        #     "document_configs": "document all of the configurations of the project"
-        # },
-    )
-    response = agent.run(llm_client, context=context)
+    # files_content = get_files_content(files_paths)
+    # response = agent.run(llm_client, context=context)
     ...
