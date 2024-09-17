@@ -9,7 +9,7 @@ from codeag.ui.state import state
 from codeag.ui.utils import search_dirs
 
 
-def display_repo():
+def display():
     st.subheader("Repo")
     display_repo_path()
     with st.expander("Files"):
