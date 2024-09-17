@@ -19,11 +19,16 @@ class FileUsage(BaseModel):
     deployment_related: bool
 
 
+class ClassDetails(BaseModel):
+    name: str
+    description: str
+
+
 class CodeDetails(BaseModel):
     description: str
     external_imports: List[str]
     internal_imports: List[str]
-    classes: List[str]
+    classes: List[ClassDetails]
     relationships: List[str]
     functionalities: List[str]
 
@@ -229,7 +234,7 @@ Analyze the given code and provide the following details:
 1. Description: A single sentence describing what the file does.
 2. External imports: List of external library used (only list the library name).
 3. Internal imports: List of internal modules used (only list the module name). !! These internal modules should not appear in the external imports list.
-4. Classes: List all class names defined in the file.
+4. Classes: A dictionary where the key is the class name and the value is a concise description of what the class does.
 5. Relationships: Show dependencies between classes in this file and modules/classes from internal imports. Use -> for "depends on", <- for "is depended on by", and <> for bidirectional dependencies. Avoid repeating the same relationship in multiple directions.
 6. Functionalities: List the main functionalities present in the file. DO NOT name specific methods or functions.
 

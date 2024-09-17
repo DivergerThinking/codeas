@@ -22,7 +22,7 @@ def display_tasks():
         "Generate refactoring",
         "Generate deployments",
     ]
-    selected_task = st.selectbox("Select a task", task_options)
+    selected_task = st.selectbox("Select a task", [""] + task_options)
 
     display_task(selected_task)
 

@@ -17,9 +17,11 @@ class ContextRetriever(BaseModel):
     use_descriptions: bool = False
     use_details: bool = False
 
-    def retrieve(self, files_paths: list[str], metadata: RepoMetadata) -> str:
+    def retrieve(
+        self, files_paths: list[str], files_tokens: list[int], metadata: RepoMetadata
+    ) -> str:
         context = []
-        for file_path in files_paths:
+        for file_path, n_tokens in zip(files_paths, files_tokens):
             file_usage = metadata.get_file_usage(file_path)
             if not file_usage:
                 raise ValueError(f"File {file_path} not found in metadata")
@@ -33,6 +35,7 @@ class ContextRetriever(BaseModel):
                 or (self.include_ui_files and file_usage.ui_related)
                 or (self.include_api_files and file_usage.api_related)
             ):
+                file_header = f"# {file_path} [{n_tokens} tokens]"
                 if self.use_details and file_usage.is_code:
                     if file_usage.testing_related:
                         details = metadata.get_testing_details(file_path)
@@ -40,7 +43,7 @@ class ContextRetriever(BaseModel):
                         details = metadata.get_code_details(file_path)
                     if details:
                         context.append(
-                            f"# {file_path}:\n{self.parse_json_response(details.model_dump_json())}"
+                            f"{file_header}:\n{self.parse_json_response(details.model_dump_json())}"
                         )
                 elif self.use_descriptions:
                     if file_usage.is_code:
@@ -50,17 +53,17 @@ class ContextRetriever(BaseModel):
                             else metadata.get_testing_details(file_path)
                         )
                         if details:
-                            description = f"# {file_path}:\n{details.description}"
+                            description = f"{file_header}:\n{details.description}"
                             if details.external_imports:
                                 description += f"\nExternal imports: {', '.join(details.external_imports)}"
                             context.append(description)
                     else:
                         description = metadata.get_file_description(file_path)
-                        context.append(f"# {file_path}:\n{description}")
+                        context.append(f"{file_header}:\n{description}")
                 else:
                     with open(file_path, "r") as f:
                         content = f.read()
-                    context.append(f"# {file_path}:\n{content}")
+                    context.append(f"{file_header}:\n{content}")
 
         return "\n\n".join(context)
 

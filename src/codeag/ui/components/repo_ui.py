@@ -118,3 +118,10 @@ def display_selected_files_info():
         )
         if incl
     ]
+    st.session_state.selected_files_tokens = [
+        token
+        for token, incl in zip(
+            st.session_state.files_data["Tokens"], st.session_state.files_data["Incl."]
+        )
+        if incl
+    ]

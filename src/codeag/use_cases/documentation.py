@@ -57,6 +57,7 @@ def generate_docs_section(
     llm_client: LLMClient,
     section: str,
     files_paths: list[str],
+    files_tokens: list[int],
     metadata: dict,
     preview: bool = False,
 ) -> str:
@@ -65,7 +66,7 @@ def generate_docs_section(
         return f"Error: Section '{section}' not found in configuration."
 
     retriever = ContextRetriever(**config["context"])
-    context = retriever.retrieve(files_paths, metadata)
+    context = retriever.retrieve(files_paths, files_tokens, metadata)
 
     agent = Agent(instructions=config["prompt"], model=config["model"])
     if preview:
