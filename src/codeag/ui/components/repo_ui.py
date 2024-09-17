@@ -4,7 +4,6 @@ from typing import Literal
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 
-from codeag.core.repo import Repo
 from codeag.ui.state import state
 from codeag.ui.utils import search_dirs
 
@@ -19,9 +18,11 @@ def display():
 
 
 def display_repo_path():
-    state.repo_path = st_searchbox(
+    repo_path = st_searchbox(
         search_dirs, placeholder=state.repo_path, default=state.repo_path
     )
+    if repo_path != state.repo_path:
+        state.update(repo_path)
     st.caption(os.path.abspath(state.repo_path))
 
 
@@ -54,18 +55,17 @@ def update_filter(filter_type: Literal["include", "exclude"]):
 
 
 def display_files_editor():
-    repo = Repo(repo_path=state.repo_path)
     include_patterns = [
         include.strip() for include in state.include.split(",") if include.strip()
     ]
     exclude_patterns = [
         exclude.strip() for exclude in state.exclude.split(",") if exclude.strip()
     ]
-    incl_files = repo.filter_files(include_patterns, exclude_patterns)
+    state.repo.filter_files(include_patterns, exclude_patterns)
     st.session_state.files_data = {
-        "Incl.": incl_files,
-        "Path": repo.files_paths,
-        "Tokens": list(repo.files_tokens.values()),
+        "Incl.": state.repo.included,
+        "Path": state.repo.files_paths,
+        "Tokens": list(state.repo.files_tokens.values()),
     }
     sort_files_data()
     st.data_editor(
@@ -111,17 +111,17 @@ def display_selected_files_info():
     st.info(
         f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
     )
-    st.session_state.selected_files_path = [
-        path
-        for path, incl in zip(
-            st.session_state.files_data["Path"], st.session_state.files_data["Incl."]
-        )
-        if incl
-    ]
-    st.session_state.selected_files_tokens = [
-        token
-        for token, incl in zip(
-            st.session_state.files_data["Tokens"], st.session_state.files_data["Incl."]
-        )
-        if incl
-    ]
+    # st.session_state.selected_files_path = [
+    #     path
+    #     for path, incl in zip(
+    #         st.session_state.files_data["Path"], st.session_state.files_data["Incl."]
+    #     )
+    #     if incl
+    # ]
+    # st.session_state.selected_files_tokens = [
+    #     token
+    #     for token, incl in zip(
+    #         st.session_state.files_data["Tokens"], st.session_state.files_data["Incl."]
+    #     )
+    #     if incl
+    # ]

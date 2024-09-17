@@ -1,5 +1,7 @@
 from codeag.core.agent import Agent
 from codeag.core.llm import LLMClient
+from codeag.core.metadata import RepoMetadata
+from codeag.core.repo import Repo
 from codeag.core.retriever import ContextRetriever
 from codeag.use_cases import prompts
 
@@ -56,9 +58,8 @@ SECTION_CONFIG = {
 def generate_docs_section(
     llm_client: LLMClient,
     section: str,
-    files_paths: list[str],
-    files_tokens: list[int],
-    metadata: dict,
+    repo: Repo,
+    metadata: RepoMetadata,
     preview: bool = False,
 ) -> str:
     config = SECTION_CONFIG.get(section)
@@ -66,8 +67,9 @@ def generate_docs_section(
         return f"Error: Section '{section}' not found in configuration."
 
     retriever = ContextRetriever(**config["context"])
-    context = retriever.retrieve(files_paths, files_tokens, metadata)
-
+    context = retriever.retrieve(
+        repo.included_files_paths, repo.included_files_tokens, metadata
+    )
     agent = Agent(instructions=config["prompt"], model=config["model"])
     if preview:
         return agent.preview(context=context)
@@ -77,9 +79,10 @@ def generate_docs_section(
 
 if __name__ == "__main__":
     from codeag.core.metadata import RepoMetadata
+    from codeag.core.repo import Repo
 
     llm_client = LLMClient()
+    repo = Repo(repo_path=".")
     metadata = RepoMetadata.load_metadata(repo_path=".")
-    files_paths = metadata.files_usage.keys()
-    docs = generate_docs_section(llm_client, "project_overview", files_paths, metadata)
+    docs = generate_docs_section(llm_client, "project_overview", repo, metadata)
     print(docs)

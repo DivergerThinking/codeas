@@ -10,12 +10,16 @@ class Repo(BaseModel):
     repo_path: str
     files_paths: List[str] = []
     files_tokens: dict = {}
+    included: List[bool] = []
+    included_files_paths: List[str] = []
+    included_files_tokens: List[int] = []
 
     def __init__(self, **data):
         super().__init__(**data)
         self.repo_path = os.path.abspath(self.repo_path)
         self.files_paths = self.get_files_paths()
         self.calculate_files_tokens()
+        self.filter_files()
 
     def get_files_paths(self):
         absolute_paths = glob.glob(os.path.join(self.repo_path, "**"), recursive=True)
@@ -43,28 +47,30 @@ class Repo(BaseModel):
     def filter_files(
         self, include_patterns: List[str] = [], exclude_patterns: List[str] = []
     ) -> List[bool]:
-        incl_files = []
+        self.included = []
+        self.included_files_paths = []
+        self.included_files_tokens = []
         for file_path in self.files_paths:
             tokens = self.files_tokens.get(file_path)
             if tokens is None or tokens == 0:
-                incl_files.append(False)
+                self.included.append(False)
                 continue
 
             if include_patterns and not any(
                 self._match_path(file_path, pattern) for pattern in include_patterns
             ):
-                incl_files.append(False)
+                self.included.append(False)
                 continue
 
             if exclude_patterns and any(
                 self._match_path(file_path, pattern) for pattern in exclude_patterns
             ):
-                incl_files.append(False)
+                self.included.append(False)
                 continue
 
-            incl_files.append(True)
-
-        return incl_files
+            self.included.append(True)
+            self.included_files_paths.append(file_path)
+            self.included_files_tokens.append(tokens)
 
     def _match_path(self, path: str, pattern: str) -> bool:
         if pattern.endswith("/"):

@@ -59,8 +59,7 @@ def process_sections(
                 output = generate_docs_section(
                     state.llm_client,
                     section,
-                    st.session_state.selected_files_path,
-                    st.session_state.selected_files_tokens,
+                    state.repo,
                     state.repo_metadata,
                     preview=preview,
                 )
@@ -104,8 +103,7 @@ def display_section(section: str, preview: bool = False):
                 output = generate_docs_section(
                     state.llm_client,
                     section,
-                    st.session_state.selected_files_path,
-                    st.session_state.selected_files_tokens,
+                    state.repo,
                     state.repo_metadata,
                     preview=True,
                 )

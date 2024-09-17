@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -18,13 +19,19 @@ class ContextRetriever(BaseModel):
     use_details: bool = False
 
     def retrieve(
-        self, files_paths: list[str], files_tokens: list[int], metadata: RepoMetadata
+        self,
+        files_paths: list[str],
+        files_tokens: Optional[list[int]] = None,
+        metadata: Optional[RepoMetadata] = None,
     ) -> str:
         context = []
-        for file_path, n_tokens in zip(files_paths, files_tokens):
-            file_usage = metadata.get_file_usage(file_path)
-            if not file_usage:
-                raise ValueError(f"File {file_path} not found in metadata")
+        for i, file_path in enumerate(files_paths):
+            if metadata:
+                file_usage = metadata.get_file_usage(file_path)
+                if not file_usage:
+                    raise ValueError(f"File {file_path} not found in metadata")
+            else:
+                file_usage = None
 
             if self.include_all_files or (
                 (self.include_code_files and file_usage.is_code)
@@ -35,7 +42,10 @@ class ContextRetriever(BaseModel):
                 or (self.include_ui_files and file_usage.ui_related)
                 or (self.include_api_files and file_usage.api_related)
             ):
-                file_header = f"# {file_path} [{n_tokens} tokens]"
+                file_header = f"# {file_path}"
+                if (self.use_details or self.use_descriptions) and files_tokens:
+                    file_header += f" [{files_tokens[i]} tokens]"
+
                 if self.use_details and file_usage.is_code:
                     if file_usage.testing_related:
                         details = metadata.get_testing_details(file_path)

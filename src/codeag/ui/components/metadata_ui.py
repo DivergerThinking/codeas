@@ -9,12 +9,12 @@ def display():
     # Display number of files with generated metadata
     files_with_metadata = [
         f
-        for f in st.session_state.selected_files_path
+        for f in state.repo.included_files_paths
         if f in state.repo_metadata.files_usage
     ]
     files_missing_metadata = [
         f
-        for f in st.session_state.selected_files_path
+        for f in state.repo.included_files_paths
         if f not in state.repo_metadata.files_usage
     ]
 
@@ -51,7 +51,7 @@ def display():
         if st.button("Update metadata"):
             with st.spinner("Generating metadata..."):
                 state.repo_metadata.generate_repo_metadata(
-                    state.llm_client, st.session_state.selected_files_path
+                    state.llm_client, state.repo.included_files_paths
                 )
                 state.repo_metadata.export_metadata(state.repo_path)
             st.success("Metadata updated!")
@@ -60,7 +60,7 @@ def display():
         if st.button("Estimate cost", key="estimate_update_metadata"):
             with st.spinner("Estimating cost..."):
                 preview = state.repo_metadata.generate_repo_metadata(
-                    state.llm_client, st.session_state.selected_files_path, preview=True
+                    state.llm_client, state.repo.included_files_paths, preview=True
                 )
                 input_cost = preview.cost["input_cost"]
                 input_tokens = preview.tokens["input_tokens"]
@@ -74,5 +74,5 @@ def display():
         st.caption("This will re-generate metadata for all selected files")
 
     st.info(
-        f"{len(files_with_metadata)}/{len(st.session_state.selected_files_path)} selected files have metadata"
+        f"{len(files_with_metadata)}/{len(state.repo.included_files_paths)} selected files have metadata"
     )

@@ -167,3 +167,41 @@ Provide detailed explanations of security measures, implementation details, and 
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
 """
+
+define_testing_strategy = """
+Analyze the given repository structure and create a comprehensive testing strategy by breaking down the test generation process into different steps. 
+Consider the following aspects when defining the steps:
+1. Types of tests: Each step should focus on a specific type of test, such as unit tests, integration tests, functional tests, etc.
+2. File relationships: Group related files together to ensure that all of the necessary context is included.
+3. Token limits: Aim to keep each step's input tokens count (the sum of the tokens count of the file paths) under 10,000 tokens unless it is absolutely necessary to exceed it.
+4. Existing tests: If there already exist tests for a given file/class/method, do not include it in the testing step.
+
+For each testing step, provide:
+- files_paths: A list of file paths to be included for the test generation process
+- type_of_test: The type of test to be performed
+- guidelines: The guidelines to follow for the test generation process (testing framework, focus areas, etc.)
+- test_file_path: The path of the file where the generated tests will be saved. **IMPORTANT**: make sure that the path doesn't already exist.
+
+Consider the following when creating the strategy:
+- Ensure critical components and core functionality are well-covered
+- Balance between different types of tests
+- Prioritize tests that will provide the most value and coverage
+- Consider the complexity and importance of different parts of the codebase
+"""
+
+generate_tests_from_guidelines = """
+Generate comprehensive tests based on the provided guidelines and file contents. 
+Follow these instructions carefully:
+1. Create tests according to the 'type of test' and 'guidelines' provided.
+2. Write the complete test code, including all necessary imports, in code blocks.
+3. Provide a brief explanation for each test or group of tests you generate.
+
+IMPORTANT:
+- All code must be contained within code blocks.
+- The code blocks should contain the full, runnable test code in the correct order.
+- Include ALL necessary imports at the beginning of the code.
+- Do not include any code outside of the code blocks.
+- The entire content of the code blocks will be extracted and written to a file, so ensure it's complete and correct.
+
+Begin with a brief overview of the tests you're creating, then proceed with the test code and explanations.
+"""
