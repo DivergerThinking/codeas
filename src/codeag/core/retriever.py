@@ -66,10 +66,7 @@ class ContextRetriever(BaseModel):
 
     def parse_json_response(self, json_str: str) -> str:
         data = json.loads(json_str)
-        result = [
-            "(the below text is a generated representation of the code present in the file)"
-        ]
-
+        result = []
         for key, value in data.items():
             if value:
                 result.append(f"\n{key.replace('_', ' ').title()}:")

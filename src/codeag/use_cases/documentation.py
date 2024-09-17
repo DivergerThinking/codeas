@@ -54,7 +54,11 @@ SECTION_CONFIG = {
 
 
 def generate_docs_section(
-    llm_client: LLMClient, section: str, files_paths: list[str], metadata: dict
+    llm_client: LLMClient,
+    section: str,
+    files_paths: list[str],
+    metadata: dict,
+    preview: bool = False,
 ) -> str:
     config = SECTION_CONFIG.get(section)
     if not config:
@@ -64,7 +68,10 @@ def generate_docs_section(
     context = retriever.retrieve(files_paths, metadata)
 
     agent = Agent(instructions=config["prompt"], model=config["model"])
-    return agent.run(llm_client, context=context)
+    if preview:
+        return agent.preview(context=context)
+    else:
+        return agent.run(llm_client, context=context)
 
 
 if __name__ == "__main__":
