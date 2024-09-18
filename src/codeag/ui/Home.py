@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit_nested_layout
 
-from codeag.ui.components import docs_ui, metadata_ui, repo_ui
+from codeag.ui.components import docs_ui, metadata_ui, repo_ui, testing_ui
 
 if "outputs" not in st.session_state:
     st.session_state.outputs = {}
@@ -30,6 +30,8 @@ def display_tasks():
 def display_task(task: str):
     if task == "Generate documentation":
         docs_ui.display()
+    elif task == "Generate testing":
+        testing_ui.display()
 
 
 if __name__ == "__main__":
