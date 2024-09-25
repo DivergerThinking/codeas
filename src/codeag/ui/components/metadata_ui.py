@@ -25,7 +25,7 @@ def display():
         if st.button("Generate Missing Metadata", type="primary"):
             with st.spinner("Generating missing metadata..."):
                 state.repo_metadata.generate_missing_repo_metadata(
-                    state.llm_client, files_missing_metadata
+                    state.llm_client, state.repo, files_missing_metadata
                 )
                 state.repo_metadata.export_metadata(state.repo_path)
             st.success("Missing metadata generated and exported successfully!")
@@ -34,7 +34,7 @@ def display():
         if st.button("Estimate cost", key="estimate_missing_metadata"):
             with st.spinner("Estimating cost..."):
                 preview = state.repo_metadata.generate_missing_repo_metadata(
-                    state.llm_client, files_missing_metadata, preview=True
+                    state.llm_client, state.repo, files_missing_metadata, preview=True
                 )
                 input_cost = preview.cost["input_cost"]
                 input_tokens = preview.tokens["input_tokens"]
@@ -51,7 +51,7 @@ def display():
         if st.button("Update metadata"):
             with st.spinner("Generating metadata..."):
                 state.repo_metadata.generate_repo_metadata(
-                    state.llm_client, state.repo.included_files_paths
+                    state.llm_client, state.repo, state.repo.included_files_paths
                 )
                 state.repo_metadata.export_metadata(state.repo_path)
             st.success("Metadata updated!")
@@ -60,7 +60,10 @@ def display():
         if st.button("Estimate cost", key="estimate_update_metadata"):
             with st.spinner("Estimating cost..."):
                 preview = state.repo_metadata.generate_repo_metadata(
-                    state.llm_client, state.repo.included_files_paths, preview=True
+                    state.llm_client,
+                    state.repo,
+                    state.repo.included_files_paths,
+                    preview=True,
                 )
                 input_cost = preview.cost["input_cost"]
                 input_tokens = preview.tokens["input_tokens"]

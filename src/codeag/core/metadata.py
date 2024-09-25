@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from codeag.core.agent import Agent
 from codeag.core.llm import LLMClient
+from codeag.core.repo import Repo
 
 
 class FileUsage(BaseModel):
@@ -48,36 +49,48 @@ class RepoMetadata(BaseModel):
     testing_details: dict[str, TestingDetails] = Field(default={})
 
     def generate_repo_metadata(
-        self, llm_client: LLMClient, files_paths: list[str], preview: bool = False
+        self,
+        llm_client: LLMClient,
+        repo: Repo,
+        files_paths: list[str],
+        preview: bool = False,
     ):
         files_usage_preview = self.generate_files_usage(
-            llm_client, files_paths, preview
+            llm_client, repo, files_paths, preview
         )
         if preview:
             return files_usage_preview
-        self.generate_descriptions(llm_client, files_paths)
-        self.generate_code_details(llm_client, files_paths)
-        self.generate_testing_details(llm_client, files_paths)
+        self.generate_descriptions(llm_client, repo, files_paths)
+        self.generate_code_details(llm_client, repo, files_paths)
+        self.generate_testing_details(llm_client, repo, files_paths)
 
     def generate_missing_repo_metadata(
-        self, llm_client: LLMClient, files_paths: list[str], preview: bool = False
+        self,
+        llm_client: LLMClient,
+        repo: Repo,
+        files_paths: list[str],
+        preview: bool = False,
     ):
         missing_files_paths = [
             file_path for file_path in files_paths if file_path not in self.files_usage
         ]
         files_usage_preview = self.generate_files_usage(
-            llm_client, missing_files_paths, preview
+            llm_client, repo, missing_files_paths, preview
         )
         if preview:
             return files_usage_preview
-        self.generate_descriptions(llm_client, missing_files_paths)
-        self.generate_code_details(llm_client, missing_files_paths)
-        self.generate_testing_details(llm_client, missing_files_paths)
+        self.generate_descriptions(llm_client, repo, missing_files_paths)
+        self.generate_code_details(llm_client, repo, missing_files_paths)
+        self.generate_testing_details(llm_client, repo, missing_files_paths)
 
     def generate_files_usage(
-        self, llm_client: LLMClient, files_paths: list[str], preview: bool = False
+        self,
+        llm_client: LLMClient,
+        repo: Repo,
+        files_paths: list[str],
+        preview: bool = False,
     ):
-        context = get_files_contents(files_paths)
+        context = get_files_contents(repo, files_paths)
         agent = Agent(
             instructions=prompt_identify_file_usage,
             model="gpt-4o-mini",
@@ -93,13 +106,15 @@ class RepoMetadata(BaseModel):
             }
         )
 
-    def generate_descriptions(self, llm_client: LLMClient, files_paths: list[str]):
+    def generate_descriptions(
+        self, llm_client: LLMClient, repo: Repo, files_paths: list[str]
+    ):
         files_to_generate_descriptions = [
             file_path
             for file_path in files_paths
             if file_path in self.files_usage and not self.files_usage[file_path].is_code
         ]
-        context = get_files_contents(files_to_generate_descriptions)
+        context = get_files_contents(repo, files_to_generate_descriptions)
         agent = Agent(instructions=prompt_generate_descriptions, model="gpt-4o-mini")
         output = agent.run(llm_client, context)
         self.descriptions.update(
@@ -109,7 +124,9 @@ class RepoMetadata(BaseModel):
             }
         )
 
-    def generate_code_details(self, llm_client: LLMClient, files_paths: list[str]):
+    def generate_code_details(
+        self, llm_client: LLMClient, repo: Repo, files_paths: list[str]
+    ):
         files_to_generate_code_details = [
             file_path
             for file_path in files_paths
@@ -117,7 +134,7 @@ class RepoMetadata(BaseModel):
             and self.files_usage[file_path].is_code
             and not self.files_usage[file_path].testing_related
         ]
-        context = get_files_contents(files_to_generate_code_details)
+        context = get_files_contents(repo, files_to_generate_code_details)
         agent = Agent(
             instructions=prompt_generate_code_details,
             model="gpt-4o-mini",
@@ -131,7 +148,9 @@ class RepoMetadata(BaseModel):
             }
         )
 
-    def generate_testing_details(self, llm_client: LLMClient, files_paths: list[str]):
+    def generate_testing_details(
+        self, llm_client: LLMClient, repo: Repo, files_paths: list[str]
+    ):
         files_to_generate_testing_details = [
             file_path
             for file_path in files_paths
@@ -139,7 +158,7 @@ class RepoMetadata(BaseModel):
             and self.files_usage[file_path].is_code
             and self.files_usage[file_path].testing_related
         ]
-        context = get_files_contents(files_to_generate_testing_details)
+        context = get_files_contents(repo, files_to_generate_testing_details)
         agent = Agent(
             instructions=prompt_generate_testing_details,
             model="gpt-4o-mini",
@@ -191,10 +210,10 @@ class RepoMetadata(BaseModel):
         return cls(**data)
 
 
-def get_files_contents(file_paths: list[str]) -> str:
+def get_files_contents(repo: Repo, file_paths: list[str]) -> str:
     contents = {}
     for file_path in file_paths:
-        with open(file_path, "r") as f:
+        with open(os.path.join(repo.repo_path, file_path), "r") as f:
             contents[file_path] = f"# path = {file_path}:\n{f.read()}"
     return contents
 

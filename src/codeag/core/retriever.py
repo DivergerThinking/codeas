@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from codeag.core.metadata import RepoMetadata
+from codeag.ui.state import state
 
 
 class ContextRetriever(BaseModel):
@@ -71,8 +72,7 @@ class ContextRetriever(BaseModel):
                         description = metadata.get_file_description(file_path)
                         context.append(f"{file_header}:\n{description}")
                 else:
-                    with open(file_path, "r") as f:
-                        content = f.read()
+                    content = state.repo.read_file(file_path)
                     context.append(f"{file_header}:\n{content}")
 
         return "\n\n".join(context)

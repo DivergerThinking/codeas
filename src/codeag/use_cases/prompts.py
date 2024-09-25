@@ -205,3 +205,81 @@ IMPORTANT:
 
 Begin with a brief overview of the tests you're creating, then proceed with the test code and explanations.
 """
+
+define_refactoring_files = """
+You are an expert software architect tasked with grouping related files for a refactoring project. Your goal is to create logical groups of files that are closely related and should be refactored together. Follow these guidelines:
+
+1. Analyze the given files and their contents to understand their relationships and dependencies.
+2. Group files based on their functional similarities, shared responsibilities, and interdependencies.
+3. Ensure that each file is placed in exactly one group - no file should appear in multiple groups.
+4. Create as many groups as necessary to logically organize all the files.
+5. Consider the following factors when grouping files:
+   - Shared imports or dependencies
+   - Similar naming conventions or prefixes
+   - Files that implement related features or functionality
+   - Files that belong to the same module or package
+   - Files that operate on the same data structures or models
+
+Ensure that all files from the input are included in the groups, and that the grouping is logical and conducive to efficient refactoring.
+
+Return the groups as a list of FileGroup objects, each FileGroup containing a list of the file paths contained in the group and a unique descriptive name for that group.
+""".strip()
+
+generate_proposed_changes = """
+As an expert software architect, your task is to propose refactoring changes for a group of related files. Analyze the provided files and suggest improvements to enhance code quality, maintainability, and adherence to best practices. Follow these guidelines:
+
+1. Examine the code structure, design patterns, and overall architecture of the files.
+2. Identify areas for improvement, such as:
+   - Code duplication
+   - Overly complex methods or classes
+   - Poorly named variables, functions, or classes
+   - Violation of SOLID principles
+   - Inefficient algorithms or data structures
+   - Lack of proper error handling
+   - Inconsistent coding style
+
+3. Propose specific refactoring changes for each identified issue. Include code examples where appropriate.
+4. Organize your suggestions by file, clearly indicating which file each change applies to.
+5. Provide a brief explanation for each proposed change, highlighting its benefits.
+6. If a change affects multiple files, explain the relationships and necessary coordinated changes.
+
+For each file, structure your response as follows:
+
+File: <file_path>
+1. <Refactoring suggestion 1>
+   Explanation: <Brief explanation of the issue and proposed solution>
+   ```<language>
+   // Original code
+   <problematic code snippet>
+
+   // Refactored code
+   <improved code snippet>
+   ```
+
+2. <Refactoring suggestion 2>
+   Explanation: <Brief explanation of the issue and proposed solution>
+   ...
+
+Repeat this structure for each file in the group that requires refactoring. If a file doesn't need any changes, you can omit it from the response.
+
+Remember to consider the context of the entire group of files when making suggestions, as some refactoring changes may have implications across multiple files.
+""".strip()
+
+refactor_files = """
+As an expert software architect, your task is to implement the proposed refactoring changes for a group of related files. You will be provided with the original file contents and the proposed changes. Your goal is to apply these changes and produce fully refactored versions of the files.
+
+Follow these guidelines:
+
+1. Carefully review the original file contents and the proposed changes for each file.
+2. Implement all suggested refactoring changes accurately.
+3. Ensure that the refactored code maintains the original functionality while improving its structure, readability, and maintainability.
+4. Apply consistent coding style and best practices throughout the refactored code.
+5. Do not include any explanations or code blocks showing before/after comparisons. You may include comments about the changes if needed.
+6. Provide the complete, refactored content for each file, even if some parts remain unchanged.
+
+Your output should be a list of RefactoredFile objects, where each object contains:
+- file_path: The path of the refactored file
+- refactored_code: The complete, refactored content of the file
+
+Ensure that all files mentioned in the proposed changes are included in your output, with their fully refactored content.
+""".strip()

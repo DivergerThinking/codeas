@@ -86,3 +86,7 @@ class Repo(BaseModel):
             return path.endswith(suffix)
         else:
             return path == pattern or path.startswith(pattern + os.path.sep)
+
+    def read_file(self, file_path: str) -> str:
+        with open(os.path.join(self.repo_path, file_path), "r") as f:
+            return f.read()

@@ -218,7 +218,4 @@ if __name__ == "__main__":
     repo = Repo(repo_path=".")
     incl_files = repo.filter_files()
     files_paths = [path for path, incl in zip(repo.files_paths, incl_files) if incl]
-
-    # files_content = get_files_content(files_paths)
-    # response = agent.run(llm_client, context=context)
     ...

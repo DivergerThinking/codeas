@@ -51,7 +51,8 @@ def display():
                         "🗑️",
                         key=f"delete_step_{i}",
                         type="primary",
-                        on_click=lambda: remove_step(i),
+                        on_click=remove_step,
+                        args=(i,),
                     )
 
         display_generate_tests()
@@ -61,8 +62,7 @@ def remove_step(i):
     strategy = (
         st.session_state.outputs["testing_strategy"].response.choices[0].message.parsed
     )
-    reversed_index = len(strategy.strategy) - 1 - i
-    del strategy.strategy[reversed_index]
+    del strategy.strategy[i]
     st.session_state.outputs["testing_strategy"].response.choices[
         0
     ].message.parsed = strategy

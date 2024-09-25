@@ -38,8 +38,8 @@ class LLMClient:
     def run(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         kwargs.setdefault("temperature", self.temperature)
         kwargs.setdefault("top_p", self.top_p)
-        kwargs.setdefault("timeout", self.timeout)
         if not kwargs.get("response_format"):
+            kwargs.setdefault("timeout", self.timeout)
             kwargs.setdefault("stream", self.stream)
 
         if model == "gpt-4o":
