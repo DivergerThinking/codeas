@@ -2,8 +2,8 @@ import os
 
 import streamlit as st
 
-from codeag.ui.utils import apply_diffs
-from codeag.use_cases.refactoring import (
+from codeas.ui.utils import apply_diffs
+from codeas.use_cases.refactoring import (
     define_refactoring_files,
     generate_diffs,
     generate_proposed_changes,

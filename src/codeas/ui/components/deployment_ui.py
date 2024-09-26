@@ -1,6 +1,6 @@
 import streamlit as st
 
-from codeag.use_cases.deployment import define_deployment, generate_deployment
+from codeas.use_cases.deployment import define_deployment, generate_deployment
 
 
 def display():

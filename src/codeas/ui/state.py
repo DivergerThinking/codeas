@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from codeag.core.llm import LLMClient
-from codeag.core.metadata import RepoMetadata
-from codeag.core.repo import Repo
+from codeas.core.llm import LLMClient
+from codeas.core.metadata import RepoMetadata
+from codeas.core.repo import Repo
 
 
 class State(BaseModel, arbitrary_types_allowed=True, extra="forbid"):

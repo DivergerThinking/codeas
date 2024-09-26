@@ -4,8 +4,8 @@ from typing import Literal
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 
-from codeag.ui.state import state
-from codeag.ui.utils import search_dirs
+from codeas.ui.state import state
+from codeas.ui.utils import search_dirs
 
 
 def display():

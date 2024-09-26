@@ -1,5 +1,5 @@
-from codeag.configs import prompts
-from codeag.core.agent import FileDetailsOutput, FilePathsOutput
+from codeas.configs import prompts
+from codeas.core.agent import FileDetailsOutput, FilePathsOutput
 
 AGENTS_CONFIGS = {
     "custom": {

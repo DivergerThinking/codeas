@@ -2,12 +2,12 @@ from typing import List
 
 from pydantic import BaseModel
 
-from codeag.core.agent import Agent
-from codeag.core.llm import LLMClient
-from codeag.core.metadata import RepoMetadata
-from codeag.core.repo import Repo
-from codeag.core.retriever import ContextRetriever
-from codeag.use_cases import prompts
+from codeas.core.agent import Agent
+from codeas.core.llm import LLMClient
+from codeas.core.metadata import RepoMetadata
+from codeas.core.repo import Repo
+from codeas.core.retriever import ContextRetriever
+from codeas.use_cases import prompts
 
 
 class TestingStep(BaseModel):
@@ -66,7 +66,7 @@ def generate_tests_from_strategy(
 
 
 if __name__ == "__main__":
-    from codeag.core.metadata import RepoMetadata
+    from codeas.core.metadata import RepoMetadata
 
     llm_client = LLMClient()
     repo = Repo(repo_path=".")

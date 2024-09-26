@@ -1,8 +1,8 @@
 import streamlit as st
 import streamlit_nested_layout
 
-from codeag.ui.components import deployment_ui  # Add this import
-from codeag.ui.components import (
+from codeas.ui.components import deployment_ui  # Add this import
+from codeas.ui.components import (
     docs_ui,
     metadata_ui,
     refactoring_ui,

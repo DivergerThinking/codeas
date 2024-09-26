@@ -4,7 +4,7 @@ import logging
 from openai import AsyncOpenAI, OpenAI
 from tenacity import retry, stop_after_attempt
 
-from codeag.configs.llm_params import OPENAI_PARAMS  # Import the parameters
+from codeas.configs.llm_params import OPENAI_PARAMS  # Import the parameters
 
 
 def log_retry(retry_state):

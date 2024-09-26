@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
-from codeag.core.agent import Agent
-from codeag.core.retriever import ContextRetriever
-from codeag.ui.state import state
-from codeag.use_cases import prompts
+from codeas.core.agent import Agent
+from codeas.core.retriever import ContextRetriever
+from codeas.ui.state import state
+from codeas.use_cases import prompts
 
 
 class FileGroup(BaseModel):

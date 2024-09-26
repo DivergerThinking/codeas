@@ -3,8 +3,8 @@ import re
 
 import streamlit as st
 
-from codeag.ui.state import state
-from codeag.use_cases.testing import (
+from codeas.ui.state import state
+from codeas.use_cases.testing import (
     define_testing_strategy,
     generate_tests_from_strategy,
 )

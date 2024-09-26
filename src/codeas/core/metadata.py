@@ -4,9 +4,9 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from codeag.core.agent import Agent
-from codeag.core.llm import LLMClient
-from codeag.core.repo import Repo
+from codeas.core.agent import Agent
+from codeas.core.llm import LLMClient
+from codeas.core.repo import Repo
 
 
 class FileUsage(BaseModel):

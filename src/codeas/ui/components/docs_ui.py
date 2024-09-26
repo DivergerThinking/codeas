@@ -1,7 +1,7 @@
 import streamlit as st
 
-from codeag.ui.state import state
-from codeag.use_cases.documentation import SECTION_CONFIG, generate_docs_section
+from codeas.ui.state import state
+from codeas.use_cases.documentation import SECTION_CONFIG, generate_docs_section
 
 
 def display():

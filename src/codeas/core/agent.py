@@ -8,7 +8,7 @@ from tokencost import (
     count_message_tokens,
 )
 
-from codeag.core.llm import LLMClient
+from codeas.core.llm import LLMClient
 
 
 class FilePathsOutput(BaseModel):
@@ -209,9 +209,9 @@ class Agent(BaseModel):
 
 
 if __name__ == "__main__":
-    from codeag.configs.agents_configs import AGENTS_CONFIGS
-    from codeag.core.llm import LLMClient
-    from codeag.core.repo import Repo
+    from codeas.configs.agents_configs import AGENTS_CONFIGS
+    from codeas.core.llm import LLMClient
+    from codeas.core.repo import Repo
 
     llm_client = LLMClient()
     agent = Agent(**AGENTS_CONFIGS["extract_files_detail"])

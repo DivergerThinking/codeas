@@ -1,6 +1,6 @@
-from codeag.core.agent import Agent
-from codeag.core.retriever import ContextRetriever
-from codeag.ui.state import state
+from codeas.core.agent import Agent
+from codeas.core.retriever import ContextRetriever
+from codeas.ui.state import state
 
 prompt_define_deployment = """
 Based on the provided context about the repository, suggest an AWS deployment strategy for the application. Your response should include:
