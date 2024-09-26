@@ -5,19 +5,92 @@ import streamlit as st
 
 from codeas.core.state import state
 from codeas.use_cases.testing import (
+    TestingStrategy,
     define_testing_strategy,
     generate_tests_from_strategy,
 )
 
 
 def display():
+    use_previous_outputs_strategy = st.toggle(
+        "Use previous outputs", value=True, key="use_previous_outputs_strategy"
+    )
+
     if st.button(
         "Define testing strategy", type="primary", key="define_testing_strategy"
     ):
         with st.spinner("Defining testing strategy..."):
-            st.session_state.outputs["testing_strategy"] = define_testing_strategy(
-                state.llm_client, state.repo, state.repo_metadata
-            )
+            if use_previous_outputs_strategy:
+                try:
+                    previous_output = state.read_output("testing_strategy.json")
+                    st.session_state.outputs["testing_strategy"] = type(
+                        "Output",
+                        (),
+                        {
+                            "response": type(
+                                "Response",
+                                (),
+                                {
+                                    "choices": [
+                                        type(
+                                            "Choice",
+                                            (),
+                                            {
+                                                "message": type(
+                                                    "Message",
+                                                    (),
+                                                    {
+                                                        "parsed": TestingStrategy.model_validate(
+                                                            previous_output["content"]
+                                                        )
+                                                    },
+                                                )
+                                            },
+                                        )
+                                    ]
+                                },
+                            ),
+                            "cost": previous_output["cost"],
+                            "tokens": previous_output["tokens"],
+                        },
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "No previous output found for testing strategy. Running generation..."
+                    )
+                    st.session_state.outputs[
+                        "testing_strategy"
+                    ] = define_testing_strategy(
+                        state.llm_client, state.repo, state.repo_metadata
+                    )
+                    # Write the output to a file
+                    state.write_output(
+                        {
+                            "content": st.session_state.outputs["testing_strategy"]
+                            .response.choices[0]
+                            .message.parsed.model_dump(),
+                            "cost": st.session_state.outputs["testing_strategy"].cost,
+                            "tokens": st.session_state.outputs[
+                                "testing_strategy"
+                            ].tokens,
+                        },
+                        "testing_strategy.json",
+                    )
+            else:
+                st.session_state.outputs["testing_strategy"] = define_testing_strategy(
+                    state.llm_client, state.repo, state.repo_metadata
+                )
+                # Write the output to a file
+                state.write_output(
+                    {
+                        "content": st.session_state.outputs["testing_strategy"]
+                        .response.choices[0]
+                        .message.parsed.dict(),
+                        "cost": st.session_state.outputs["testing_strategy"].cost,
+                        "tokens": st.session_state.outputs["testing_strategy"].tokens,
+                    },
+                    "testing_strategy.json",
+                )
 
     if st.button("Preview", key="preview_testing_strategy"):
         preview_strategy = define_testing_strategy(
@@ -71,14 +144,56 @@ def remove_step(i):
 
 
 def display_generate_tests():
+    use_previous_outputs_tests = st.toggle(
+        "Use previous outputs", value=True, key="use_previous_outputs_tests"
+    )
+
     strategy = (
         st.session_state.outputs["testing_strategy"].response.choices[0].message.parsed
     )
     if st.button("Generate tests", type="primary", key="generate_tests"):
         with st.spinner("Generating tests..."):
-            st.session_state.outputs["tests"] = generate_tests_from_strategy(
-                state.llm_client, strategy
-            )
+            if use_previous_outputs_tests:
+                try:
+                    previous_output = state.read_output("generated_tests.json")
+                    st.session_state.outputs["tests"] = type(
+                        "Output",
+                        (),
+                        {
+                            "response": previous_output["content"],
+                            "cost": previous_output["cost"],
+                            "tokens": previous_output["tokens"],
+                        },
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "No previous output found for generated tests. Running generation..."
+                    )
+                    st.session_state.outputs["tests"] = generate_tests_from_strategy(
+                        state.llm_client, strategy
+                    )
+                    # Write the output to a file
+                    state.write_output(
+                        {
+                            "content": st.session_state.outputs["tests"].response,
+                            "cost": st.session_state.outputs["tests"].cost,
+                            "tokens": st.session_state.outputs["tests"].tokens,
+                        },
+                        "generated_tests.json",
+                    )
+            else:
+                st.session_state.outputs["tests"] = generate_tests_from_strategy(
+                    state.llm_client, strategy
+                )
+                # Write the output to a file
+                state.write_output(
+                    {
+                        "content": st.session_state.outputs["tests"].response,
+                        "cost": st.session_state.outputs["tests"].cost,
+                        "tokens": st.session_state.outputs["tests"].tokens,
+                    },
+                    "generated_tests.json",
+                )
 
     if st.button("Preview", key="preview_tests"):
         with st.expander("Tests [Preview]", expanded=True):

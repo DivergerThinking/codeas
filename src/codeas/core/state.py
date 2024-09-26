@@ -1,3 +1,6 @@
+import json
+import os
+
 from pydantic import BaseModel
 
 from codeas.core.llm import LLMClient
@@ -23,6 +26,16 @@ class State(BaseModel, arbitrary_types_allowed=True, extra="forbid"):
         self.repo_path = repo_path
         self.repo = Repo(repo_path=repo_path)
         self.repo_metadata = RepoMetadata.load_metadata(repo_path)
+
+    def write_output(self, output: dict, path: str):
+        if not os.path.exists(f"{self.repo_path}/.codeas/outputs"):
+            os.makedirs(f"{self.repo_path}/.codeas/outputs")
+        with open(f"{self.repo_path}/.codeas/outputs/{path}", "w") as f:
+            json.dump(output, f)
+
+    def read_output(self, path: str):
+        with open(f"{self.repo_path}/.codeas/outputs/{path}", "r") as f:
+            return json.load(f)
 
 
 state = State()

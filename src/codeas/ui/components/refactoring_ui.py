@@ -2,8 +2,11 @@ import os
 
 import streamlit as st
 
+from codeas.core.state import state
 from codeas.ui.utils import apply_diffs
 from codeas.use_cases.refactoring import (
+    ProposedChanges,
+    RefactoringGroups,
     define_refactoring_files,
     generate_diffs,
     generate_proposed_changes,
@@ -11,11 +14,81 @@ from codeas.use_cases.refactoring import (
 
 
 def display():
+    use_previous_outputs_groups = st.toggle(
+        "Use previous outputs", value=True, key="use_previous_outputs_groups"
+    )
+
     if st.button(
         "Define refactoring groups", type="primary", key="define_refactoring_groups"
     ):
         with st.spinner("Defining refactoring groups..."):
-            st.session_state.outputs["refactoring_groups"] = define_refactoring_files()
+            if use_previous_outputs_groups:
+                try:
+                    previous_output = state.read_output("refactoring_groups.json")
+                    st.session_state.outputs["refactoring_groups"] = type(
+                        "Output",
+                        (),
+                        {
+                            "response": type(
+                                "Response",
+                                (),
+                                {
+                                    "choices": [
+                                        type(
+                                            "Choice",
+                                            (),
+                                            {
+                                                "message": type(
+                                                    "Message",
+                                                    (),
+                                                    {
+                                                        "parsed": RefactoringGroups.model_validate(
+                                                            previous_output["content"]
+                                                        )
+                                                    },
+                                                )
+                                            },
+                                        )
+                                    ]
+                                },
+                            ),
+                            "cost": previous_output["cost"],
+                            "tokens": previous_output["tokens"],
+                        },
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "No previous output found for refactoring groups. Running generation..."
+                    )
+                    st.session_state.outputs[
+                        "refactoring_groups"
+                    ] = define_refactoring_files()
+                    state.write_output(
+                        {
+                            "content": st.session_state.outputs["refactoring_groups"]
+                            .response.choices[0]
+                            .message.parsed.model_dump(),
+                            "cost": st.session_state.outputs["refactoring_groups"].cost,
+                            "tokens": st.session_state.outputs[
+                                "refactoring_groups"
+                            ].tokens,
+                        },
+                        "refactoring_groups.json",
+                    )
+            else:
+                st.session_state.outputs[
+                    "refactoring_groups"
+                ] = define_refactoring_files()
+                state.write_output(
+                    {
+                        "content": st.session_state.outputs["refactoring_groups"]
+                        .response.choices[0]
+                        .message.parsed.model_dump(),
+                        "cost": st.session_state.outputs["refactoring_groups"].cost,
+                        "tokens": st.session_state.outputs["refactoring_groups"].tokens,
+                    },
+                    "refactoring_groups.json",
+                )
 
     if st.button("Preview", key="preview_refactoring_groups"):
         preview_groups = define_refactoring_files(preview=True)
@@ -67,6 +140,10 @@ def remove_group(i):
 
 
 def display_generate_proposed_changes():
+    use_previous_outputs_changes = st.toggle(
+        "Use previous outputs", value=True, key="use_previous_outputs_changes"
+    )
+
     groups = (
         st.session_state.outputs["refactoring_groups"]
         .response.choices[0]
@@ -76,9 +153,86 @@ def display_generate_proposed_changes():
         "Generate proposed changes", type="primary", key="generate_proposed_changes"
     ):
         with st.spinner("Generating proposed changes..."):
-            st.session_state.outputs["proposed_changes"] = generate_proposed_changes(
-                groups
-            )
+            if use_previous_outputs_changes:
+                try:
+                    previous_output = state.read_output("proposed_changes.json")
+                    st.session_state.outputs["proposed_changes"] = type(
+                        "Output",
+                        (),
+                        {
+                            "response": {
+                                group_name: type(
+                                    "Response",
+                                    (),
+                                    {
+                                        "choices": [
+                                            type(
+                                                "Choice",
+                                                (),
+                                                {
+                                                    "message": type(
+                                                        "Message",
+                                                        (),
+                                                        {
+                                                            "parsed": ProposedChanges.model_validate(
+                                                                changes
+                                                            )
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        ]
+                                    },
+                                )
+                                for group_name, changes in previous_output[
+                                    "content"
+                                ].items()
+                            },
+                            "cost": previous_output["cost"],
+                            "tokens": previous_output["tokens"],
+                        },
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "No previous output found for proposed changes. Running generation..."
+                    )
+                    st.session_state.outputs[
+                        "proposed_changes"
+                    ] = generate_proposed_changes(groups)
+                    state.write_output(
+                        {
+                            "content": {
+                                group_name: response.choices[
+                                    0
+                                ].message.parsed.model_dump()
+                                for group_name, response in st.session_state.outputs[
+                                    "proposed_changes"
+                                ].response.items()
+                            },
+                            "cost": st.session_state.outputs["proposed_changes"].cost,
+                            "tokens": st.session_state.outputs[
+                                "proposed_changes"
+                            ].tokens,
+                        },
+                        "proposed_changes.json",
+                    )
+            else:
+                st.session_state.outputs[
+                    "proposed_changes"
+                ] = generate_proposed_changes(groups)
+                state.write_output(
+                    {
+                        "content": {
+                            group_name: response.choices[0].message.parsed.model_dump()
+                            for group_name, response in st.session_state.outputs[
+                                "proposed_changes"
+                            ].response.items()
+                        },
+                        "cost": st.session_state.outputs["proposed_changes"].cost,
+                        "tokens": st.session_state.outputs["proposed_changes"].tokens,
+                    },
+                    "proposed_changes.json",
+                )
 
     if st.button("Preview", key="preview_proposed_changes"):
         with st.expander("Proposed changes [Preview]", expanded=True):
@@ -109,6 +263,10 @@ def display_generate_proposed_changes():
 
 
 def display_generate_diffs():
+    use_previous_outputs_diffs = st.toggle(
+        "Use previous outputs", value=True, key="use_previous_outputs_diffs"
+    )
+
     if st.button("Generate diffs", type="primary", key="generate_diffs"):
         groups_changes = [
             groups_changes.choices[0].message.parsed
@@ -117,7 +275,49 @@ def display_generate_diffs():
             ].response.values()
         ]
         with st.spinner("Generating diffs..."):
-            st.session_state.outputs["generated_diffs"] = generate_diffs(groups_changes)
+            if use_previous_outputs_diffs:
+                try:
+                    previous_output = state.read_output("generated_diffs.json")
+                    st.session_state.outputs["generated_diffs"] = type(
+                        "Output",
+                        (),
+                        {
+                            "response": previous_output["content"],
+                            "cost": previous_output["cost"],
+                            "tokens": previous_output["tokens"],
+                        },
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "No previous output found for generated diffs. Running generation..."
+                    )
+                    st.session_state.outputs["generated_diffs"] = generate_diffs(
+                        groups_changes
+                    )
+                    state.write_output(
+                        {
+                            "content": st.session_state.outputs[
+                                "generated_diffs"
+                            ].response,
+                            "cost": st.session_state.outputs["generated_diffs"].cost,
+                            "tokens": st.session_state.outputs[
+                                "generated_diffs"
+                            ].tokens,
+                        },
+                        "generated_diffs.json",
+                    )
+            else:
+                st.session_state.outputs["generated_diffs"] = generate_diffs(
+                    groups_changes
+                )
+                state.write_output(
+                    {
+                        "content": st.session_state.outputs["generated_diffs"].response,
+                        "cost": st.session_state.outputs["generated_diffs"].cost,
+                        "tokens": st.session_state.outputs["generated_diffs"].tokens,
+                    },
+                    "generated_diffs.json",
+                )
 
     if "generated_diffs" in st.session_state.outputs:
         with st.expander("Generated diffs", expanded=True):

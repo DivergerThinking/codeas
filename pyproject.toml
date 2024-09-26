@@ -28,4 +28,4 @@ dependencies = {file = ["requirements.txt"]}
 profile = "black"
 
 [tool.ruff.lint.per-file-ignores]
-"src/codeas/ui/Home.py" = ["F401"]
+"src/codeas/ui/page_ui.py" = ["F401"]
