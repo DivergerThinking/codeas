@@ -2,7 +2,7 @@ import streamlit as st
 
 
 def home_page():
-    st.title("Codeas")
+    st.subheader("🏠 Codeas")
     st.markdown(
         """
     Codeas is a tool that helps you **boost your software development processes using generative AI**.

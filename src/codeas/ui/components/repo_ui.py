@@ -10,19 +10,56 @@ from codeas.ui.utils import search_dirs
 
 def display():
     display_repo_path()
-    with st.expander("Files"):
-        display_filters()
-        display_files_editor()
-    display_selected_files_info()
+    display_files()
 
 
 def display_repo_path():
-    repo_path = st_searchbox(
-        search_dirs, placeholder=state.repo_path, default=state.repo_path
+    col, _ = st.columns([1, 2])
+    with col:
+        repo_path = st_searchbox(
+            search_dirs, placeholder=state.repo_path, default=state.repo_path
+        )
+        if repo_path != state.repo_path:
+            state.update(repo_path)
+    st.caption(os.path.abspath(state.repo_path))
+
+
+def display_files():
+    filter_files()
+    num_selected_files, total_files, selected_tokens = get_selected_files_info()
+    with st.expander(
+        f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
+    ):
+        display_filters()
+        display_files_editor()
+
+
+def filter_files():
+    include_patterns = [
+        include.strip() for include in state.include.split(",") if include.strip()
+    ]
+    exclude_patterns = [
+        exclude.strip() for exclude in state.exclude.split(",") if exclude.strip()
+    ]
+    state.repo.filter_files(include_patterns, exclude_patterns)
+    st.session_state.files_data = {
+        "Incl.": state.repo.included,
+        "Path": state.repo.files_paths,
+        "Tokens": list(state.repo.files_tokens.values()),
+    }
+
+
+def get_selected_files_info():
+    num_selected_files = sum(st.session_state.files_data["Incl."])
+    total_files = len(st.session_state.files_data["Incl."])
+    selected_tokens = sum(
+        token
+        for incl, token in zip(
+            st.session_state.files_data["Incl."], st.session_state.files_data["Tokens"]
+        )
+        if incl
     )
-    if repo_path != state.repo_path:
-        state.update(repo_path)
-    st.write(os.path.abspath(state.repo_path))
+    return num_selected_files, total_files, selected_tokens
 
 
 def display_filters():
@@ -54,18 +91,6 @@ def update_filter(filter_type: Literal["include", "exclude"]):
 
 
 def display_files_editor():
-    include_patterns = [
-        include.strip() for include in state.include.split(",") if include.strip()
-    ]
-    exclude_patterns = [
-        exclude.strip() for exclude in state.exclude.split(",") if exclude.strip()
-    ]
-    state.repo.filter_files(include_patterns, exclude_patterns)
-    st.session_state.files_data = {
-        "Incl.": state.repo.included,
-        "Path": state.repo.files_paths,
-        "Tokens": list(state.repo.files_tokens.values()),
-    }
     sort_files_data()
     st.data_editor(
         st.session_state.files_data,
@@ -95,18 +120,3 @@ def sort_files_data():
         st.session_state.files_data["Path"],
         st.session_state.files_data["Tokens"],
     ) = zip(*sorted_data)
-
-
-def display_selected_files_info():
-    num_selected_files = sum(st.session_state.files_data["Incl."])
-    total_files = len(st.session_state.files_data["Incl."])
-    selected_tokens = sum(
-        token
-        for incl, token in zip(
-            st.session_state.files_data["Incl."], st.session_state.files_data["Tokens"]
-        )
-        if incl
-    )
-    st.info(
-        f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
-    )

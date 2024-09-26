@@ -20,7 +20,7 @@ pages = {
 
 
 def display(name: Literal["Documentation", "Deployment", "Testing", "Refactoring"]):
-    st.title(pages[name]["name"])
+    st.subheader(pages[name]["name"])
     repo_ui.display()
     metadata_ui.display()
     pages[name]["ui"].display()

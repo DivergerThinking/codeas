@@ -35,7 +35,7 @@ def display():
         section for section, incl in zip(doc_sections, edited_data["Incl."]) if incl
     ]
 
-    if st.button("Run", type="primary", key="run_docs"):
+    if st.button("Generate documentation", type="primary", key="generate_docs"):
         process_sections(selected_sections, generate=True)
     elif st.button("Preview", key="preview_docs"):
         process_sections(selected_sections, preview=True)

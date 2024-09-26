@@ -4,8 +4,6 @@ from codeas.core.state import state
 
 
 def display():
-    st.subheader("Metadata")
-
     # Display number of files with generated metadata
     files_with_metadata = [
         f
@@ -17,8 +15,10 @@ def display():
         for f in state.repo.included_files_paths
         if f not in state.repo_metadata.files_usage
     ]
+    n_files_with_metadata = len(files_with_metadata)
+    n_selected_files = len(state.repo.included_files_paths)
 
-    with st.expander("Metadata"):
+    with st.expander(f"{n_files_with_metadata}/{n_selected_files} files have metadata"):
         st.write("Files missing metadata")
         st.json(files_missing_metadata, expanded=False)
 
@@ -76,6 +76,6 @@ def display():
 
         st.caption("This will re-generate metadata for all selected files")
 
-    st.info(
-        f"{len(files_with_metadata)}/{len(state.repo.included_files_paths)} selected files have metadata"
-    )
+    n_files_missing_metadata = len(files_missing_metadata)
+    if n_files_missing_metadata > 0:
+        st.warning(f"{n_files_missing_metadata} files are missing metadata")
