@@ -237,15 +237,15 @@ As an expert software architect, your task is to propose refactoring changes for
    - Inefficient algorithms or data structures
    - Lack of proper error handling
    - Inconsistent coding style
+3. Propose specific refactoring changes for each file.
+4. Provide a brief explanation for each proposed change, highlighting its benefits.
 
-3. Propose specific refactoring changes for each identified issue. Include code examples where appropriate.
-4. Organize your suggestions by file, clearly indicating which file each change applies to.
-5. Provide a brief explanation for each proposed change, highlighting its benefits.
-6. If a change affects multiple files, explain the relationships and necessary coordinated changes.
+Return your response in a structured format with
+- file_path: <path to the file>
+- changes: <proposed changes for that file>
 
-For each file, structure your response as follows:
+EXAMPLE STRUCTURE FOR PROPOSED CHANGES:
 
-File: <file_path>
 1. <Refactoring suggestion 1>
    Explanation: <Brief explanation of the issue and proposed solution>
    ```<language>
@@ -255,12 +255,81 @@ File: <file_path>
    // Refactored code
    <improved code snippet>
    ```
-
 2. <Refactoring suggestion 2>
    Explanation: <Brief explanation of the issue and proposed solution>
    ...
 
-Repeat this structure for each file in the group that requires refactoring. If a file doesn't need any changes, you can omit it from the response.
+Only include code snippets if you think it is relevant. The above is only an example of what the structure of your response might look like.
+IMPORTANT: Remember to consider the context of the entire group of files when making suggestions, as some refactoring changes may have implications across multiple files.
+""".strip()
 
-Remember to consider the context of the entire group of files when making suggestions, as some refactoring changes may have implications across multiple files.
+generate_diffs = """
+As an expert software architect, your task is to implement the proposed refactoring changes for a single file. You will be provided with the original file content and the proposed changes. Your goal is to generate a diff that represents the necessary changes.
+
+Follow these guidelines:
+
+1. Carefully review the original file content and the proposed changes.
+2. Generate a diff that accurately represents the proposed changes.
+3. Use unified diff format for the file.
+4. Include only the changed parts of the file in the diff.
+5. Ensure that applying this diff will result in the desired refactored code.
+
+EXAMPLE OF PROPOSED CHANGES:
+
+1. Add an imports of sympy.
+2. Remove the is_prime() function.
+3. Replace the existing call to is_prime() with a call to sympy.isprime().
+
+EXAMPLE OF DIFF OUTPUT:
+
+```diff
+--- mathweb/flask/app.py
++++ mathweb/flask/app.py
+@@ ... @@
+-class MathWeb:
++import sympy
++
++class MathWeb:
+@@ ... @@
+-def is_prime(x):
+-    if x < 2:
+-        return False
+-    for i in range(2, int(math.sqrt(x)) + 1):
+-        if x % i == 0:
+-            return False
+-    return True
+@@ ... @@
+-@app.route('/prime/<int:n>')
+-def nth_prime(n):
+-    count = 0
+-    num = 1
+-    while count < n:
+-        num += 1
+-        if is_prime(num):
+-            count += 1
+-    return str(num)
++@app.route('/prime/<int:n>')
++def nth_prime(n):
++    count = 0
++    num = 1
++    while count < n:
++        num += 1
++        if sympy.isprime(num):
++            count += 1
++    return str(num)
+```
+
+FILE EDITING RULES:
+- Include the first 2 lines with the file paths.
+- Don't include timestamps with the file paths.
+- Start a new hunk for each section of the file that needs changes.
+- Start each hunk of changes with a `@@ ... @@` line. (Don't include line numbers like `diff -U0` does.)
+- Mark all new or modified lines with `+`.
+- Mark all lines that need to be removed with `-`.
+- Only output hunks that specify changes with `+` or `-` lines.
+- IMPORTANT: MAKE SURE THAT ALL CHANGES START WITH A `+` OR `-`!
+- Indentation matters in the diffs!
+- When editing a function, method, loop, etc use a hunk to replace the *entire* code block. Delete the entire existing version with `-` lines and then add a new, updated version with `+` lines.
+-To move code within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
+- Your output should be ONLY the unified diff, without any explanations or additional text.
 """.strip()

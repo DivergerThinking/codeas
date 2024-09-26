@@ -5,8 +5,8 @@ import streamlit as st
 from codeag.ui.utils import apply_diffs
 from codeag.use_cases.refactoring import (
     define_refactoring_files,
+    generate_diffs,
     generate_proposed_changes,
-    refactor_files,
 )
 
 
@@ -95,73 +95,75 @@ def display_generate_proposed_changes():
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
             for group_name, response in output.response.items():
-                with st.expander(f"{group_name} proposed changes"):
-                    st.markdown(response["content"])
+                with st.expander(f"{group_name}"):
+                    changes = response.choices[0].message.parsed
+                    for change in changes.changes:
+                        with st.expander(f"File: {change.file_path}"):
+                            st.markdown(change.file_changes)
 
-        display_refactor_files()
+        display_generate_diffs()
 
 
-def display_refactor_files():
-    groups = (
-        st.session_state.outputs["refactoring_groups"]
-        .response.choices[0]
-        .message.parsed
-    )
-    proposed_changes = st.session_state.outputs["proposed_changes"].response
+def display_generate_diffs():
+    if st.button("Generate diffs", type="primary"):
+        groups_changes = [
+            groups_changes.choices[0].message.parsed
+            for groups_changes in st.session_state.outputs[
+                "proposed_changes"
+            ].response.values()
+        ]
+        with st.spinner("Generating diffs..."):
+            st.session_state.outputs["generated_diffs"] = generate_diffs(groups_changes)
 
-    if st.button("Refactor files", type="primary"):
-        with st.spinner("Refactoring files..."):
-            st.session_state.outputs["refactored_files"] = refactor_files(
-                groups, proposed_changes
-            )
-
-    if "refactored_files" in st.session_state.outputs:
-        with st.expander("Refactored files", expanded=True):
-            output = st.session_state.outputs["refactored_files"]
+    if "generated_diffs" in st.session_state.outputs:
+        with st.expander("Generated diffs", expanded=True):
+            output = st.session_state.outputs["generated_diffs"]
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
 
-            for group_name, response in output.response.items():
-                with st.expander(f"{group_name}"):
-                    refactored_files = response.choices[0].message.parsed.files
-                    for refactored_file in refactored_files:
-                        with st.expander(
-                            f"Refactored file: {refactored_file.file_path}"
-                        ):
-                            st.code(refactored_file.diff)
+            for file_path, response in output.response.items():
+                with st.expander(f"Diff for file: {file_path}"):
+                    st.code(response["content"])
 
-        display_write_refactored_files()
+        display_apply_diffs()
 
 
-def display_write_refactored_files():
-    if st.button("Write refactored files", type="primary"):
-        refactored_files_output = st.session_state.outputs["refactored_files"]
+def display_apply_diffs():
+    if st.button("Apply diffs", type="primary"):
+        generated_diffs_output = st.session_state.outputs["generated_diffs"]
 
-        for group_name, response in refactored_files_output.response.items():
-            refactored_files = response.choices[0].message.parsed.files
-            for refactored_file in refactored_files:
-                # Split the file path into directory, filename, and extension
-                directory, filename = os.path.split(refactored_file.file_path)
-                name, ext = os.path.splitext(filename)
+        for file_path, response in generated_diffs_output.response.items():
+            # Split the file path into directory, filename, and extension
+            directory, filename = os.path.split(file_path)
+            name, ext = os.path.splitext(filename)
 
-                # Create the new file path with "_refactored" added
-                new_file_path = os.path.join(directory, f"{name}_refactored{ext}")
+            # Create the new file path with "_refactored" added
+            new_file_path = os.path.join(directory, f"{name}_refactored{ext}")
 
-                # Read the original file content
-                with open(refactored_file.file_path, "r") as f:
-                    original_content = f.read()
+            # Read the original file content
+            with open(file_path, "r") as f:
+                original_content = f.read()
 
-                # Apply the diff to the original content
-                patched_content = apply_diffs(
-                    original_content, f"```diff\n{refactored_file.diff}\n```"
-                )
+            # Apply the diff to the original content
+            diff = (
+                f"```diff\n{response['content']}\n```"
+                if not response["content"].startswith("```diff")
+                else response["content"]
+            )
 
-                # Write the patched content to the new file
-                if not os.path.exists(os.path.dirname(new_file_path)):
-                    os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
-                with open(new_file_path, "w") as f:
-                    f.write(patched_content)
-                st.success(f"{new_file_path} successfully written!")
+            try:
+                patched_content = apply_diffs(original_content, diff)
+            except Exception as e:
+                st.error(f"Error applying diff to {file_path}: {e}")
+                continue
+
+            # Write the patched content to the new file
+            if not os.path.exists(os.path.dirname(new_file_path)):
+                os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+            with open(new_file_path, "w") as f:
+                f.write(patched_content)
+
+            st.success(f"{new_file_path} successfully written!")
