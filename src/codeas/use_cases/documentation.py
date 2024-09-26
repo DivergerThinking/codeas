@@ -1,9 +1,9 @@
+from codeas.configs import prompts
 from codeas.core.agent import Agent
 from codeas.core.llm import LLMClient
 from codeas.core.metadata import RepoMetadata
 from codeas.core.repo import Repo
 from codeas.core.retriever import ContextRetriever
-from codeas.use_cases import prompts
 
 DOCS_MODEL = "gpt-4o"
 SECTION_CONFIG = {

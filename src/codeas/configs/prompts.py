@@ -1,489 +1,340 @@
-BASE_SYSTEM_PROMPT = """
-You are an LLM agent specialized in software engineering tasks.
-You will be given some context about a respository, which would be either:
-- the content of files inside the repository with their corresponding path (instead of the full content, only a description of the file might be provided)
-- some additional context needed to complete the task, such as another agent's output, or additional information about the task or repository.
-Each bits of context will be passed through <context> ... </context> tags.
+generate_docs_project_overview = """
+Generate a comprehensive project overview documentation section.
 
-After receiving the context, you will be given some instructions to follow based on that context.
-Pay close attention to both the context and the instructions given and make sure to follow them carefully.
-""".strip()
+Start with the title '## Project Overview'.
 
-EXTRACT_FILE_DESCRIPTION = """
-Write a concised description of what the file does.
-Include the technologies used inside that file at the end of that description.
-ONLY WRITE A SINGLE PARAGRAPH. DO NOT USE TITLES, MARKDOWN OR ANY OTHER FORM OF MARKUP.
-If the file is relatively simple and short, your answer SHOULD NOT EXCEED 20 tokens.
-If the file is more complex and longer, your answer SHOULD NOT EXCEED 50 tokens.
-""".strip()
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Purpose and Goals
+- Target Audience
+- Key Features
+- Technology Stack
+- System Architecture Overview
+- Repository Structure
 
-EXTRACT_FILE_DETAIL = """
-Analyze the provided file and extract information relevant for generating technical documentation. 
-Focus on details related to architecture, technologies, layers, patterns, and data models. 
-Structure your response with the following sections:
+Provide detailed information for each subsection.
 
-Architectural Insights:
-   - Identify any architectural components or patterns implemented in this file.
-   - Describe how this file fits into the overall system architecture.
-
-Technologies and Dependencies:
-   - List main libraries, frameworks, or technologies used in this file.
-   - Mention any significant internal or external dependencies.
-
-Application Layer:
-   - Identify which application layer(s) this file belongs to (e.g., presentation, business logic, data access).
-   - Describe the file's role within its layer.
-
-Design Patterns:
-   - List any design patterns implemented or utilized in this file.
-   - Briefly explain how these patterns are applied.
-
-Data Model Elements:
-   - Identify any data structures, models, or schemas defined in this file.
-   - Describe key entities and their relationships, if applicable.
-
-Key Components:
-   - List main classes, functions, or modules defined in the file.
-   - Provide a brief description of their purposes.
-
-Provide concise, factual information based solely on the file's content. 
-Do not make assumptions or add details not present in the file. 
-
-**IMPORTANT**:
-- If information for a section is not applicable or not present, set applicable to false and return an empty string for that section.
-- Limit your response to the most relevant details for technical documentation. 
-- The total response should not exceed 50 tokens for simple files and 200 tokens for complex files.
-""".strip()
-
-AUTO_SELECT_FILES = """
-Based on the provided context, which includes descriptions of files in the repository and a set of instructions given to another agent, select the most relevant files for this given task. 
-
-Consider the following:
-1. The content and purpose of each file as described
-2. The specific requirements outlined in the instructions
-3. Any technologies, frameworks, or libraries mentioned in both the file descriptions and instructions
-4. The potential impact or importance of each file to the task at hand
-
-The content of the files you select will be passed to the next agent which only has a limited context, so make sure to select the most relevant files only.
-Return only the file paths.
-""".strip()
-
-GENERATE_DETAILED_TECHNICAL_DOCS = """
-Generate comprehensive and technically detailed documentation for the software project based on the provided context. Create markdown documentation that focuses on the architecture, technologies, layers, patterns, and data models of the system. This documentation should be applicable to backend, frontend, or mobile development, depending on the context provided.
-
-Your documentation should include the following sections:
-
-1. Architecture
-   - Detailed architectural diagram (describe it textually if image generation is not possible)
-   - Explanation of the overall system architecture
-   - Description of major components and their interactions
-   - Discussion of architectural decisions and trade-offs
-
-2. Technology Stack
-   - Comprehensive list of all technologies, frameworks, and libraries used
-   - Version information for key technologies
-   - Justification for technology choices where relevant
-
-3. Application Layers
-   - Detailed breakdown of the application's layers (e.g., presentation, business logic, data access for backend; or UI, state management, API integration for frontend/mobile)
-   - Responsibilities of each layer
-   - Inter-layer communication and dependencies
-
-4. Design Patterns and Principles
-   - List and explanation of design patterns used in the project
-   - Description of how these patterns are implemented
-   - Key software design principles followed (e.g., SOLID principles, component-based architecture)
-
-5. Data Model
-   - Detailed entity-relationship diagram or component state structure (describe it textually if image generation is not possible)
-   - Explanation of key entities/components and their relationships
-   - Data flow and state management strategies
-
-Format your response in markdown, using appropriate headers, code blocks, and formatting for readability. Be as detailed and technical as possible, assuming the reader has advanced knowledge of software development.
-
-Based on the context provided, adjust the focus and terminology of each section to be relevant to either backend, frontend, or mobile development as appropriate. Include code snippets, configuration examples, and textual representations of diagrams where appropriate to illustrate complex concepts.
-
-IT IS CRUCIAL THAT YOU DO NOT INVENT OR ASSUME INFORMATION. ONLY USE THE DETAILS PROVIDED IN THE CONTEXT. IF CERTAIN INFORMATION IS NOT AVAILABLE, CLEARLY STATE THAT IT'S NOT SPECIFIED IN THE GIVEN CONTEXT.
-
-DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
-""".strip()
-
-GENERATE_BACKEND_DOCS = """
-You are tasked with generating comprehensive backend documentation for a software project. Based on the provided context about the repository, create detailed markdown documentation that covers all relevant aspects of the backend.
-
-Your documentation should include the following sections, and any additional sections you deem necessary based on the context:
-
-1. Overview
-   - Brief description of what the repository does
-   - Main functionalities and features
-
-2. Project Setup
-   - Prerequisites
-   - Installation steps
-   - Configuration details (if applicable)
-
-3. Project Structure
-   - Main directories and their purposes
-   - Key files and their roles
-
-4. Architecture
-   - High-level architecture overview
-   - Main components and their interactions
-
-5. Deployment (if applicable)
-   - Deployment process
-   - Environment-specific configurations
-   - Continuous Integration/Continuous Deployment (CI/CD) setup
-
-6. Security (if applicable)
-   - Authentication and authorization mechanisms
-   - Data protection measures
-   - API security
-
-7. Database (if applicable)
-   - Database schema
-   - Entity relationships
-   - Data migration processes
-
-8. API Documentation (if applicable)
-   - Endpoints
-   - Request/response formats
-   - Authentication requirements
-
-9. Testing (if applicable)
-   - Testing strategy
-   - How to run tests
-   - Test coverage
-   
-PLUS any other sections you deem necessary based on the context.
-
-Format your response in markdown, using appropriate headers, code blocks, and formatting for readability. Be as detailed and clear as possible, assuming the reader has basic knowledge of backend development.
-
-Based on the context provided, add or remove sections as necessary to create the most relevant and comprehensive documentation for this specific backend project.
-IT IS IMPORTANT THAT YOU DO NOT INVENT THINGS. ONLY USE THE INFORMATION PROVIDED TO YOU, AND ONLY ADD SECTIONS WHICH ARE RELEVANT BASED ON THAT INFORMATION.
-DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
-""".strip()
-
-GENERATE_FRONTEND_DOCS = """
-You are tasked with generating comprehensive frontend documentation for a software project. Based on the provided context about the repository, create detailed markdown documentation that covers all relevant aspects of the frontend.
-
-Your documentation should include the following sections, and any additional sections you deem necessary based on the context:
-
-1. Overview
-   - Brief description of what the frontend does
-   - Main features and functionalities
-
-2. Project Setup
-   - Prerequisites
-   - Installation steps
-   - Configuration details (if applicable)
-
-3. Project Structure
-   - Main directories and their purposes
-   - Key files and their roles
-
-4. Architecture
-   - High-level architecture overview
-   - Main components and their interactions
-   - State management approach (if applicable)
-
-5. UI/UX Design
-   - Design system or UI framework used
-   - Key UI components and their usage
-   - Responsive design approach
-
-6. Routing (if applicable)
-   - Route structure
-   - Navigation implementation
-
-7. API Integration (if applicable)
-   - How the frontend interacts with the backend
-   - API client setup and usage
-
-8. State Management (if applicable)
-   - State management library used
-   - Store structure and organization
-   - Key actions and reducers
-
-9. Performance Optimization (if applicable)
-   - Lazy loading and code splitting strategies
-   - Caching mechanisms
-   - Performance best practices implemented
-
-10. Testing (if applicable)
-    - Testing framework(s) used
-    - Types of tests (unit, integration, e2e)
-    - How to run tests
-    - Test coverage
-
-11. Build and Deployment (if applicable)
-    - Build process
-    - Deployment workflow
-    - Environment-specific configurations
-
-12. Internationalization (if applicable)
-    - i18n setup and usage
-    - Adding new languages
-
-13. Accessibility (if applicable)
-    - Accessibility standards followed
-    - Key a11y features implemented
-
-14. Browser Compatibility (if applicable)
-    - Supported browsers
-    - Any browser-specific considerations
-
-PLUS any other sections you deem necessary based on the context.
-
-Format your response in markdown, using appropriate headers, code blocks, and formatting for readability. Be as detailed and clear as possible, assuming the reader has basic knowledge of frontend development.
-
-Based on the context provided, add or remove sections as necessary to create the most relevant and comprehensive documentation for this specific frontend project.
-IT IS IMPORTANT THAT YOU DO NOT INVENT THINGS. ONLY USE THE INFORMATION PROVIDED TO YOU, AND ONLY ADD SECTIONS WHICH ARE RELEVANT BASED ON THAT INFORMATION.
-DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
-""".strip()
-
-GENERATE_MOBILE_DOCS = """
-You are tasked with generating comprehensive mobile documentation for a software project. Based on the provided context about the repository, create detailed markdown documentation that covers all relevant aspects of the mobile application.
-
-Your documentation should include the following sections, and any additional sections you deem necessary based on the context:
-
-1. Overview
-   - Brief description of what the mobile app does
-   - Main features and functionalities
-
-2. Project Setup
-   - Prerequisites
-   - Installation steps
-   - Configuration details (if applicable)
-
-3. Project Structure
-   - Main directories and their purposes
-   - Key files and their roles
-
-4. Architecture
-   - High-level architecture overview
-   - Main components and their interactions
-   - State management approach (if applicable)
-
-5. UI/UX Design
-   - Design system or UI framework used
-   - Key UI components and their usage
-   - Platform-specific design considerations
-
-6. Navigation
-   - Navigation structure
-   - Routing implementation
-
-7. API Integration
-   - How the app interacts with backend services
-   - API client setup and usage
-
-8. State Management (if applicable)
-   - State management approach used
-   - Store structure and organization (if applicable)
-   - Key actions and reducers (if applicable)
-
-9. Performance Optimization (if applicable)
-   - Lazy loading and code splitting strategies (if applicable)
-   - Caching mechanisms
-   - Performance best practices implemented
-
-10. Testing (if applicable)
-    - Testing framework(s) used
-    - Types of tests (unit, integration, UI)
-    - How to run tests
-    - Test coverage
-
-11. Build and Deployment (if applicable)
-    - Build process
-    - Deployment workflow
-    - App store submission process
-
-12. Internationalization (if applicable)
-    - i18n setup and usage
-    - Adding new languages
-
-13. Accessibility (if applicable)
-    - Accessibility standards followed
-    - Key a11y features implemented
-
-14. Device Compatibility (if applicable)
-    - Supported devices and OS versions
-    - Any device-specific considerations
-
-15. Push Notifications (if applicable)
-    - Push notification setup
-    - Handling notifications
-
-16. Offline Support (if applicable)
-    - Offline data management
-    - Sync mechanisms
-
-17. Security (if applicable)
-    - Data encryption
-    - Secure storage practices
-    - Authentication and authorization
-
-PLUS any other sections you deem necessary based on the context.
-
-Format your response in markdown, using appropriate headers, code blocks, and formatting for readability. Be as detailed and clear as possible, assuming the reader has basic knowledge of mobile app development.
-
-Based on the context provided, add or remove sections as necessary to create the most relevant and comprehensive documentation for this specific mobile project.
-IT IS IMPORTANT THAT YOU DO NOT INVENT THINGS. ONLY USE THE INFORMATION PROVIDED TO YOU, AND ONLY ADD SECTIONS WHICH ARE RELEVANT BASED ON THAT INFORMATION.
-DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
-""".strip()
-
-GENERATE_CONFIG_DOCS = """
-Generate comprehensive documentation for the configuration files of the software project based on the provided context. Create detailed markdown documentation that covers all relevant aspects of the project's configuration system.
-
-Your documentation should include (when relevant):
-
-1. An overview of the project's configuration system
-2. Description of each configuration file and its purpose
-3. Key configuration parameters and their impacts
-4. How configurations are managed across different environments
-5. Instructions for modifying and troubleshooting configurations
-
-Additionally, include any other relevant sections based on the specific context of the project, such as:
-
-- Sensitive information handling
-- Configuration loading process
-- Version control practices for config files
-- Any unique or project-specific configuration aspects
-
-IMPORTANT: 
-- Only use the information provided in the context. Do not invent or assume details not explicitly given. Add or remove sections as necessary based on the available information.
-- DO NOT INCLUDE ANY EXPLANATIONS ABOUT THE DOCUMENTATION GENERATION PROCESS OR MARKDOWN CODE BLOCKS IN YOUR RESPONSE.
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
 """
 
-GENERATE_UNIT_TESTS_PYTHON = """
-You are tasked with generating unit tests for the Python file provided as context. 
-Please follow these guidelines:
+generate_docs_setup_and_development = """
+Create a detailed setup and development documentation section.
 
-1. Use pytest as the testing framework.
-2. Name test functions using the format 'test_<function_name>_<scenario>'.
-3. Include docstrings for each test function explaining its purpose.
-4. Use appropriate pytest fixtures when necessary.
-5. Utilize pytest.parametrize for testing multiple inputs when applicable.
-6. Use assert statements for verifications.
-7. Mock external dependencies or complex objects when needed.
-8. Aim for high code coverage, testing both normal and edge cases.
-9. Keep tests isolated and independent of each other.
-10. Follow the Arrange-Act-Assert (AAA) pattern in your tests.
+Start with the title '## Setup and Development'.
 
-Generate the unit tests and provide your response in the following format:
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Prerequisites
+- Environment Setup
+- Dependencies
+- Build Process
+- Configuration Files
+- Code Style and Standards
 
-```python
-# Import statements and any necessary fixtures here
+Provide clear, step-by-step instructions and explanations for each subsection.
 
-def test_function_name_scenario():
-    '''
-    Docstring explaining the test's purpose
-    '''
-    # Arrange
-    # Act
-    # Assert
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
 
-# Additional test functions...
+generate_docs_architecture = """
+Produce a thorough architecture documentation section.
+
+Start with the title '## Architecture'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Detailed System Architecture
+- Core Components
+- Main Modules/Classes
+- Key Algorithms
+- Data Structures
+- Design Patterns
+- Business Logic
+- Core Functions
+- Workflow Processes
+- Data Flow
+
+Provide in-depth technical details and explanations for each subsection.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+generate_docs_ui = """
+Generate a comprehensive UI documentation section.
+
+Start with the title '## User Interface'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Component Hierarchy
+- State Management
+- Styling Approach
+- Responsive Design
+- Accessibility Features
+- User Interaction Flows
+
+Provide detailed explanations and examples for each aspect of the UI.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+generate_docs_db = """
+Create a detailed database documentation section.
+
+Start with the title '## Database'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Schema Design
+- Entity-Relationship Diagrams
+- Indexing Strategy
+- Query Optimization
+- Data Models
+- Database Migrations
+
+Provide comprehensive information about the database structure, optimization techniques, and management processes.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+generate_docs_api = """
+Produce a thorough API documentation section.
+
+Start with the title '## API'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Endpoints
+- Request/Response Formats
+- Authentication Methods
+- Rate Limiting
+- API Versioning
+- Error Handling for API Responses
+
+Provide detailed descriptions of each API endpoint, including request methods, parameters, response formats, and examples.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+generate_docs_testing = """
+Generate a comprehensive testing documentation section.
+
+Start with the title '## Testing'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Unit Tests
+- Integration Tests
+- End-to-End Tests
+- Test Coverage
+- Mocking Strategies
+- Test Data Management
+- Continuous Integration Testing
+
+Provide detailed information about testing methodologies, tools used, and best practices.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+generate_docs_deployment = """
+Create a detailed deployment documentation section.
+
+Start with the title '## Deployment'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Deployment Process
+- Continuous Integration/Continuous Deployment (CI/CD)
+- Environment-Specific Configurations
+- Scaling Strategies
+- Server Setup
+- Containerization
+- Cloud Service Configurations
+
+Provide step-by-step deployment instructions, configuration details, and best practices.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+generate_docs_security = """
+Produce a thorough security documentation section.
+
+Start with the title '## Security'.
+
+Include subsections using '### [Subsection Name]' format. Examples of subsections may include (but are not limited to):
+- Authentication Mechanisms
+- Authorization Rules
+- Data Encryption
+- Input Validation
+- CSRF Protection
+- XSS Prevention
+- Security Best Practices
+- Compliance and Regulations
+
+Provide detailed explanations of security measures, implementation details, and compliance requirements.
+
+IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
+"""
+
+define_testing_strategy = """
+Analyze the given repository structure and create a comprehensive testing strategy by breaking down the test generation process into different steps. 
+Consider the following aspects when defining the steps:
+1. Types of tests: Each step should focus on a specific type of test, such as unit tests, integration tests, functional tests, etc.
+2. File relationships: Group related files together to ensure that all of the necessary context is included.
+3. Token limits: Aim to keep each step's input tokens count (the sum of the tokens count of the file paths) under 10,000 tokens unless it is absolutely necessary to exceed it.
+4. Existing tests: If there already exist tests for a given file/class/method, do not include it in the testing step.
+
+For each testing step, provide:
+- files_paths: A list of file paths to be included for the test generation process
+- type_of_test: The type of test to be performed
+- guidelines: The guidelines to follow for the test generation process (testing framework, focus areas, etc.)
+- test_file_path: The path of the file where the generated tests will be saved. **IMPORTANT**: make sure that the path doesn't already exist.
+
+Consider the following when creating the strategy:
+- Ensure critical components and core functionality are well-covered
+- Balance between different types of tests
+- Prioritize tests that will provide the most value and coverage
+- Consider the complexity and importance of different parts of the codebase
+"""
+
+generate_tests_from_guidelines = """
+Generate comprehensive tests based on the provided guidelines and file contents. 
+Follow these instructions carefully:
+1. Create tests according to the 'type of test' and 'guidelines' provided.
+2. Write the complete test code, including all necessary imports, in code blocks.
+3. Provide a brief explanation for each test or group of tests you generate.
+
+IMPORTANT:
+- All code must be contained within code blocks.
+- The code blocks should contain the full, runnable test code in the correct order.
+- Include ALL necessary imports at the beginning of the code.
+- Do not include any code outside of the code blocks.
+- The entire content of the code blocks will be extracted and written to a file, so ensure it's complete and correct.
+
+Begin with a brief overview of the tests you're creating, then proceed with the test code and explanations.
+"""
+
+define_refactoring_files = """
+You are an expert software architect tasked with grouping related files for a refactoring project. Your goal is to create logical groups of files that are closely related and should be refactored together. Follow these guidelines:
+
+1. Analyze the given files and their contents to understand their relationships and dependencies.
+2. Group files based on their functional similarities, shared responsibilities, and interdependencies.
+3. Ensure that each file is placed in exactly one group - no file should appear in multiple groups.
+4. Create as many groups as necessary to logically organize all the files.
+5. Consider the following factors when grouping files:
+   - Shared imports or dependencies
+   - Similar naming conventions or prefixes
+   - Files that implement related features or functionality
+   - Files that belong to the same module or package
+   - Files that operate on the same data structures or models
+
+Ensure that all files from the input are included in the groups, and that the grouping is logical and conducive to efficient refactoring.
+
+Return the groups as a list of FileGroup objects, each FileGroup containing a list of the file paths contained in the group and a unique descriptive name for that group.
+""".strip()
+
+generate_proposed_changes = """
+As an expert software architect, your task is to propose refactoring changes for a group of related files. Analyze the provided files and suggest improvements to enhance code quality, maintainability, and adherence to best practices. Follow these guidelines:
+
+1. Examine the code structure, design patterns, and overall architecture of the files.
+2. Identify areas for improvement, such as:
+   - Code duplication
+   - Overly complex methods or classes
+   - Poorly named variables, functions, or classes
+   - Violation of SOLID principles
+   - Inefficient algorithms or data structures
+   - Lack of proper error handling
+   - Inconsistent coding style
+3. Propose specific refactoring changes for each file.
+4. Provide a brief explanation for each proposed change, highlighting its benefits.
+
+Return your response in a structured format with
+- file_path: <path to the file>
+- changes: <proposed changes for that file>
+
+EXAMPLE STRUCTURE FOR PROPOSED CHANGES:
+
+1. <Refactoring suggestion 1>
+   Explanation: <Brief explanation of the issue and proposed solution>
+   ```<language>
+   // Original code
+   <problematic code snippet>
+
+   // Refactored code
+   <improved code snippet>
+   ```
+2. <Refactoring suggestion 2>
+   Explanation: <Brief explanation of the issue and proposed solution>
+   ...
+
+Only include code snippets if you think it is relevant. The above is only an example of what the structure of your response might look like.
+IMPORTANT: Remember to consider the context of the entire group of files when making suggestions, as some refactoring changes may have implications across multiple files.
+""".strip()
+
+generate_diffs = """
+As an expert software architect, your task is to implement the proposed refactoring changes for a single file. You will be provided with the original file content and the proposed changes. Your goal is to generate a diff that represents the necessary changes.
+
+Follow these guidelines:
+
+1. Carefully review the original file content and the proposed changes.
+2. Generate a diff that accurately represents the proposed changes.
+3. Use unified diff format for the file.
+4. Include only the changed parts of the file in the diff.
+5. Ensure that applying this diff will result in the desired refactored code.
+
+EXAMPLE OF PROPOSED CHANGES:
+
+1. Add an imports of sympy.
+2. Remove the is_prime() function.
+3. Replace the existing call to is_prime() with a call to sympy.isprime().
+
+EXAMPLE OF DIFF OUTPUT:
+
+```diff
+--- mathweb/flask/app.py
++++ mathweb/flask/app.py
+@@ ... @@
+-class MathWeb:
++import sympy
++
++class MathWeb:
+@@ ... @@
+-def is_prime(x):
+-    if x < 2:
+-        return False
+-    for i in range(2, int(math.sqrt(x)) + 1):
+-        if x % i == 0:
+-            return False
+-    return True
+@@ ... @@
+-@app.route('/prime/<int:n>')
+-def nth_prime(n):
+-    count = 0
+-    num = 1
+-    while count < n:
+-        num += 1
+-        if is_prime(num):
+-            count += 1
+-    return str(num)
++@app.route('/prime/<int:n>')
++def nth_prime(n):
++    count = 0
++    num = 1
++    while count < n:
++        num += 1
++        if sympy.isprime(num):
++            count += 1
++    return str(num)
 ```
 
-Below the code block, provide a brief explanation of your test strategy and any important considerations.
+FILE EDITING RULES:
+- Include the first 2 lines with the file paths.
+- Don't include timestamps with the file paths.
+- Start a new hunk for each section of the file that needs changes.
+- Start each hunk of changes with a `@@ ... @@` line. (Don't include line numbers like `diff -U0` does.)
+- Mark all new or modified lines with `+`.
+- Mark all lines that need to be removed with `-`.
+- Only output hunks that specify changes with `+` or `-` lines.
+- IMPORTANT: MAKE SURE THAT ALL CHANGES START WITH A `+` OR `-`!
+- Indentation matters in the diffs!
+- When editing a function, method, loop, etc use a hunk to replace the *entire* code block. Delete the entire existing version with `-` lines and then add a new, updated version with `+` lines.
+-To move code within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
+- Your output should be ONLY the unified diff, without any explanations or additional text.
 """.strip()
 
-GENERATE_FUNCTIONAL_TESTS_PYTHON = """
-You are tasked with generating functional tests for the Python files provided as context. 
-Please follow these guidelines:
-
-1. Use pytest as the testing framework.
-2. Name test functions using the format 'test_<functionality>_<scenario>'.
-3. Include docstrings for each test function explaining its purpose.
-4. Use appropriate pytest fixtures for setup and teardown.
-5. Utilize pytest.parametrize for testing multiple scenarios when applicable.
-6. Use assert statements for verifications.
-7. Mock external dependencies or services when needed.
-8. Focus on testing end-to-end functionality and user workflows.
-9. Ensure tests cover different user scenarios and edge cases.
-10. Keep tests independent and avoid dependencies between test cases.
-11. Use meaningful test data that represents real-world scenarios.
-12. Follow the Arrange-Act-Assert (AAA) pattern in your tests.
-
-Generate the functional tests and provide your response in the following format:
-
-```python
-# Import statements and any necessary fixtures here
-
-@pytest.fixture
-def setup_fixture():
-    # Setup code here
-    yield
-    # Teardown code here
-
-def test_functionality_scenario(setup_fixture):
-    '''
-    Docstring explaining the test's purpose and scenario
-    '''
-    # Arrange
-    # Act
-    # Assert
-
-# Additional test functions...
-```
-
-Below the code block, provide a brief explanation of your test strategy, including how the tests cover different functionalities and user scenarios.
-""".strip()
-
-GENERATE_FILE_REFACTOR = """
-You are tasked with refactoring the file provided as context. 
-Your refactoring should:
-
-1. Ensure the code is clean, maintainable, and follows best practices.
-2. Optimize the code for performance and readability.
-3. Remove any redundant code and unnecessary complexity.
-4. Ensure the code is modular and follows a consistent structure.
-5. Add comments to explain the code where necessary.
-
-Use code blocks whenever you are suggesting changes to the code.
-Below the code block, provide a brief explanation of your changes and the rationale behind them.
-""".strip()
-
-GENERATE_REPO_REFACTOR = """
-You are tasked with proposing high-level refactoring suggestions for multiple files in a repository. Based on the provided context, analyze the code structure, architecture, and patterns across the files. Your goal is to suggest improvements that enhance the overall quality, maintainability, and scalability of the codebase.
-
-Please provide your refactoring suggestions in the following format:
-
-1. Overall Assessment
-   - Briefly describe the current state of the codebase and its main characteristics.
-
-2. Key Areas for Refactoring
-   - List the main areas or aspects of the codebase that would benefit from refactoring.
-
-3. Specific Refactoring Suggestions
-   For each suggestion, include:
-   - The files or components affected
-   - A brief description of the proposed change
-   - The rationale behind the suggestion
-   - Potential benefits of implementing the change
-   - If applicable, a small code snippet or pseudocode to illustrate the concept
-
-4. Architecture and Design Improvements
-   - Suggest any high-level architectural changes that could benefit the project.
-
-5. Code Organization and Structure
-   - Propose improvements to the overall organization of the codebase, such as folder structure or module separation.
-
-6. Common Patterns and Abstractions
-   - Identify any recurring patterns that could be abstracted or standardized across the codebase.
-
-7. Performance Considerations
-   - Highlight any areas where performance could be improved through refactoring.
-
-8. Maintainability and Scalability
-   - Suggest changes that would make the codebase easier to maintain and scale in the future.
-
-Remember to focus on high-level improvements rather than line-by-line code changes. Provide reasoning for your suggestions and explain how they align with software engineering best practices.
-""".strip()
-
-SUGGEST_AWS_DEPLOYMENT = """
+define_aws_deployment = """
 Based on the provided context about the repository, suggest an AWS deployment strategy for the application. Your response should include:
 
 1. Analysis of Requirements
@@ -526,8 +377,8 @@ Based on the provided context about the repository, suggest an AWS deployment st
 Provide clear and concise information for each section, focusing on the specific needs of the application as understood from the context. The recommended deployment strategy should be well-defined and detailed enough to serve as a basis for generating Terraform code in the next step.
 """.strip()
 
-GENERATE_AWS_TERRAFORM = """
-Based on the recommended AWS deployment strategy provided in the previous context, generate comprehensive Terraform code to implement the infrastructure. Your code should cover all the components and services mentioned in the strategy. Follow these guidelines:
+generate_aws_deployment = """
+Based on the recommended AWS deployment strategy provided, generate comprehensive Terraform code to implement the infrastructure. Your code should cover all the components and services mentioned in the strategy. Follow these guidelines:
 
 1. Structure:
    - Organize the code into logical files (e.g., main.tf, variables.tf, outputs.tf, modules).
