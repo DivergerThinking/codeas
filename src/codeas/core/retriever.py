@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from codeas.core.metadata import RepoMetadata
-from codeas.ui.state import state
+from codeas.core.state import state
 
 
 class ContextRetriever(BaseModel):

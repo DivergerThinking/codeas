@@ -1,7 +1,7 @@
 from codeas.configs import prompts
 from codeas.core.agent import Agent
 from codeas.core.retriever import ContextRetriever
-from codeas.ui.state import state
+from codeas.core.state import state
 
 
 def define_deployment(preview: bool = False) -> str:

@@ -290,7 +290,7 @@ Add the technologies mentioned inside that file (and their versions if present) 
 if __name__ == "__main__":
     llm_client = LLMClient()
     repo_path = "."
-    files_paths = ["src/codeag/core/repo.py", "requirements.txt"]
+    files_paths = ["src/codeas/core/repo.py", "requirements.txt"]
 
     metadata = RepoMetadata()
     # metadata.generate_repo_metadata(llm_client, files_paths)

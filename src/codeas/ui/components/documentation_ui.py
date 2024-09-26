@@ -1,6 +1,6 @@
 import streamlit as st
 
-from codeas.ui.state import state
+from codeas.core.state import state
 from codeas.use_cases.documentation import SECTION_CONFIG, generate_docs_section
 
 
@@ -35,9 +35,9 @@ def display():
         section for section, incl in zip(doc_sections, edited_data["Incl."]) if incl
     ]
 
-    if st.button("Run", type="primary"):
+    if st.button("Run", type="primary", key="run_docs"):
         process_sections(selected_sections, generate=True)
-    elif st.button("Preview"):
+    elif st.button("Preview", key="preview_docs"):
         process_sections(selected_sections, preview=True)
     else:
         process_sections(selected_sections)

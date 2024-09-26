@@ -4,11 +4,13 @@ from codeas.use_cases.deployment import define_deployment, generate_deployment
 
 
 def display():
-    if st.button("Define deployment strategy", type="primary"):
+    if st.button(
+        "Define deployment strategy", type="primary", key="define_deployment_strategy"
+    ):
         with st.spinner("Defining deployment strategy..."):
             st.session_state.outputs["deployment_strategy"] = define_deployment()
 
-    if st.button("Preview"):
+    if st.button("Preview", key="preview_deployment_strategy"):
         preview_strategy = define_deployment(preview=True)
         with st.expander("Deployment strategy [Preview]", expanded=True):
             st.info(
@@ -31,7 +33,9 @@ def display():
 
 
 def display_generate_deployment():
-    if st.button("Generate Terraform code", type="primary"):
+    if st.button(
+        "Generate Terraform code", type="primary", key="generate_terraform_code"
+    ):
         with st.spinner("Generating Terraform code..."):
             deployment_strategy = st.session_state.outputs[
                 "deployment_strategy"
@@ -40,7 +44,7 @@ def display_generate_deployment():
                 deployment_strategy
             )
 
-    if st.button("Preview"):
+    if st.button("Preview", key="preview_terraform_code"):
         deployment_strategy = st.session_state.outputs["deployment_strategy"].response[
             "content"
         ]

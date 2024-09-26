@@ -1,6 +1,6 @@
 import streamlit as st
 
-from codeas.ui.state import state
+from codeas.core.state import state
 
 
 def display():

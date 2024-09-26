@@ -11,11 +11,13 @@ from codeas.use_cases.refactoring import (
 
 
 def display():
-    if st.button("Define refactoring groups", type="primary"):
+    if st.button(
+        "Define refactoring groups", type="primary", key="define_refactoring_groups"
+    ):
         with st.spinner("Defining refactoring groups..."):
             st.session_state.outputs["refactoring_groups"] = define_refactoring_files()
 
-    if st.button("Preview"):
+    if st.button("Preview", key="preview_refactoring_groups"):
         preview_groups = define_refactoring_files(preview=True)
         with st.expander("Refactoring groups [Preview]", expanded=True):
             st.info(
@@ -70,7 +72,9 @@ def display_generate_proposed_changes():
         .response.choices[0]
         .message.parsed
     )
-    if st.button("Generate proposed changes", type="primary"):
+    if st.button(
+        "Generate proposed changes", type="primary", key="generate_proposed_changes"
+    ):
         with st.spinner("Generating proposed changes..."):
             st.session_state.outputs["proposed_changes"] = generate_proposed_changes(
                 groups
@@ -105,7 +109,7 @@ def display_generate_proposed_changes():
 
 
 def display_generate_diffs():
-    if st.button("Generate diffs", type="primary"):
+    if st.button("Generate diffs", type="primary", key="generate_diffs"):
         groups_changes = [
             groups_changes.choices[0].message.parsed
             for groups_changes in st.session_state.outputs[
@@ -132,7 +136,7 @@ def display_generate_diffs():
 
 
 def display_apply_diffs():
-    if st.button("Apply diffs", type="primary"):
+    if st.button("Apply diffs", type="primary", key="apply_diffs"):
         generated_diffs_output = st.session_state.outputs["generated_diffs"]
 
         for file_path, response in generated_diffs_output.response.items():

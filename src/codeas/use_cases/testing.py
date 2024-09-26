@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     llm_client = LLMClient()
     repo = Repo(repo_path=".")
-    repo.filter_files(include_patterns=["src/codeag/core"])
+    repo.filter_files(include_patterns=["src/codeas/core"])
     metadata = RepoMetadata.load_metadata(repo_path=".")
     testing_strategy = define_testing_strategy(llm_client, repo, metadata)
     strategy = parse_response(testing_strategy.response)

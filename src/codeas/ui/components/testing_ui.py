@@ -3,7 +3,7 @@ import re
 
 import streamlit as st
 
-from codeas.ui.state import state
+from codeas.core.state import state
 from codeas.use_cases.testing import (
     define_testing_strategy,
     generate_tests_from_strategy,
@@ -11,13 +11,15 @@ from codeas.use_cases.testing import (
 
 
 def display():
-    if st.button("Define testing strategy", type="primary"):
+    if st.button(
+        "Define testing strategy", type="primary", key="define_testing_strategy"
+    ):
         with st.spinner("Defining testing strategy..."):
             st.session_state.outputs["testing_strategy"] = define_testing_strategy(
                 state.llm_client, state.repo, state.repo_metadata
             )
 
-    if st.button("Preview"):
+    if st.button("Preview", key="preview_testing_strategy"):
         preview_strategy = define_testing_strategy(
             state.llm_client, state.repo, state.repo_metadata, preview=True
         )
@@ -72,7 +74,7 @@ def display_generate_tests():
     strategy = (
         st.session_state.outputs["testing_strategy"].response.choices[0].message.parsed
     )
-    if st.button("Generate tests", type="primary"):
+    if st.button("Generate tests", type="primary", key="generate_tests"):
         with st.spinner("Generating tests..."):
             st.session_state.outputs["tests"] = generate_tests_from_strategy(
                 state.llm_client, strategy
@@ -106,7 +108,7 @@ def display_generate_tests():
 
 
 def display_write_tests():
-    if st.button("Write tests", type="primary"):
+    if st.button("Write tests", type="primary", key="write_tests"):
         for path, response in st.session_state.outputs["tests"].response.items():
             code = parse_code_blocks(response["content"])
             if not os.path.exists(path):

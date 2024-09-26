@@ -4,12 +4,11 @@ from typing import Literal
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 
-from codeas.ui.state import state
+from codeas.core.state import state
 from codeas.ui.utils import search_dirs
 
 
 def display():
-    st.subheader("Repo")
     display_repo_path()
     with st.expander("Files"):
         display_filters()
@@ -23,7 +22,7 @@ def display_repo_path():
     )
     if repo_path != state.repo_path:
         state.update(repo_path)
-    st.caption(os.path.abspath(state.repo_path))
+    st.write(os.path.abspath(state.repo_path))
 
 
 def display_filters():
@@ -111,17 +110,3 @@ def display_selected_files_info():
     st.info(
         f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
     )
-    # st.session_state.selected_files_path = [
-    #     path
-    #     for path, incl in zip(
-    #         st.session_state.files_data["Path"], st.session_state.files_data["Incl."]
-    #     )
-    #     if incl
-    # ]
-    # st.session_state.selected_files_tokens = [
-    #     token
-    #     for token, incl in zip(
-    #         st.session_state.files_data["Tokens"], st.session_state.files_data["Incl."]
-    #     )
-    #     if incl
-    # ]
