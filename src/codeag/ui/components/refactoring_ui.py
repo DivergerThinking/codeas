@@ -2,6 +2,7 @@ import os
 
 import streamlit as st
 
+from codeag.ui.utils import apply_diffs
 from codeag.use_cases.refactoring import (
     define_refactoring_files,
     generate_proposed_changes,
@@ -94,7 +95,7 @@ def display_generate_proposed_changes():
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
             for group_name, response in output.response.items():
-                with st.expander(f"Proposed changes for [{group_name}]"):
+                with st.expander(f"{group_name} proposed changes"):
                     st.markdown(response["content"])
 
         display_refactor_files()
@@ -122,25 +123,45 @@ def display_refactor_files():
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
-            refactored_files = output.response.choices[0].message.parsed
 
-            for refactored_file in refactored_files.files:
-                with st.expander(f"Refactored file: {refactored_file.file_path}"):
-                    st.code(refactored_file.refactored_code, language="python")
+            for group_name, response in output.response.items():
+                with st.expander(f"{group_name}"):
+                    refactored_files = response.choices[0].message.parsed.files
+                    for refactored_file in refactored_files:
+                        with st.expander(
+                            f"Refactored file: {refactored_file.file_path}"
+                        ):
+                            st.code(refactored_file.diff)
 
         display_write_refactored_files()
 
 
 def display_write_refactored_files():
     if st.button("Write refactored files", type="primary"):
-        refactored_files = (
-            st.session_state.outputs["refactored_files"]
-            .response.choices[0]
-            .message.parsed
-        )
-        for refactored_file in refactored_files.files:
-            if not os.path.exists(os.path.dirname(refactored_file.file_path)):
-                os.makedirs(os.path.dirname(refactored_file.file_path), exist_ok=True)
-            with open(refactored_file.file_path, "w") as f:
-                f.write(refactored_file.refactored_code)
-            st.success(f"{refactored_file.file_path} successfully written!")
+        refactored_files_output = st.session_state.outputs["refactored_files"]
+
+        for group_name, response in refactored_files_output.response.items():
+            refactored_files = response.choices[0].message.parsed.files
+            for refactored_file in refactored_files:
+                # Split the file path into directory, filename, and extension
+                directory, filename = os.path.split(refactored_file.file_path)
+                name, ext = os.path.splitext(filename)
+
+                # Create the new file path with "_refactored" added
+                new_file_path = os.path.join(directory, f"{name}_refactored{ext}")
+
+                # Read the original file content
+                with open(refactored_file.file_path, "r") as f:
+                    original_content = f.read()
+
+                # Apply the diff to the original content
+                patched_content = apply_diffs(
+                    original_content, f"```diff\n{refactored_file.diff}\n```"
+                )
+
+                # Write the patched content to the new file
+                if not os.path.exists(os.path.dirname(new_file_path)):
+                    os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+                with open(new_file_path, "w") as f:
+                    f.write(patched_content)
+                st.success(f"{new_file_path} successfully written!")

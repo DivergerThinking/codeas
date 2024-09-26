@@ -264,22 +264,3 @@ Repeat this structure for each file in the group that requires refactoring. If a
 
 Remember to consider the context of the entire group of files when making suggestions, as some refactoring changes may have implications across multiple files.
 """.strip()
-
-refactor_files = """
-As an expert software architect, your task is to implement the proposed refactoring changes for a group of related files. You will be provided with the original file contents and the proposed changes. Your goal is to apply these changes and produce fully refactored versions of the files.
-
-Follow these guidelines:
-
-1. Carefully review the original file contents and the proposed changes for each file.
-2. Implement all suggested refactoring changes accurately.
-3. Ensure that the refactored code maintains the original functionality while improving its structure, readability, and maintainability.
-4. Apply consistent coding style and best practices throughout the refactored code.
-5. Do not include any explanations or code blocks showing before/after comparisons. You may include comments about the changes if needed.
-6. Provide the complete, refactored content for each file, even if some parts remain unchanged.
-
-Your output should be a list of RefactoredFile objects, where each object contains:
-- file_path: The path of the refactored file
-- refactored_code: The complete, refactored content of the file
-
-Ensure that all files mentioned in the proposed changes are included in your output, with their fully refactored content.
-""".strip()
