@@ -1,6 +1,7 @@
 import streamlit as st
 import streamlit_nested_layout
 
+from codeag.ui.components import deployment_ui  # Add this import
 from codeag.ui.components import (
     docs_ui,
     metadata_ui,
@@ -40,6 +41,8 @@ def display_task(task: str):
         testing_ui.display()
     elif task == "Generate refactoring":
         refactoring_ui.display()
+    elif task == "Generate deployments":  # Add this condition
+        deployment_ui.display()
 
 
 if __name__ == "__main__":
