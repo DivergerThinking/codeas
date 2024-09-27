@@ -1,10 +1,12 @@
 import os
 import re
 
+import pandas as pd
 import streamlit as st
 
 from codeas.core.state import state
 from codeas.use_cases.testing import (
+    TestingStep,
     TestingStrategy,
     define_testing_strategy,
     generate_tests_from_strategy,
@@ -113,34 +115,56 @@ def display():
             )
             strategy = output.response.choices[0].message.parsed
 
-            for i, step in enumerate(strategy.strategy):
-                col1, col2 = st.columns([0.95, 0.05])
-                with col1:
-                    with st.expander(f"{step.test_file_path} [{step.type_of_test}]"):
-                        st.write("**Guidelines:**")
-                        st.code(step.guidelines, language="markdown")
-                        st.write("**Files to be tested:**")
-                        st.json(step.files_paths)
-                with col2:
-                    st.button(
-                        "🗑️",
-                        key=f"delete_step_{i}",
-                        type="primary",
-                        on_click=remove_step,
-                        args=(i,),
+            # Create a DataFrame for the data editor
+            data = [
+                {
+                    "selected": True,
+                    "type_of_test": step.type_of_test,
+                    "files_to_test": step.files_paths,
+                    "test_file_path": step.test_file_path,
+                    "guidelines": step.guidelines,
+                }
+                for step in strategy.strategy
+            ]
+
+            df = pd.DataFrame(data)
+            edited_df = st.data_editor(
+                df,
+                column_config={
+                    "selected": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="Select steps to include in test generation",
+                        default=True,
+                    ),
+                    "type_of_test": "Type of Test",
+                    "test_file_path": "Output Path",
+                    "files_to_test": "Files to Test",
+                    "guidelines": st.column_config.Column(
+                        "Guidelines",
+                        help="Click to view guidelines",
+                        width="medium",
+                    ),
+                },
+                hide_index=True,
+            )
+
+            # Update the strategy based on the edited DataFrame
+            updated_strategy = TestingStrategy(
+                strategy=[
+                    TestingStep(
+                        type_of_test=step["type_of_test"],
+                        test_file_path=step["test_file_path"],
+                        files_paths=step["files_to_test"],
+                        guidelines=step["guidelines"],
                     )
+                    for step in edited_df.to_dict("records")
+                ]
+            )
+            st.session_state.outputs["testing_strategy"].response.choices[
+                0
+            ].message.parsed = updated_strategy
 
         display_generate_tests()
-
-
-def remove_step(i):
-    strategy = (
-        st.session_state.outputs["testing_strategy"].response.choices[0].message.parsed
-    )
-    del strategy.strategy[i]
-    st.session_state.outputs["testing_strategy"].response.choices[
-        0
-    ].message.parsed = strategy
 
 
 def display_generate_tests():
@@ -216,7 +240,7 @@ def display_generate_tests():
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
             for path, response in output.response.items():
-                with st.expander(f"Context [{path}]"):
+                with st.expander(path):
                     st.markdown(response["content"])
 
         display_write_tests()

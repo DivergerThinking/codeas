@@ -1,10 +1,12 @@
 import os
 
+import pandas as pd
 import streamlit as st
 
 from codeas.core.state import state
 from codeas.ui.utils import apply_diffs
 from codeas.use_cases.refactoring import (
+    FileGroup,
     ProposedChanges,
     RefactoringGroups,
     define_refactoring_files,
@@ -109,34 +111,47 @@ def display():
             )
             groups = output.response.choices[0].message.parsed
 
-            for i, group in enumerate(groups.groups):
-                col1, col2 = st.columns([0.95, 0.05])
-                with col1:
-                    with st.expander(f"{group.name}"):
-                        st.write("**Files to be refactored:**")
-                        st.json(group.files_paths)
-                with col2:
-                    st.button(
-                        "🗑️",
-                        key=f"delete_group_{i}",
-                        type="primary",
-                        on_click=remove_group,
-                        args=(i,),
-                    )
+            # Create a DataFrame for the data editor
+            data = [
+                {
+                    "selected": True,
+                    "name": group.name,
+                    "files_paths": group.files_paths,
+                }
+                for group in groups.groups
+            ]
+
+            df = pd.DataFrame(data)
+            edited_df = st.data_editor(
+                df,
+                column_config={
+                    "selected": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="Select groups to include in refactoring",
+                        default=True,
+                    ),
+                    "name": "Group Name",
+                    "files_paths": st.column_config.Column(
+                        "Files to Refactor",
+                        help="Comma-separated list of files to refactor",
+                        width="large",
+                    ),
+                },
+                hide_index=True,
+            )
+
+            # Update the groups based on the edited DataFrame, keeping all rows
+            updated_groups = RefactoringGroups(
+                groups=[
+                    FileGroup(name=row["name"], files_paths=row["files_paths"])
+                    for row in edited_df.to_dict("records")
+                ]
+            )
+            st.session_state.outputs["refactoring_groups"].response.choices[
+                0
+            ].message.parsed = updated_groups
 
         display_generate_proposed_changes()
-
-
-def remove_group(i):
-    groups = (
-        st.session_state.outputs["refactoring_groups"]
-        .response.choices[0]
-        .message.parsed
-    )
-    del groups.groups[i]
-    st.session_state.outputs["refactoring_groups"].response.choices[
-        0
-    ].message.parsed = groups
 
 
 def display_generate_proposed_changes():
@@ -252,12 +267,11 @@ def display_generate_proposed_changes():
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
-            for group_name, response in output.response.items():
-                with st.expander(f"{group_name}"):
-                    changes = response.choices[0].message.parsed
-                    for change in changes.changes:
-                        with st.expander(f"File: {change.file_path}"):
-                            st.markdown(change.file_changes)
+            for response in output.response.values():
+                changes = response.choices[0].message.parsed
+                for change in changes.changes:
+                    with st.expander(change.file_path):
+                        st.markdown(change.file_changes)
 
         display_generate_diffs()
 
@@ -329,7 +343,7 @@ def display_generate_diffs():
             )
 
             for file_path, response in output.response.items():
-                with st.expander(f"Diff for file: {file_path}"):
+                with st.expander(file_path):
                     st.code(response["content"])
 
         display_apply_diffs()
@@ -360,8 +374,8 @@ def display_apply_diffs():
 
             try:
                 patched_content = apply_diffs(original_content, diff)
-            except Exception as e:
-                st.error(f"Error applying diff to {file_path}: {e}")
+            except Exception:
+                # st.error(f"Error applying diff to {file_path}: {e}")
                 continue
 
             # Write the patched content to the new file

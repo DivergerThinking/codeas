@@ -1,7 +1,9 @@
 from typing import Literal
 
 import streamlit as st
+import streamlit_nested_layout  # noqa
 
+from codeas.core.state import state
 from codeas.ui.components import (
     deployment_ui,
     documentation_ui,
@@ -19,8 +21,36 @@ pages = {
 }
 
 
-def display(name: Literal["Documentation", "Deployment", "Testing", "Refactoring"]):
+def display(
+    name: Literal["Documentation", "Deployment", "Testing", "Refactoring"],
+    demo: bool = True,
+):
     st.subheader(pages[name]["name"])
-    repo_ui.display()
+    if demo:
+        set_demo_state(name)
+    repo_ui.display(demo)
     metadata_ui.display()
     pages[name]["ui"].display()
+
+
+def set_demo_state(name: str):
+    if name == "Documentation":
+        abstreet_state()
+    elif name == "Deployment":
+        abstreet_state()
+    elif name == "Testing":
+        codeas_state()
+    elif name == "Refactoring":
+        codeas_state()
+
+
+def codeas_state():
+    state.update("../codeas")
+    state.include = "*.py"
+    state.exclude = "*configs*"
+
+
+def abstreet_state():
+    state.update("../abstreet")
+    state.include = ""
+    state.exclude = "*.lock, *.txt, *README.md, *osm, *data*, *geojson"

@@ -62,80 +62,40 @@ def process_sections(
     total_input_cost = 0
     full_documentation = ""
 
-    with st.expander("Sections", expanded=False):
+    with st.expander("Sections", expanded=not use_previous):
         for section in selected_sections:
             with st.spinner(
                 f"{'Generating' if generate else 'Previewing' if preview else 'Displaying'} {section}..."
             ):
-                if generate or preview:
-                    output = generate_docs_section(
-                        state.llm_client,
-                        section,
-                        state.repo,
-                        state.repo_metadata,
-                        preview=preview,
+                if generate:
+                    (
+                        total_cost,
+                        total_input_tokens,
+                        total_output_tokens,
+                    ) = run_generation(
+                        section, total_cost, total_input_tokens, total_output_tokens
                     )
-                    if generate:
-                        st.session_state.outputs[section] = output
-                        total_cost += output.cost["total_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
-                        total_output_tokens += output.tokens["output_tokens"]
-
-                        # Write the output to a file
-                        state.write_output(
-                            {
-                                "content": output.response["content"],
-                                "cost": output.cost,
-                                "tokens": output.tokens,
-                            },
-                            f"{section}.json",
-                        )
-
-                    if preview:
-                        total_input_cost += output.cost["input_cost"]
+                elif preview:
+                    total_input_cost = run_preview(section, total_input_cost)
                 elif use_previous:
                     try:
-                        previous_output = state.read_output(f"{section}.json")
-                        output = type(
-                            "Output",
-                            (),
-                            {
-                                "response": {"content": previous_output["content"]},
-                                "cost": previous_output["cost"],
-                                "tokens": previous_output["tokens"],
-                                "messages": [
-                                    {"content": ""}
-                                ],  # Placeholder for context
-                            },
+                        (
+                            total_cost,
+                            total_input_tokens,
+                            total_output_tokens,
+                        ) = read_output(
+                            section, total_cost, total_input_tokens, total_output_tokens
                         )
-                        st.session_state.outputs[section] = output
-                        total_cost += output.cost["total_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
-                        total_output_tokens += output.tokens["output_tokens"]
                     except FileNotFoundError:
-                        st.warning(
-                            f"No previous output found for {section}. Running generation..."
-                        )
-                        output = generate_docs_section(
-                            state.llm_client,
-                            section,
-                            state.repo,
-                            state.repo_metadata,
-                            preview=False,
-                        )
-                        st.session_state.outputs[section] = output
-                        total_cost += output.cost["total_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
-                        total_output_tokens += output.tokens["output_tokens"]
-
-                        # Write the output to a file
-                        state.write_output(
-                            {
-                                "content": output.response["content"],
-                                "cost": output.cost,
-                                "tokens": output.tokens,
-                            },
-                            f"{section}.json",
+                        # st.warning(
+                        #     f"No previous output found for {section}. Generating section..."
+                        # )
+                        (
+                            total_cost,
+                            total_input_tokens,
+                            total_output_tokens,
+                        ) = run_generation(
+                            section, total_cost, total_input_tokens, total_output_tokens
                         )
                 display_section(section, preview)
 
@@ -145,7 +105,7 @@ def process_sections(
                     )
                     full_documentation += f"\n\n{cleaned_content}"
 
-    if generate:
+    if generate or use_previous:
         st.info(
             f"Total cumulated cost: ${total_cost:.4f} "
             f"(input tokens: {total_input_tokens:,}, "
@@ -154,15 +114,88 @@ def process_sections(
     elif preview:
         st.info(f"Total cumulated input cost: ${total_input_cost:.4f}")
 
-    with st.expander("Full Documentation", expanded=True):
-        full_documentation = clean_markdown_content(full_documentation)
-        st.markdown(full_documentation)
+    if full_documentation:
+        with st.expander("Full Documentation", expanded=True):
+            full_documentation = clean_markdown_content(full_documentation)
+            st.markdown(full_documentation)
 
     if generate or (
         not preview
         and any(section in st.session_state.outputs for section in selected_sections)
     ):
         add_download_button(selected_sections)
+
+
+def run_generation(
+    section: str, total_cost: float, total_input_tokens: int, total_output_tokens: int
+):
+    preview_output = generate_docs_section(
+        state.llm_client,
+        section,
+        state.repo,
+        state.repo_metadata,
+        preview=True,
+    )
+    if preview_output.messages and preview_output.messages[0]["content"].strip():
+        output = generate_docs_section(
+            state.llm_client,
+            section,
+            state.repo,
+            state.repo_metadata,
+            preview=False,
+        )
+        st.session_state.outputs[section] = output
+        total_cost += output.cost["total_cost"]
+        total_input_tokens += output.tokens["input_tokens"]
+        total_output_tokens += output.tokens["output_tokens"]
+
+        # Write the output to a file
+        state.write_output(
+            {
+                "content": output.response["content"],
+                "cost": output.cost,
+                "tokens": output.tokens,
+            },
+            f"{section}.json",
+        )
+    else:
+        st.warning(f"No context found for {section}. Skipping generation.")
+    return total_cost, total_input_tokens, total_output_tokens
+
+
+def run_preview(section: str, total_input_cost: float):
+    output = generate_docs_section(
+        state.llm_client,
+        section,
+        state.repo,
+        state.repo_metadata,
+        preview=True,
+    )
+    total_input_cost += output.cost["input_cost"]
+    return total_input_cost
+
+
+def read_output(
+    section: str, total_cost: float, total_input_tokens: int, total_output_tokens: int
+):
+    previous_output = state.read_output(f"{section}.json")
+    output = type(
+        "Output",
+        (),
+        {
+            "response": {"content": previous_output["content"]},
+            "cost": previous_output["cost"],
+            "tokens": previous_output["tokens"],
+            "messages": [
+                {"content": "Context was not stored with previous output"}
+            ],  # Placeholder for context
+        },
+    )
+    st.session_state.outputs[section] = output
+    total_cost += output.cost["total_cost"]
+    total_input_tokens += output.tokens["input_tokens"]
+    total_output_tokens += output.tokens["output_tokens"]
+    return total_cost, total_input_tokens, total_output_tokens
 
 
 def clean_markdown_content(content: str) -> str:
@@ -179,7 +212,7 @@ def display_section(section: str, preview: bool = False):
         expander_label = (
             f"{section.replace('_', ' ').upper()}{' [Preview]' if preview else ''}"
         )
-        with st.expander(expander_label, expanded=True):
+        with st.expander(expander_label, expanded=False):
             if preview:
                 output = generate_docs_section(
                     state.llm_client,
@@ -203,7 +236,7 @@ def display_section(section: str, preview: bool = False):
                 with st.expander("Context", expanded=False):
                     st.code(context_content, language="markdown")
             else:
-                st.warning("Context is empty. Previous output may have been used.")
+                st.warning("Context is empty.")
 
             if not preview:
                 content = output.response["content"]

@@ -56,6 +56,8 @@ def apply_diffs(file_content, diff_content):
         if not file_content:
             raise ValueError("The diff failed to apply to the file content.")
 
+    if os.path.exists("dummy_path"):
+        os.remove("dummy_path")
     return file_content
 
 
