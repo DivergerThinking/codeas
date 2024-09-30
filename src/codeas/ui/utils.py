@@ -49,11 +49,15 @@ def apply_diffs(file_content, diff_content):
         try:
             file_content = do_replace(Path("dummy_path"), file_content, hunk)
         except SearchTextNotUnique:
+            if os.path.exists("dummy_path"):
+                os.remove("dummy_path")
             raise ValueError(
                 "The diff could not be applied uniquely to the file content."
             )
 
         if not file_content:
+            if os.path.exists("dummy_path"):
+                os.remove("dummy_path")
             raise ValueError("The diff failed to apply to the file content.")
 
     if os.path.exists("dummy_path"):
