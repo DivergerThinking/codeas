@@ -35,9 +35,9 @@ def display(
 
 def set_demo_state(name: str):
     if name == "Documentation":
-        codeas_state_all()
+        abstreet_state()
     elif name == "Deployment":
-        codeas_state_all()
+        abstreet_state()
     elif name == "Testing":
         codeas_state()
     elif name == "Refactoring":
