@@ -52,6 +52,7 @@ def display():
                             ),
                             "cost": previous_output["cost"],
                             "tokens": previous_output["tokens"],
+                            "messages": previous_output["messages"],  # Add this line
                         },
                     )
                 except FileNotFoundError:
@@ -73,6 +74,9 @@ def display():
                             "tokens": st.session_state.outputs[
                                 "testing_strategy"
                             ].tokens,
+                            "messages": st.session_state.outputs[
+                                "testing_strategy"
+                            ].messages,  # Add this line
                         },
                         "testing_strategy.json",
                     )
@@ -88,6 +92,9 @@ def display():
                         .message.parsed.dict(),
                         "cost": st.session_state.outputs["testing_strategy"].cost,
                         "tokens": st.session_state.outputs["testing_strategy"].tokens,
+                        "messages": st.session_state.outputs[
+                            "testing_strategy"
+                        ].messages,  # Add this line
                     },
                     "testing_strategy.json",
                 )
@@ -96,12 +103,12 @@ def display():
         preview_strategy = define_testing_strategy(
             state.llm_client, state.repo, state.repo_metadata, preview=True
         )
-        with st.expander("Testing strategy [Preview]", expanded=True):
+        with st.expander("Testing strategy", expanded=True):
             st.info(
                 f"Input cost: ${preview_strategy.cost['input_cost']:.4f} ({preview_strategy.tokens['input_tokens']:,} input tokens)"
             )
-            with st.expander("Context"):
-                st.code(preview_strategy.messages[0]["content"], language="markdown")
+            with st.expander("Messages"):
+                st.json(preview_strategy.messages)
 
     if "testing_strategy" in st.session_state.outputs:
         with st.expander("Testing strategy", expanded=True):
@@ -185,6 +192,7 @@ def display_generate_tests():
                             "response": previous_output["content"],
                             "cost": previous_output["cost"],
                             "tokens": previous_output["tokens"],
+                            "messages": previous_output["messages"],  # Add this line
                         },
                     )
                 except FileNotFoundError:
@@ -200,6 +208,9 @@ def display_generate_tests():
                             "content": st.session_state.outputs["tests"].response,
                             "cost": st.session_state.outputs["tests"].cost,
                             "tokens": st.session_state.outputs["tests"].tokens,
+                            "messages": st.session_state.outputs[
+                                "tests"
+                            ].messages,  # Add this line
                         },
                         "generated_tests.json",
                     )
@@ -213,6 +224,9 @@ def display_generate_tests():
                         "content": st.session_state.outputs["tests"].response,
                         "cost": st.session_state.outputs["tests"].cost,
                         "tokens": st.session_state.outputs["tests"].tokens,
+                        "messages": st.session_state.outputs[
+                            "tests"
+                        ].messages,  # Add this line
                     },
                     "generated_tests.json",
                 )
@@ -226,8 +240,8 @@ def display_generate_tests():
                 f"Input cost: ${preview.cost['input_cost']:.4f} ({preview.tokens['input_tokens']:,} input tokens)"
             )
             for path, messages in preview.messages.items():
-                with st.expander(f"Context [{path}]"):
-                    st.code(messages[0]["content"], language="markdown")
+                with st.expander(f"{path} [Messages]"):
+                    st.json(messages)
 
     if "tests" in st.session_state.outputs:
         with st.expander("Tests", expanded=True):

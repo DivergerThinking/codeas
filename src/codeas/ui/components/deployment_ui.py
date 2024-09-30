@@ -25,6 +25,7 @@ def display():
                             "response": {"content": previous_output["content"]},
                             "cost": previous_output["cost"],
                             "tokens": previous_output["tokens"],
+                            "messages": previous_output["messages"],  # Add this line
                         },
                     )
                 except FileNotFoundError:
@@ -46,6 +47,9 @@ def display():
                             "tokens": st.session_state.outputs[
                                 "deployment_strategy"
                             ].tokens,
+                            "messages": st.session_state.outputs[
+                                "deployment_strategy"
+                            ].messages,  # Add this line
                         },
                         "deployment_strategy.json",
                     )
@@ -61,6 +65,9 @@ def display():
                         "tokens": st.session_state.outputs[
                             "deployment_strategy"
                         ].tokens,
+                        "messages": st.session_state.outputs[
+                            "deployment_strategy"
+                        ].messages,  # Add this line
                     },
                     "deployment_strategy.json",
                 )
@@ -71,8 +78,8 @@ def display():
             st.info(
                 f"Input cost: ${preview_strategy.cost['input_cost']:.4f} ({preview_strategy.tokens['input_tokens']:,} input tokens)"
             )
-            with st.expander("Context"):
-                st.code(preview_strategy.messages[0]["content"], language="markdown")
+            with st.expander("Messages", expanded=False):
+                st.json(preview_strategy.messages)
 
     if "deployment_strategy" in st.session_state.outputs:
         with st.expander("Deployment strategy", expanded=True):
@@ -82,6 +89,8 @@ def display():
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
+            with st.expander("Messages", expanded=False):
+                st.json(output.messages)
             st.markdown(output.response["content"])
 
         display_generate_deployment()
@@ -109,6 +118,7 @@ def display_generate_deployment():
                             "response": {"content": previous_output["content"]},
                             "cost": previous_output["cost"],
                             "tokens": previous_output["tokens"],
+                            "messages": previous_output["messages"],  # Add this line
                         },
                     )
                 except FileNotFoundError:
@@ -126,6 +136,9 @@ def display_generate_deployment():
                             ].response["content"],
                             "cost": st.session_state.outputs["terraform_code"].cost,
                             "tokens": st.session_state.outputs["terraform_code"].tokens,
+                            "messages": st.session_state.outputs[
+                                "terraform_code"
+                            ].messages,  # Add this line
                         },
                         "terraform_code.json",
                     )
@@ -141,6 +154,9 @@ def display_generate_deployment():
                         ],
                         "cost": st.session_state.outputs["terraform_code"].cost,
                         "tokens": st.session_state.outputs["terraform_code"].tokens,
+                        "messages": st.session_state.outputs[
+                            "terraform_code"
+                        ].messages,  # Add this line
                     },
                     "terraform_code.json",
                 )
@@ -154,8 +170,8 @@ def display_generate_deployment():
             st.info(
                 f"Input cost: ${preview_terraform.cost['input_cost']:.4f} ({preview_terraform.tokens['input_tokens']:,} input tokens)"
             )
-            with st.expander("Context"):
-                st.code(preview_terraform.messages[0]["content"], language="markdown")
+            with st.expander("Messages", expanded=False):
+                st.json(preview_terraform.messages)
 
     if "terraform_code" in st.session_state.outputs:
         with st.expander("Terraform code", expanded=True):
@@ -165,4 +181,6 @@ def display_generate_deployment():
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
+            with st.expander("Messages", expanded=False):
+                st.json(output.messages)
             st.markdown(output.response["content"])

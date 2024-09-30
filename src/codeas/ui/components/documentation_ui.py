@@ -149,12 +149,13 @@ def run_generation(
         total_input_tokens += output.tokens["input_tokens"]
         total_output_tokens += output.tokens["output_tokens"]
 
-        # Write the output to a file
+        # Write the output to a file, including messages
         state.write_output(
             {
                 "content": output.response["content"],
                 "cost": output.cost,
                 "tokens": output.tokens,
+                "messages": output.messages,  # Add messages to the output
             },
             f"{section}.json",
         )
@@ -186,9 +187,9 @@ def read_output(
             "response": {"content": previous_output["content"]},
             "cost": previous_output["cost"],
             "tokens": previous_output["tokens"],
-            "messages": [
-                {"content": "Context was not stored with previous output"}
-            ],  # Placeholder for context
+            "messages": previous_output.get(
+                "messages", [{"content": "Context was not stored with previous output"}]
+            ),  # Use stored messages if available
         },
     )
     st.session_state.outputs[section] = output
@@ -231,12 +232,8 @@ def display_section(section: str, preview: bool = False):
                     f"output tokens: {output.tokens['output_tokens']:,})"
                 )
 
-            context_content = output.messages[0]["content"]
-            if context_content.strip():
-                with st.expander("Context", expanded=False):
-                    st.code(context_content, language="markdown")
-            else:
-                st.warning("Context is empty.")
+            with st.expander("Messages", expanded=False):
+                st.json(output.messages)
 
             if not preview:
                 content = output.response["content"]
