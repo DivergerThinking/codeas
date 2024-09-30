@@ -10,9 +10,11 @@ def display():
     )
 
     if st.button(
-        "Define deployment strategy", type="primary", key="define_deployment_strategy"
+        "Define deployment requirements",
+        type="primary",
+        key="define_deployment_strategy",
     ):
-        with st.spinner("Defining deployment strategy..."):
+        with st.spinner("Defining deployment requirements..."):
             if use_previous_outputs_strategy:
                 try:
                     previous_output = state.read_output("deployment_strategy.json")

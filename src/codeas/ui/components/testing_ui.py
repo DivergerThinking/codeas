@@ -18,10 +18,8 @@ def display():
         "Use previous outputs", value=True, key="use_previous_outputs_strategy"
     )
 
-    if st.button(
-        "Define testing strategy", type="primary", key="define_testing_strategy"
-    ):
-        with st.spinner("Defining testing strategy..."):
+    if st.button("Define test suite", type="primary", key="define_testing_strategy"):
+        with st.spinner("Defining test suite..."):
             if use_previous_outputs_strategy:
                 try:
                     previous_output = state.read_output("testing_strategy.json")

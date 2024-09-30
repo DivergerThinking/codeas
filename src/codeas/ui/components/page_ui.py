@@ -50,7 +50,13 @@ def codeas_state():
     state.exclude = "*configs*"
 
 
+def codeas_state_all():
+    state.update("../codeas")
+    state.include = ""
+    state.exclude = ""
+
+
 def abstreet_state():
     state.update("../abstreet")
     state.include = ""
-    state.exclude = "*.lock, *.txt, *README.md, *osm, *data*, *geojson"
+    state.exclude = "*.lock, *.txt, *.md, *osm, *data*, *geojson"

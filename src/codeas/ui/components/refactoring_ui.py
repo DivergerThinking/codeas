@@ -21,9 +21,9 @@ def display():
     )
 
     if st.button(
-        "Define refactoring groups", type="primary", key="define_refactoring_groups"
+        "Identify refactoring files", type="primary", key="identify_refactoring_files"
     ):
-        with st.spinner("Defining refactoring groups..."):
+        with st.spinner("Identifying refactoring files..."):
             if use_previous_outputs_groups:
                 try:
                     previous_output = state.read_output("refactoring_groups.json")

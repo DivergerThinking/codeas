@@ -159,7 +159,7 @@ def run_generation(
             f"{section}.json",
         )
     else:
-        st.warning(f"No context found for {section}. Skipping generation.")
+        st.warning(f"No context found for {section.upper()}. Skipping generation.")
     return total_cost, total_input_tokens, total_output_tokens
 
 
