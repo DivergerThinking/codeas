@@ -172,7 +172,10 @@ def run_preview(section: str, total_input_cost: float):
         state.repo_metadata,
         preview=True,
     )
-    total_input_cost += output.cost["input_cost"]
+    if output.messages and output.messages[0]["content"].strip():
+        total_input_cost += output.cost["input_cost"]
+    else:
+        st.warning(f"No context found for {section.upper()}.")
     return total_input_cost
 
 
