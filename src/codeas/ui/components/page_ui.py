@@ -3,6 +3,7 @@ from typing import Literal
 import streamlit as st
 import streamlit_nested_layout  # noqa
 
+from codeas.core.state import state
 from codeas.ui.components import (
     deployment_ui,
     documentation_ui,
@@ -24,6 +25,7 @@ def display(
     name: Literal["Documentation", "Deployment", "Testing", "Refactoring"],
 ):
     st.subheader(pages[name]["name"])
+    state.update_current_page(name)
     repo_ui.display()
     metadata_ui.display()
     pages[name]["ui"].display()

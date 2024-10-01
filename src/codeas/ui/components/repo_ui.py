@@ -16,11 +16,6 @@ def display_repo_path():
 
 
 def display_files():
-    st.session_state.files_data = {
-        "Incl.": state.repo.included,
-        "Path": state.repo.files_paths,
-        "Tokens": list(state.repo.files_tokens.values()),
-    }
     num_selected_files, total_files, selected_tokens = get_selected_files_info()
     with st.expander(
         f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
@@ -29,29 +24,12 @@ def display_files():
         display_files_editor()
 
 
-def filter_files():
-    include_patterns = [
-        include.strip() for include in state.include.split(",") if include.strip()
-    ]
-    exclude_patterns = [
-        exclude.strip() for exclude in state.exclude.split(",") if exclude.strip()
-    ]
-    state.repo.filter_files(include_patterns, exclude_patterns)
-    st.session_state.files_data = {
-        "Incl.": state.repo.included,
-        "Path": state.repo.files_paths,
-        "Tokens": list(state.repo.files_tokens.values()),
-    }
-
-
 def get_selected_files_info():
-    num_selected_files = sum(st.session_state.files_data["Incl."])
-    total_files = len(st.session_state.files_data["Incl."])
+    num_selected_files = sum(state.files_data["Incl."])
+    total_files = len(state.files_data["Incl."])
     selected_tokens = sum(
         token
-        for incl, token in zip(
-            st.session_state.files_data["Incl."], st.session_state.files_data["Tokens"]
-        )
+        for incl, token in zip(state.files_data["Incl."], state.files_data["Tokens"])
         if incl
     )
     return num_selected_files, total_files, selected_tokens
@@ -59,10 +37,11 @@ def get_selected_files_info():
 
 def display_filters():
     col_include, col_exclude = st.columns(2)
+    page_filter = state.get_page_filter()
     with col_include:
         st.text_input(
             "Include",
-            value=state.include,
+            value=page_filter.include,
             key="include_input",
             on_change=lambda: update_filter("include"),
             placeholder="*.py, src/*, etc.",
@@ -70,26 +49,23 @@ def display_filters():
     with col_exclude:
         st.text_input(
             "Exclude",
-            value=state.exclude,
+            value=page_filter.exclude,
             key="exclude_input",
             on_change=lambda: update_filter("exclude"),
             placeholder="debug/*, *.ipynb, etc.",
         )
-    filter_files()
 
 
 def update_filter(filter_type: Literal["include", "exclude"]):
     input_key = f"{filter_type}_input"
-    state_key = f"{filter_type}"
-
-    if input_key in st.session_state:
-        setattr(state, state_key, st.session_state[input_key])
+    update_args = {filter_type: st.session_state[input_key]}
+    state.update_page_filter(**update_args)
 
 
 def display_files_editor():
     sort_files_data()
     st.data_editor(
-        st.session_state.files_data,
+        state.files_data,
         use_container_width=True,
         column_config={
             "Incl.": st.column_config.CheckboxColumn(width=5),
@@ -101,18 +77,16 @@ def display_files_editor():
 
 
 def sort_files_data():
-    # Sort by Incl. = True first, then by Path
     sorted_data = sorted(
         zip(
-            st.session_state.files_data["Incl."],
-            st.session_state.files_data["Path"],
-            st.session_state.files_data["Tokens"],
+            state.files_data["Incl."],
+            state.files_data["Path"],
+            state.files_data["Tokens"],
         ),
-        key=lambda x: (not x[0], x[1]),  # Sort by Incl. (True first) then by Path
+        key=lambda x: (not x[0], x[1]),
     )
-    # Unzip the sorted data back into separate lists
     (
-        st.session_state.files_data["Incl."],
-        st.session_state.files_data["Path"],
-        st.session_state.files_data["Tokens"],
+        state.files_data["Incl."],
+        state.files_data["Path"],
+        state.files_data["Tokens"],
     ) = zip(*sorted_data)
