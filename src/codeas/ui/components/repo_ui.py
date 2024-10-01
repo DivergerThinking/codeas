@@ -28,7 +28,11 @@ def display_repo_path(demo: bool = False):
 
 
 def display_files():
-    filter_files()
+    st.session_state.files_data = {
+        "Incl.": state.repo.included,
+        "Path": state.repo.files_paths,
+        "Tokens": list(state.repo.files_tokens.values()),
+    }
     num_selected_files, total_files, selected_tokens = get_selected_files_info()
     with st.expander(
         f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
@@ -83,6 +87,7 @@ def display_filters():
             on_change=lambda: update_filter("exclude"),
             placeholder="debug/*, *.ipynb, etc.",
         )
+    filter_files()
 
 
 def update_filter(filter_type: Literal["include", "exclude"]):
