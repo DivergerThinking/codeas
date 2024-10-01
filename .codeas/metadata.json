@@ -1,0 +1,1805 @@
+{
+  "files_usage": {
+    "LICENSE": {
+      "is_code": false,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "Makefile": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "README.md": {
+      "is_code": false,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "pyproject.toml": {
+      "is_code": false,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "requirements.txt": {
+      "is_code": false,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/configs/agents_configs.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/configs/llm_params.py": {
+      "is_code": false,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/configs/prompts.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/core/agent.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/core/llm.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": true,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/core/metadata.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/core/repo.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/core/retriever.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/Home.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/components/docs_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/components/metadata_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/components/repo_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/state.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/utils.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/use_cases/documentation.py": {
+      "is_code": true,
+      "db_related": true,
+      "ui_related": false,
+      "api_related": true,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeag/use_cases/prompts.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/use_cases/testing.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/components/testing_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/components/refactoring_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/use_cases/refactoring.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeag/ui/components/deployment_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeag/use_cases/deployment.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/ui/ui_state.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/components/refactoring_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/components/metadata_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/components/deployment_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/ui/components/documentation_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/components/page_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/ui/components/repo_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/components/testing_ui.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/utils.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/\ud83c\udfe0_Home.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/pages/1_\ud83d\udcda_Documentation.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/pages/4_\ud83d\udd04_Refactoring.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/pages/3_\ud83e\uddea_Testing.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/ui/pages/2_\ud83d\ude80_Deployment.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": true,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/core/metadata.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/core/retriever.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/core/llm.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": true,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/core/repo.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/core/agent.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/core/state.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/configs/prompts.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/configs/agents_configs.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/configs/llm_params.py": {
+      "is_code": false,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/use_cases/documentation.py": {
+      "is_code": true,
+      "db_related": true,
+      "ui_related": false,
+      "api_related": true,
+      "config_related": true,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/use_cases/deployment.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": true
+    },
+    "src/codeas/use_cases/refactoring.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": false,
+      "security_related": false,
+      "deployment_related": false
+    },
+    "src/codeas/use_cases/testing.py": {
+      "is_code": true,
+      "db_related": false,
+      "ui_related": false,
+      "api_related": false,
+      "config_related": false,
+      "testing_related": true,
+      "security_related": false,
+      "deployment_related": false
+    }
+  },
+  "descriptions": {
+    "LICENSE": "The given file is a license document that grants permission to use, modify, and distribute the software under the MIT License, while also disclaiming warranties and liabilities. \n\nTechnologies: None mentioned.",
+    "README.md": "The given file serves as a CODEbase Assistant that enhances software development processes by utilizing LLMs with the entire codebase as context, and it supports technologies such as OpenAI's API for AI interactions.",
+    "pyproject.toml": "The given `pyproject.toml` file configures a Python project named \"codeas,\" specifying its build system, project metadata, dependencies, and linting settings. \n\nTechnologies mentioned: setuptools, setuptools-scm (versions unspecified), Python (>=3.9,<3.12), isort (profile: black), ruff (with specific linting rules).",
+    "requirements.txt": "The given file specifies a list of Python package dependencies required for a project, including their minimum versions or exact versions where applicable. Technologies mentioned: openai>=1.0.0, pydantic>=2.3, pyyaml>=6.0.1, python-dotenv>=1.0.0, pyperclip>=1.8.2, tiktoken>=0.5.1, tree_sitter==0.20.2, tree-sitter-languages>=1.8.0, prompt-toolkit>=3.0.3, rich>=13.7.0.",
+    "src/codeag/configs/llm_params.py": "The given file defines a dictionary named `OPENAI_PARAMS` that contains configuration parameters for interacting with the OpenAI API, including settings for temperature, top_p, streaming, and timeout. \n\nTechnologies: OpenAI API (version not specified).",
+    "src/codeag/use_cases/prompts.py": "The given file contains prompts for generating comprehensive documentation sections for various aspects of a software project, including project overview, setup and development, architecture, user interface, database, API, testing, deployment, and security. \n\nTechnologies mentioned: None.",
+    "src/codeas/configs/llm_params.py": "The given file defines a dictionary named `OPENAI_PARAMS` that contains configuration parameters for interacting with the OpenAI API, including settings for temperature, top_p, streaming, and timeout. \n\nTechnologies: OpenAI API (version unspecified)."
+  },
+  "code_details": {
+    "Makefile": {
+      "description": "This Makefile defines a style target that runs code formatting and linting tools on the project.",
+      "external_imports": [
+        "black",
+        "isort",
+        "ruff"
+      ],
+      "internal_imports": [],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Run code formatting",
+        "Run import sorting",
+        "Run linting and fixing"
+      ]
+    },
+    "src/codeag/configs/prompts.py": {
+      "description": "This file handles the configuration settings for the application.",
+      "external_imports": [
+        "json",
+        "os"
+      ],
+      "internal_imports": [
+        "config_loader",
+        "settings_manager"
+      ],
+      "classes": [
+        {
+          "name": "AppConfig",
+          "description": "Manages application configuration settings."
+        },
+        {
+          "name": "DatabaseConfig",
+          "description": "Handles database connection configurations."
+        }
+      ],
+      "relationships": [
+        "AppConfig -> config_loader",
+        "DatabaseConfig -> settings_manager",
+        "settings_manager <- DatabaseConfig"
+      ],
+      "functionalities": [
+        "Load configuration settings",
+        "Validate configuration values",
+        "Manage environment-specific settings"
+      ]
+    },
+    "src/codeag/core/agent.py": {
+      "description": "This file defines an agent that interacts with a language model to process and analyze file-related contexts.",
+      "external_imports": [
+        "pydantic",
+        "tokencost"
+      ],
+      "internal_imports": [
+        "codeag.core.llm"
+      ],
+      "classes": [
+        {
+          "name": "FilePathsOutput",
+          "description": "Represents the output containing a list of file paths."
+        },
+        {
+          "name": "ApplicableResponse",
+          "description": "Represents a response indicating applicability and its corresponding message."
+        },
+        {
+          "name": "FileDetailsOutput",
+          "description": "Holds various insights and details about files."
+        },
+        {
+          "name": "AgentOutput",
+          "description": "Encapsulates the output of the agent including tokens and cost."
+        },
+        {
+          "name": "AgentPreview",
+          "description": "Represents a preview output of the agent with tokens and cost."
+        },
+        {
+          "name": "Agent",
+          "description": "Main class that manages interactions with the language model and processes contexts."
+        }
+      ],
+      "relationships": [
+        "Agent -> LLMClient",
+        "FilePathsOutput -> ApplicableResponse",
+        "FileDetailsOutput -> ApplicableResponse",
+        "AgentOutput -> Agent",
+        "AgentPreview -> Agent"
+      ],
+      "functionalities": [
+        "Processing file contexts",
+        "Interacting with a language model",
+        "Calculating token usage and costs",
+        "Generating structured output for file details",
+        "Creating messages for model interaction"
+      ]
+    },
+    "src/codeag/core/llm.py": {
+      "description": "This file defines an LLMClient class for interacting with OpenAI's language models, providing synchronous and asynchronous methods for generating completions.",
+      "external_imports": [
+        "asyncio",
+        "logging",
+        "openai",
+        "tenacity"
+      ],
+      "internal_imports": [
+        "codeag.configs.llm_params"
+      ],
+      "classes": [
+        {
+          "name": "LLMClient",
+          "description": "Handles communication with OpenAI's language models for generating text completions."
+        }
+      ],
+      "relationships": [
+        "LLMClient -> codeag.configs.llm_params"
+      ],
+      "functionalities": [
+        "Manage OpenAI client connection",
+        "Generate text completions",
+        "Handle streaming responses",
+        "Batch processing of requests",
+        "Retry logic for failed requests"
+      ]
+    },
+    "src/codeag/core/metadata.py": {
+      "description": "This file manages the metadata of a repository, including file usage, descriptions, code details, and testing details, utilizing an LLM client for analysis.",
+      "external_imports": [
+        "json",
+        "os",
+        "typing",
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeag.core.agent",
+        "codeag.core.llm"
+      ],
+      "classes": [
+        {
+          "name": "FileUsage",
+          "description": "Defines the usage characteristics of a file."
+        },
+        {
+          "name": "ClassDetails",
+          "description": "Holds details about a class including its name and description."
+        },
+        {
+          "name": "CodeDetails",
+          "description": "Stores details about code files such as imports, classes, and functionalities."
+        },
+        {
+          "name": "TestingDetails",
+          "description": "Contains information about testing files including test cases and classes."
+        },
+        {
+          "name": "RepoMetadata",
+          "description": "Manages the repository metadata including file usage, descriptions, and code/testing details."
+        }
+      ],
+      "relationships": [
+        "RepoMetadata -> FileUsage",
+        "RepoMetadata -> CodeDetails",
+        "RepoMetadata -> TestingDetails",
+        "CodeDetails -> ClassDetails",
+        "TestingDetails -> ClassDetails",
+        "RepoMetadata -> LLMClient",
+        "RepoMetadata -> Agent"
+      ],
+      "functionalities": [
+        "Generate repository metadata",
+        "Generate missing repository metadata",
+        "Analyze file usage",
+        "Generate file descriptions",
+        "Generate code details",
+        "Generate testing details",
+        "Export metadata to JSON",
+        "Load metadata from JSON"
+      ]
+    },
+    "src/codeag/core/repo.py": {
+      "description": "This file defines a Repo class that manages and analyzes files in a specified repository path, calculating token counts and filtering files based on patterns.",
+      "external_imports": [
+        "glob",
+        "os",
+        "typing",
+        "tokencost",
+        "pydantic"
+      ],
+      "internal_imports": [],
+      "classes": [
+        {
+          "name": "Repo",
+          "description": "Manages repository files, calculates token counts, and filters files based on inclusion and exclusion patterns."
+        }
+      ],
+      "relationships": [],
+      "functionalities": [
+        "Manage repository file paths",
+        "Calculate token counts for files",
+        "Filter files based on patterns"
+      ]
+    },
+    "src/codeag/core/retriever.py": {
+      "description": "This file defines a ContextRetriever class that retrieves contextual information about files in a repository based on specified criteria.",
+      "external_imports": [
+        "json",
+        "typing",
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeag.core.metadata"
+      ],
+      "classes": [
+        {
+          "name": "ContextRetriever",
+          "description": "Retrieves context information from files based on various inclusion criteria."
+        }
+      ],
+      "relationships": [
+        "ContextRetriever -> RepoMetadata"
+      ],
+      "functionalities": [
+        "Retrieve contextual information from files",
+        "Parse JSON responses",
+        "Handle file usage metadata"
+      ]
+    },
+    "src/codeag/ui/Home.py": {
+      "description": "This file defines the home page of the Codeas application using Streamlit, displaying various UI components and tasks.",
+      "external_imports": [
+        "streamlit",
+        "streamlit_nested_layout"
+      ],
+      "internal_imports": [
+        "docs_ui",
+        "metadata_ui",
+        "repo_ui"
+      ],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Display home page",
+        "Display repository UI",
+        "Display metadata UI",
+        "Display task selection",
+        "Display documentation generation task"
+      ]
+    },
+    "src/codeag/ui/components/docs_ui.py": {
+      "description": "This file provides a Streamlit interface for displaying and generating documentation sections based on user selections.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeag.ui.state",
+        "codeag.use_cases.documentation"
+      ],
+      "classes": [],
+      "relationships": [
+        "docs_ui.py -> state",
+        "docs_ui.py -> SECTION_CONFIG",
+        "docs_ui.py -> generate_docs_section",
+        "state <- docs_ui.py",
+        "SECTION_CONFIG <- docs_ui.py",
+        "generate_docs_section <- docs_ui.py"
+      ],
+      "functionalities": [
+        "Display documentation sections",
+        "Edit section inclusion",
+        "Generate documentation",
+        "Preview documentation",
+        "Download documentation"
+      ]
+    },
+    "src/codeag/ui/components/metadata_ui.py": {
+      "description": "This file provides a Streamlit UI for displaying and managing metadata related to files in a repository.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeag.ui.state"
+      ],
+      "classes": [],
+      "relationships": [
+        "metadata_ui.py -> state",
+        "state <- metadata_ui.py"
+      ],
+      "functionalities": [
+        "Display metadata information",
+        "Generate missing metadata",
+        "Estimate cost of generating metadata",
+        "Update existing metadata"
+      ]
+    },
+    "src/codeag/ui/components/repo_ui.py": {
+      "description": "This file provides a Streamlit interface for displaying and managing repository files with filtering options.",
+      "external_imports": [
+        "os",
+        "typing",
+        "streamlit",
+        "streamlit_searchbox"
+      ],
+      "internal_imports": [
+        "codeag.ui.state",
+        "codeag.ui.utils"
+      ],
+      "classes": [],
+      "relationships": [
+        "repo_ui.py -> state",
+        "repo_ui.py -> search_dirs"
+      ],
+      "functionalities": [
+        "Display repository path",
+        "Filter files",
+        "Display files in an editor",
+        "Sort files data",
+        "Show selected files information"
+      ]
+    },
+    "src/codeag/ui/state.py": {
+      "description": "This file defines a State class that manages repository-related information and metadata using Pydantic for data validation.",
+      "external_imports": [
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeag.core.llm",
+        "codeag.core.metadata",
+        "codeag.core.repo"
+      ],
+      "classes": [
+        {
+          "name": "State",
+          "description": "Manages the state of a repository including its path, inclusion/exclusion filters, and associated metadata."
+        }
+      ],
+      "relationships": [
+        "State -> LLMClient",
+        "State -> Repo",
+        "State -> RepoMetadata",
+        "LLMClient <- State",
+        "Repo <- State",
+        "RepoMetadata <- State"
+      ],
+      "functionalities": [
+        "Manage repository state",
+        "Initialize repository and metadata",
+        "Update repository path and metadata"
+      ]
+    },
+    "src/codeag/ui/utils.py": {
+      "description": "This file provides a utility function to search for directories based on a given path.",
+      "external_imports": [
+        "os"
+      ],
+      "internal_imports": [],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Directory searching based on a specified path."
+      ]
+    },
+    "src/codeag/use_cases/documentation.py": {
+      "description": "This file generates documentation sections for a project using a language model and context retriever.",
+      "external_imports": [
+        "codeag.core.agent",
+        "codeag.core.llm",
+        "codeag.core.metadata",
+        "codeag.core.repo",
+        "codeag.core.retriever",
+        "codeag.use_cases.prompts"
+      ],
+      "internal_imports": [
+        "codeag.core.metadata",
+        "codeag.core.repo"
+      ],
+      "classes": [
+        {
+          "name": "Agent",
+          "description": "Handles instructions and interactions with the language model."
+        },
+        {
+          "name": "LLMClient",
+          "description": "Client for interacting with the language model."
+        },
+        {
+          "name": "RepoMetadata",
+          "description": "Manages metadata related to the repository."
+        },
+        {
+          "name": "Repo",
+          "description": "Represents the repository and its files."
+        },
+        {
+          "name": "ContextRetriever",
+          "description": "Retrieves context based on configuration."
+        }
+      ],
+      "relationships": [
+        "generate_docs_section -> LLMClient",
+        "generate_docs_section -> Repo",
+        "generate_docs_section -> RepoMetadata",
+        "generate_docs_section -> ContextRetriever",
+        "generate_docs_section -> Agent",
+        "RepoMetadata <- Repo",
+        "ContextRetriever <- Repo"
+      ],
+      "functionalities": [
+        "Generate documentation sections",
+        "Retrieve context from repository files",
+        "Interact with a language model",
+        "Handle different documentation prompts based on section configuration"
+      ]
+    },
+    "src/codeag/use_cases/prompts.py": {
+      "description": "This file contains various functions for generating documentation sections for a project.",
+      "external_imports": [],
+      "internal_imports": [
+        "src.codeag.use_cases.prompts"
+      ],
+      "classes": [
+        {
+          "name": "DocumentationGenerator",
+          "description": "Handles the generation of different documentation sections."
+        }
+      ],
+      "relationships": [
+        "DocumentationGenerator -> src.codeag.use_cases.prompts"
+      ],
+      "functionalities": [
+        "Generate project overview documentation",
+        "Create setup and development documentation",
+        "Produce architecture documentation",
+        "Generate UI documentation",
+        "Create database documentation",
+        "Produce API documentation",
+        "Generate testing documentation",
+        "Create deployment documentation",
+        "Produce security documentation"
+      ]
+    },
+    "src/codeag/ui/components/refactoring_ui.py": {
+      "description": "This file provides a user interface for defining refactoring groups, previewing proposed changes, refactoring files, and writing the refactored files using Streamlit.",
+      "external_imports": [
+        "os",
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeag.use_cases.refactoring"
+      ],
+      "classes": [],
+      "relationships": [
+        "refactoring_ui.py -> codeag.use_cases.refactoring"
+      ],
+      "functionalities": [
+        "Define refactoring groups",
+        "Preview refactoring groups",
+        "Generate proposed changes",
+        "Preview proposed changes",
+        "Refactor files",
+        "Write refactored files"
+      ]
+    },
+    "src/codeag/use_cases/refactoring.py": {
+      "description": "This file handles the refactoring of code files by defining refactoring groups, generating proposed changes, and applying those changes.",
+      "external_imports": [
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeag.core.retriever",
+        "codeag.core.agent",
+        "codeag.ui.state",
+        "codeag.use_cases.prompts"
+      ],
+      "classes": [
+        {
+          "name": "FileGroup",
+          "description": "Represents a group of files with a name and their respective file paths."
+        },
+        {
+          "name": "RefactoringGroups",
+          "description": "Holds a collection of FileGroup instances."
+        },
+        {
+          "name": "RefactoredFile",
+          "description": "Represents a file that has been refactored with its new code."
+        },
+        {
+          "name": "RefactoredFiles",
+          "description": "Holds a collection of RefactoredFile instances."
+        }
+      ],
+      "relationships": [
+        "RefactoringGroups -> FileGroup",
+        "RefactoredFiles -> RefactoredFile",
+        "ContextRetriever -> RefactoringGroups",
+        "Agent -> RefactoringGroups",
+        "Agent -> RefactoredFiles",
+        "state -> Agent"
+      ],
+      "functionalities": [
+        "Define refactoring files",
+        "Generate proposed changes for refactoring",
+        "Refactor files based on proposed changes"
+      ]
+    },
+    "src/codeag/ui/components/deployment_ui.py": {
+      "description": "This file provides a Streamlit interface for defining and generating deployment strategies and Terraform code.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeag.use_cases.deployment"
+      ],
+      "classes": [],
+      "relationships": [
+        "deployment_ui.py -> define_deployment",
+        "deployment_ui.py -> generate_deployment"
+      ],
+      "functionalities": [
+        "Display buttons for defining deployment strategy and generating Terraform code",
+        "Show previews of deployment strategies and Terraform code",
+        "Manage session state for outputs related to deployment strategies and Terraform code"
+      ]
+    },
+    "src/codeag/use_cases/deployment.py": {
+      "description": "This file defines functions to analyze and generate AWS deployment strategies and Terraform code based on application context.",
+      "external_imports": [],
+      "internal_imports": [
+        "codeag.core.agent",
+        "codeag.core.retriever",
+        "codeag.ui.state"
+      ],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Analyze application requirements for AWS deployment",
+        "Suggest AWS deployment strategies",
+        "Generate Terraform code for AWS infrastructure"
+      ]
+    },
+    "src/codeas/ui/ui_state.py": {
+      "description": "This file initializes the UI state for a Streamlit application.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Initialize session state for UI outputs."
+      ]
+    },
+    "src/codeas/ui/components/refactoring_ui.py": {
+      "description": "This file provides a Streamlit user interface for defining refactoring groups, generating proposed changes, and applying diffs to files.",
+      "external_imports": [
+        "os",
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeas.ui.utils",
+        "codeas.use_cases.refactoring"
+      ],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Define refactoring groups",
+        "Preview refactoring groups",
+        "Generate proposed changes",
+        "Preview proposed changes",
+        "Generate diffs",
+        "Preview generated diffs",
+        "Apply diffs"
+      ]
+    },
+    "src/codeas/ui/components/metadata_ui.py": {
+      "description": "This file provides a Streamlit interface for displaying and managing metadata related to files in a repository.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeas.core.state"
+      ],
+      "classes": [],
+      "relationships": [
+        "metadata_ui.py -> state",
+        "state <- metadata_ui.py"
+      ],
+      "functionalities": [
+        "Display metadata information",
+        "Generate missing metadata",
+        "Estimate cost of generating metadata",
+        "Update existing metadata"
+      ]
+    },
+    "src/codeas/ui/components/deployment_ui.py": {
+      "description": "This file provides a Streamlit user interface for defining and generating deployment strategies and Terraform code.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeas.use_cases.deployment"
+      ],
+      "classes": [],
+      "relationships": [
+        "deployment_ui.py -> define_deployment",
+        "deployment_ui.py -> generate_deployment",
+        "define_deployment <- deployment_ui.py",
+        "generate_deployment <- deployment_ui.py"
+      ],
+      "functionalities": [
+        "Define deployment strategy",
+        "Preview deployment strategy",
+        "Generate Terraform code",
+        "Preview Terraform code"
+      ]
+    },
+    "src/codeas/ui/components/documentation_ui.py": {
+      "description": "This file provides a Streamlit interface for displaying and generating documentation sections based on a configuration.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeas.core.state",
+        "codeas.use_cases.documentation"
+      ],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Display documentation sections",
+        "Edit section inclusion",
+        "Generate documentation",
+        "Preview documentation",
+        "Download generated documentation"
+      ]
+    },
+    "src/codeas/ui/components/page_ui.py": {
+      "description": "This file defines a Streamlit UI for displaying different pages related to documentation, deployment, testing, and refactoring.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "repo_ui",
+        "metadata_ui",
+        "documentation_ui",
+        "deployment_ui",
+        "testing_ui",
+        "refactoring_ui"
+      ],
+      "classes": [],
+      "relationships": [
+        "page_ui -> repo_ui",
+        "page_ui -> metadata_ui",
+        "page_ui -> documentation_ui",
+        "page_ui -> deployment_ui",
+        "page_ui -> testing_ui",
+        "page_ui -> refactoring_ui"
+      ],
+      "functionalities": [
+        "Display a title for each page",
+        "Render the repository UI",
+        "Render metadata UI",
+        "Render specific page UI based on selection"
+      ]
+    },
+    "src/codeas/ui/components/repo_ui.py": {
+      "description": "This file provides a user interface for managing and displaying repository files in a Streamlit application.",
+      "external_imports": [
+        "os",
+        "typing",
+        "streamlit",
+        "streamlit_searchbox"
+      ],
+      "internal_imports": [
+        "codeas.core.state",
+        "codeas.ui.utils"
+      ],
+      "classes": [],
+      "relationships": [
+        "repo_ui.py -> state",
+        "repo_ui.py -> search_dirs"
+      ],
+      "functionalities": [
+        "Display repository path",
+        "Filter files based on include/exclude patterns",
+        "Edit and display files in a data table",
+        "Show information about selected files and tokens"
+      ]
+    },
+    "src/codeas/ui/utils.py": {
+      "description": "This file provides utilities for searching directories and applying diffs to file contents.",
+      "external_imports": [
+        "diff_match_patch"
+      ],
+      "internal_imports": [],
+      "classes": [
+        {
+          "name": "SearchTextNotUnique",
+          "description": "Custom exception for handling non-unique search text errors."
+        },
+        {
+          "name": "RelativeIndenter",
+          "description": "Handles the transformation of text files to have relative indentation."
+        }
+      ],
+      "relationships": [],
+      "functionalities": [
+        "Searching directories",
+        "Applying diffs to file content",
+        "Handling exceptions related to search text uniqueness",
+        "Transforming text to relative indentation"
+      ]
+    },
+    "src/codeas/ui/\ud83c\udfe0_Home.py": {
+      "description": "This file defines the home page of the Codeas application using Streamlit.",
+      "external_imports": [
+        "streamlit",
+        "streamlit_nested_layout"
+      ],
+      "internal_imports": [],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Display title and description",
+        "Provide navigation links to other pages",
+        "Link to external documentation"
+      ]
+    },
+    "src/codeas/ui/pages/1_\ud83d\udcda_Documentation.py": {
+      "description": "This file initializes the UI state and displays the documentation page.",
+      "external_imports": [],
+      "internal_imports": [
+        "codeas.ui.components",
+        "codeas.ui.ui_state"
+      ],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Initialize UI state",
+        "Display documentation page"
+      ]
+    },
+    "src/codeas/ui/pages/4_\ud83d\udd04_Refactoring.py": {
+      "description": "This file initializes the UI state and displays the Refactoring page.",
+      "external_imports": [],
+      "internal_imports": [
+        "codeas.ui.components",
+        "codeas.ui.ui_state"
+      ],
+      "classes": [],
+      "relationships": [
+        "codeas.ui.ui_state -> init_ui_state",
+        "codeas.ui.components -> page_ui.display"
+      ],
+      "functionalities": [
+        "Initialize UI state",
+        "Display Refactoring page"
+      ]
+    },
+    "src/codeas/ui/pages/2_\ud83d\ude80_Deployment.py": {
+      "description": "This file initializes the UI state and displays the deployment page.",
+      "external_imports": [],
+      "internal_imports": [
+        "codeas.ui.components",
+        "codeas.ui.ui_state"
+      ],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Initialize UI state",
+        "Display deployment page"
+      ]
+    },
+    "src/codeas/core/metadata.py": {
+      "description": "This file manages the metadata for a repository, including file usage, descriptions, code details, and testing details.",
+      "external_imports": [
+        "json",
+        "os",
+        "typing",
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeas.core.agent",
+        "codeas.core.llm",
+        "codeas.core.repo"
+      ],
+      "classes": [
+        {
+          "name": "FileUsage",
+          "description": "Defines the usage characteristics of a file."
+        },
+        {
+          "name": "ClassDetails",
+          "description": "Holds details about a class in the code."
+        },
+        {
+          "name": "CodeDetails",
+          "description": "Contains metadata about code files."
+        },
+        {
+          "name": "TestingDetails",
+          "description": "Stores information about testing files."
+        },
+        {
+          "name": "RepoMetadata",
+          "description": "Manages and generates metadata for the repository."
+        }
+      ],
+      "relationships": [
+        "RepoMetadata -> FileUsage",
+        "RepoMetadata -> ClassDetails",
+        "RepoMetadata -> CodeDetails",
+        "RepoMetadata -> TestingDetails",
+        "CodeDetails -> ClassDetails",
+        "TestingDetails -> ClassDetails"
+      ],
+      "functionalities": [
+        "Generate repository metadata",
+        "Identify file usage",
+        "Generate descriptions for files",
+        "Generate code details for code files",
+        "Generate testing details for test files",
+        "Export metadata to a JSON file",
+        "Load metadata from a JSON file"
+      ]
+    },
+    "src/codeas/core/retriever.py": {
+      "description": "This file defines a ContextRetriever class that retrieves contextual information from files based on specified criteria.",
+      "external_imports": [
+        "json",
+        "typing",
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeas.core.metadata",
+        "codeas.core.state"
+      ],
+      "classes": [
+        {
+          "name": "ContextRetriever",
+          "description": "Retrieves contextual information from files based on various inclusion criteria."
+        }
+      ],
+      "relationships": [
+        "ContextRetriever -> RepoMetadata",
+        "ContextRetriever -> state"
+      ],
+      "functionalities": [
+        "Retrieve contextual information from files",
+        "Parse JSON responses",
+        "Generate file descriptions based on metadata"
+      ]
+    },
+    "src/codeas/core/llm.py": {
+      "description": "This file defines an LLMClient class for interacting with OpenAI's language models, supporting both synchronous and asynchronous requests.",
+      "external_imports": [
+        "asyncio",
+        "logging",
+        "openai",
+        "tenacity"
+      ],
+      "internal_imports": [
+        "codeas.configs.llm_params"
+      ],
+      "classes": [
+        {
+          "name": "LLMClient",
+          "description": "Handles communication with OpenAI's language models, managing both synchronous and asynchronous completions."
+        }
+      ],
+      "relationships": [
+        "LLMClient -> codeas.configs.llm_params"
+      ],
+      "functionalities": [
+        "Manage OpenAI client initialization and configuration",
+        "Handle synchronous and asynchronous message completions",
+        "Implement retry logic for API calls",
+        "Parse streaming responses from the API",
+        "Batch process multiple requests"
+      ]
+    },
+    "src/codeas/core/repo.py": {
+      "description": "This file defines a Repo class that manages and analyzes files in a specified repository path, calculating token counts and filtering files based on patterns.",
+      "external_imports": [
+        "glob",
+        "os",
+        "typing",
+        "tokencost",
+        "pydantic"
+      ],
+      "internal_imports": [],
+      "classes": [
+        {
+          "name": "Repo",
+          "description": "Manages repository files, calculates token counts, and filters files based on inclusion and exclusion patterns."
+        }
+      ],
+      "relationships": [],
+      "functionalities": [
+        "Manage repository file paths",
+        "Calculate token counts for files",
+        "Filter files based on patterns",
+        "Read file contents"
+      ]
+    },
+    "src/codeas/core/agent.py": {
+      "description": "This file defines an agent that interacts with a language model to process input contexts and calculate associated token costs.",
+      "external_imports": [
+        "pydantic",
+        "tokencost"
+      ],
+      "internal_imports": [
+        "codeas.core.llm"
+      ],
+      "classes": [
+        {
+          "name": "FilePathsOutput",
+          "description": "Represents the output containing file paths."
+        },
+        {
+          "name": "ApplicableResponse",
+          "description": "Indicates whether a response is applicable and provides the response string."
+        },
+        {
+          "name": "FileDetailsOutput",
+          "description": "Holds various insights and details about a file."
+        },
+        {
+          "name": "AgentOutput",
+          "description": "Encapsulates the output from the agent including tokens and cost."
+        },
+        {
+          "name": "AgentPreview",
+          "description": "Provides a preview of the agent's output including tokens and cost."
+        },
+        {
+          "name": "Agent",
+          "description": "Main class that manages interactions with the language model and processes input contexts."
+        }
+      ],
+      "relationships": [
+        "Agent -> LLMClient",
+        "AgentOutput -> Agent",
+        "AgentPreview -> Agent",
+        "FileDetailsOutput -> ApplicableResponse",
+        "FilePathsOutput -> list[str]"
+      ],
+      "functionalities": [
+        "Process input contexts",
+        "Calculate token costs",
+        "Generate messages for the language model",
+        "Provide output details and previews"
+      ]
+    },
+    "src/codeas/core/state.py": {
+      "description": "This file defines a State class that manages repository state and metadata using Pydantic for data validation.",
+      "external_imports": [
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeas.core.llm",
+        "codeas.core.metadata",
+        "codeas.core.repo"
+      ],
+      "classes": [
+        {
+          "name": "State",
+          "description": "A Pydantic model that represents the state of a repository, including its path, inclusion/exclusion patterns, and associated metadata."
+        }
+      ],
+      "relationships": [
+        "State -> LLMClient",
+        "State -> Repo",
+        "State -> RepoMetadata",
+        "LLMClient <- State",
+        "Repo <- State",
+        "RepoMetadata <- State"
+      ],
+      "functionalities": [
+        "Manage repository state",
+        "Load repository metadata",
+        "Update repository path"
+      ]
+    },
+    "src/codeas/configs/prompts.py": {
+      "description": "This file defines various prompts for generating documentation sections for a project.",
+      "external_imports": [],
+      "internal_imports": [
+        "src.codeas.configs"
+      ],
+      "classes": [
+        {
+          "name": "PromptGenerator",
+          "description": "Handles the creation and management of documentation prompts."
+        },
+        {
+          "name": "DocumentationSection",
+          "description": "Represents a section of documentation with a title and content."
+        }
+      ],
+      "relationships": [
+        "PromptGenerator -> DocumentationSection",
+        "DocumentationSection <- PromptGenerator"
+      ],
+      "functionalities": [
+        "Define documentation prompts",
+        "Generate structured documentation sections",
+        "Manage prompt templates"
+      ]
+    },
+    "src/codeas/use_cases/documentation.py": {
+      "description": "This file generates documentation sections for a project using an LLM client based on various configurations.",
+      "external_imports": [
+        "codeas.configs",
+        "codeas.core.agent",
+        "codeas.core.llm",
+        "codeas.core.metadata",
+        "codeas.core.repo",
+        "codeas.core.retriever"
+      ],
+      "internal_imports": [],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Generate documentation sections based on project context and configurations.",
+        "Retrieve relevant context from the repository for documentation generation.",
+        "Interact with an LLM client to produce documentation."
+      ]
+    },
+    "src/codeas/use_cases/deployment.py": {
+      "description": "This file defines functions for deploying AWS resources using an agent that retrieves context from the codebase.",
+      "external_imports": [
+        "codeas.configs",
+        "codeas.core.agent",
+        "codeas.core.retriever",
+        "codeas.core.state"
+      ],
+      "internal_imports": [],
+      "classes": [],
+      "relationships": [],
+      "functionalities": [
+        "Define AWS deployment",
+        "Generate AWS deployment"
+      ]
+    },
+    "src/codeas/use_cases/refactoring.py": {
+      "description": "This file defines functionality for refactoring code files by organizing them into groups and generating proposed changes and diffs.",
+      "external_imports": [
+        "pydantic"
+      ],
+      "internal_imports": [
+        "codeas.configs",
+        "codeas.core.agent",
+        "codeas.core.retriever",
+        "codeas.core.state"
+      ],
+      "classes": [
+        {
+          "name": "FileGroup",
+          "description": "Represents a group of files with a name and their paths."
+        },
+        {
+          "name": "RefactoringGroups",
+          "description": "Holds multiple file groups for refactoring."
+        },
+        {
+          "name": "FileChanges",
+          "description": "Represents changes made to a specific file."
+        },
+        {
+          "name": "ProposedChanges",
+          "description": "Holds proposed changes for a set of files."
+        }
+      ],
+      "relationships": [
+        "FileGroup -> RefactoringGroups",
+        "RefactoringGroups -> FileChanges",
+        "ProposedChanges -> FileChanges",
+        "ContextRetriever -> define_refactoring_files",
+        "ContextRetriever -> generate_proposed_changes",
+        "ContextRetriever -> generate_diffs",
+        "Agent -> define_refactoring_files",
+        "Agent -> generate_proposed_changes",
+        "Agent -> generate_diffs"
+      ],
+      "functionalities": [
+        "Define refactoring files",
+        "Generate proposed changes",
+        "Generate diffs for proposed changes"
+      ]
+    }
+  },
+  "testing_details": {
+    "src/codeag/configs/agents_configs.py": {
+      "description": "This test file covers the configuration settings for various agent prompts in the codeag project.",
+      "external_imports": [],
+      "internal_imports": [
+        "prompts",
+        "FileDetailsOutput",
+        "FilePathsOutput"
+      ],
+      "classes": [],
+      "test_cases": [
+        "Configuration of custom agent",
+        "Generation of backend documentation",
+        "Generation of frontend documentation",
+        "Generation of mobile documentation",
+        "Generation of detailed technical documentation",
+        "Generation of configuration documentation",
+        "Generation of unit tests in Python",
+        "Generation of functional tests in Python",
+        "File refactoring generation",
+        "Repository refactoring generation",
+        "AWS deployment suggestions",
+        "AWS Terraform generation",
+        "Extraction of file descriptions",
+        "Extraction of file details",
+        "Automatic file selection"
+      ]
+    },
+    "src/codeag/use_cases/testing.py": {
+      "description": "This test file defines a strategy for generating testing steps and tests based on guidelines and context from a repository.",
+      "external_imports": [
+        "pydantic"
+      ],
+      "internal_imports": [
+        "Agent",
+        "LLMClient",
+        "RepoMetadata",
+        "Repo",
+        "ContextRetriever",
+        "prompts"
+      ],
+      "classes": [
+        "TestingStep",
+        "TestingStrategy"
+      ],
+      "test_cases": [
+        "Define testing strategy",
+        "Parse response from agent",
+        "Generate tests from strategy"
+      ]
+    },
+    "src/codeag/ui/components/testing_ui.py": {
+      "description": "This test file covers the user interface for defining and estimating testing strategies in a Streamlit application.",
+      "external_imports": [
+        "streamlit"
+      ],
+      "internal_imports": [
+        "state",
+        "define_testing_strategy"
+      ],
+      "classes": [],
+      "test_cases": [
+        "Defining testing strategy",
+        "Estimating cost",
+        "Displaying testing strategy details"
+      ]
+    },
+    "src/codeag/ui/Home.py": {
+      "description": "This test file covers the functionality of the Home page in the Codeas application.",
+      "external_imports": [
+        "streamlit",
+        "streamlit_nested_layout"
+      ],
+      "internal_imports": [
+        "docs_ui",
+        "metadata_ui",
+        "repo_ui",
+        "testing_ui"
+      ],
+      "classes": [],
+      "test_cases": [
+        "Display home page",
+        "Select task from dropdown",
+        "Display documentation task",
+        "Display testing task"
+      ]
+    },
+    "src/codeas/ui/components/testing_ui.py": {
+      "description": "This test file covers the user interface for defining testing strategies and generating tests in a Streamlit application.",
+      "external_imports": [
+        "os",
+        "re",
+        "streamlit"
+      ],
+      "internal_imports": [
+        "codeas.core.state",
+        "codeas.use_cases.testing"
+      ],
+      "classes": [],
+      "test_cases": [
+        "Define testing strategy",
+        "Preview testing strategy",
+        "Remove testing step",
+        "Generate tests",
+        "Preview generated tests",
+        "Write tests"
+      ]
+    },
+    "src/codeas/ui/pages/3_\ud83e\uddea_Testing.py": {
+      "description": "This test file covers the initialization and display functionality of the UI components.",
+      "external_imports": [],
+      "internal_imports": [
+        "codeas.ui.components",
+        "codeas.ui.ui_state"
+      ],
+      "classes": [],
+      "test_cases": [
+        "UI State Initialization",
+        "Page Display Functionality"
+      ]
+    },
+    "src/codeas/configs/agents_configs.py": {
+      "description": "This test file covers the configuration settings for various agents used in the application.",
+      "external_imports": [],
+      "internal_imports": [
+        "prompts",
+        "FileDetailsOutput",
+        "FilePathsOutput"
+      ],
+      "classes": [],
+      "test_cases": [
+        "Agent configuration validation",
+        "Prompt instruction correctness",
+        "Model selection verification",
+        "Context assignment checks"
+      ]
+    },
+    "src/codeas/use_cases/testing.py": {
+      "description": "This test file defines a strategy for generating tests based on a given repository's metadata and guidelines.",
+      "external_imports": [
+        "pydantic"
+      ],
+      "internal_imports": [
+        "prompts",
+        "Agent",
+        "LLMClient",
+        "RepoMetadata",
+        "Repo",
+        "ContextRetriever"
+      ],
+      "classes": [
+        "TestingStep",
+        "TestingStrategy"
+      ],
+      "test_cases": [
+        "Define testing strategy",
+        "Generate tests from strategy"
+      ]
+    }
+  }
+}
