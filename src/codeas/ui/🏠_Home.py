@@ -1,4 +1,13 @@
+import os
+import sys
+
 import streamlit as st
+
+root_app_directory = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+module_path = f"{root_app_directory}"
+sys.path.append(module_path)
 
 
 def home_page():

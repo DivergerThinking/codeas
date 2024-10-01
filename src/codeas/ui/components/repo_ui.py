@@ -24,7 +24,14 @@ def display_repo_path(demo: bool = False):
                 state.update(repo_path)
         st.caption(os.path.abspath(state.repo_path))
     else:
-        st.markdown(f"**Repo**: {os.path.abspath(state.repo_path)}")
+        if state.repo_path == "../abstreet":
+            st.markdown(
+                "[github.com/a-b-street/abstreet](https://github.com/a-b-street/abstreet)"
+            )
+        elif state.repo_path == "../codeas":
+            st.markdown(
+                "[github.com/DivergerThinking/codeas](https://github.com/DivergerThinking/codeas)"
+            )
 
 
 def display_files():
