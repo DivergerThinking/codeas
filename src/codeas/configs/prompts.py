@@ -1,3 +1,5 @@
+import os
+
 generate_docs_project_overview = """
 Generate a comprehensive project overview documentation section.
 
@@ -14,7 +16,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide detailed information for each subsection.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_setup_and_development = """
 Create a detailed setup and development documentation section.
@@ -32,7 +34,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide clear, step-by-step instructions and explanations for each subsection.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_architecture = """
 Produce a thorough architecture documentation section.
@@ -54,7 +56,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide in-depth technical details and explanations for each subsection.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_ui = """
 Generate a comprehensive UI documentation section.
@@ -72,7 +74,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide detailed explanations and examples for each aspect of the UI.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_db = """
 Create a detailed database documentation section.
@@ -90,7 +92,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide comprehensive information about the database structure, optimization techniques, and management processes.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_api = """
 Produce a thorough API documentation section.
@@ -108,7 +110,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide detailed descriptions of each API endpoint, including request methods, parameters, response formats, and examples.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_testing = """
 Generate a comprehensive testing documentation section.
@@ -127,7 +129,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide detailed information about testing methodologies, tools used, and best practices.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_deployment = """
 Create a detailed deployment documentation section.
@@ -146,7 +148,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide step-by-step deployment instructions, configuration details, and best practices.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 generate_docs_security = """
 Produce a thorough security documentation section.
@@ -166,7 +168,7 @@ Include subsections using '### [Subsection Name]' format. Examples of subsection
 Provide detailed explanations of security measures, implementation details, and compliance requirements.
 
 IMPORTANT: The output should be directly suitable for a markdown file without any additional explanations or markdown code block tags.
-"""
+""".strip()
 
 define_testing_strategy = """
 Analyze the given repository structure and create a comprehensive testing strategy by breaking down the test generation process into different steps. 
@@ -187,7 +189,7 @@ Consider the following when creating the strategy:
 - Balance between different types of tests
 - Prioritize tests that will provide the most value and coverage
 - Consider the complexity and importance of different parts of the codebase
-"""
+""".strip()
 
 generate_tests_from_guidelines = """
 Generate comprehensive tests based on the provided guidelines and file contents. 
@@ -204,7 +206,7 @@ IMPORTANT:
 - The entire content of the code blocks will be extracted and written to a file, so ensure it's complete and correct.
 
 Begin with a brief overview of the tests you're creating, then proceed with the test code and explanations.
-"""
+""".strip()
 
 define_refactoring_files = """
 You are an expert software architect tasked with grouping related files for a refactoring project. Your goal is to create logical groups of files that are closely related and should be refactored together. Follow these guidelines:
@@ -426,3 +428,28 @@ Based on the recommended AWS deployment strategy provided, generate comprehensiv
 
 Provide the Terraform code in multiple code blocks, organized by file or logical sections. Include comments to explain key configurations and any assumptions made. After the code blocks, briefly explain any important considerations or next steps for applying this Terraform configuration.
 """.strip()
+
+
+def load_prompt(prompt_name):
+    prompt_path = f".codeas/prompts/{prompt_name}.txt"
+    if not os.path.exists(prompt_path):
+        with open(prompt_path, "w") as f:
+            f.write(globals()[prompt_name])
+
+    with open(prompt_path, "r") as f:
+        return f.read().strip()
+
+
+# Get all string variables in the current module
+prompt_names = [
+    name
+    for name, value in globals().items()
+    if isinstance(value, str) and not name.startswith("__")
+]
+
+# Ensure the prompts directory exists
+os.makedirs(".codeas/prompts", exist_ok=True)
+
+# Load all prompts
+for prompt_name in prompt_names:
+    globals()[prompt_name] = load_prompt(prompt_name)
