@@ -2,29 +2,17 @@ import os
 from typing import Literal
 
 import streamlit as st
-from streamlit_searchbox import st_searchbox
 
 from codeas.core.state import state
-from codeas.ui.utils import search_dirs
 
 
-def display(demo: bool = False):
-    display_repo_path(demo)
+def display():
+    display_repo_path()
     display_files()
 
 
-def display_repo_path(demo: bool = False):
-    col, _ = st.columns([1, 2])
-    if demo is False:
-        with col:
-            repo_path = st_searchbox(
-                search_dirs, placeholder=state.repo_path, default=state.repo_path
-            )
-            if repo_path != state.repo_path:
-                state.update(repo_path)
-        st.caption(os.path.abspath(state.repo_path))
-    else:
-        st.markdown(f"**Repo**: {os.path.abspath(state.repo_path)}")
+def display_repo_path():
+    st.markdown(f"**Repo**: {os.path.abspath(state.repo_path)}")
 
 
 def display_files():
