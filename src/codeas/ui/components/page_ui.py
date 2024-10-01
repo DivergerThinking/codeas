@@ -38,7 +38,7 @@ def display(
 
 def set_demo_state(name: str):
     if name == "Documentation" or name == "Deployment":
-        load_or_create_repo_state("../abstreet", "abstreet")
+        load_or_create_repo_state("./abstreet", "abstreet")
     elif name == "Testing" or name == "Refactoring":
         load_or_create_repo_state("../codeas", "codeas")
 

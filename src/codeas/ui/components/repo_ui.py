@@ -15,7 +15,7 @@ def display_repo_path(demo: bool = False):
     if demo is False:
         st.caption(os.path.abspath(state.repo_path))
     else:
-        if state.repo_path == "../abstreet":
+        if state.repo_path == "./abstreet":
             st.markdown(
                 "[github.com/a-b-street/abstreet](https://github.com/a-b-street/abstreet)"
             )
