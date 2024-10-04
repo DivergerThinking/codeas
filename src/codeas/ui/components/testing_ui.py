@@ -56,15 +56,14 @@ def display():
                         },
                     )
                 except FileNotFoundError:
-                    st.warning(
-                        "No previous output found for testing strategy. Running generation..."
-                    )
+                    # st.warning(
+                    #     "No previous output found for testing strategy. Running generation..."
+                    # )
                     st.session_state.outputs[
                         "testing_strategy"
                     ] = define_testing_strategy(
                         state.llm_client, state.repo, state.repo_metadata
                     )
-                    # Write the output to a file
                     state.write_output(
                         {
                             "content": st.session_state.outputs["testing_strategy"]
@@ -118,6 +117,8 @@ def display():
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
+            with st.expander("Messages"):
+                st.json(output.messages)
             strategy = output.response.choices[0].message.parsed
 
             # Create a DataFrame for the data editor
@@ -246,6 +247,8 @@ def display_generate_tests():
     if "tests" in st.session_state.outputs:
         with st.expander("Tests", expanded=True):
             output = st.session_state.outputs["tests"]
+            with st.expander("Messages"):
+                st.json(output.messages)
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "

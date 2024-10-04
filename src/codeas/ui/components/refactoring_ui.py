@@ -111,6 +111,8 @@ def display():
     if "refactoring_groups" in st.session_state.outputs:
         with st.expander("Refactoring groups", expanded=True):
             output = st.session_state.outputs["refactoring_groups"]
+            with st.expander("Messages"):
+                st.json(output.messages)
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
@@ -276,6 +278,8 @@ def display_generate_proposed_changes():
     if "proposed_changes" in st.session_state.outputs:
         with st.expander("Proposed changes", expanded=True):
             output = st.session_state.outputs["proposed_changes"]
+            with st.expander("Messages"):
+                st.json(output.messages)
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
@@ -386,16 +390,3 @@ def display_apply_changes():
                 st.success(f"{new_file_path} successfully written!")
                 with st.expander(f"Generated changes [{file_path}]"):
                     st.code(diff)
-
-        # Display generated diffs
-        # with st.expander("Generated diffs", expanded=True):
-        #     output = st.session_state.outputs["generated_diffs"]
-        #     st.info(
-        #         f"Total cost: ${output.cost['total_cost']:.4f} "
-        #         f"(input tokens: {output.tokens['input_tokens']:,}, "
-        #         f"output tokens: {output.tokens['output_tokens']:,})"
-        #     )
-
-        #     for file_path, response in output.response.items():
-        #         with st.expander(file_path):
-        #             st.code(response["content"])
