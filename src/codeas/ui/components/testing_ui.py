@@ -99,16 +99,16 @@ def display():
                     "testing_strategy.json",
                 )
 
-    if st.button("Preview", key="preview_testing_strategy"):
-        preview_strategy = define_testing_strategy(
-            state.llm_client, state.repo, state.repo_metadata, preview=True
-        )
-        with st.expander("Testing strategy", expanded=True):
-            st.info(
-                f"Input cost: ${preview_strategy.cost['input_cost']:.4f} ({preview_strategy.tokens['input_tokens']:,} input tokens)"
-            )
-            with st.expander("Messages"):
-                st.json(preview_strategy.messages)
+    # if st.button("Preview", key="preview_testing_strategy"):
+    #     preview_strategy = define_testing_strategy(
+    #         state.llm_client, state.repo, state.repo_metadata, preview=True
+    #     )
+    #     with st.expander("Testing strategy", expanded=True):
+    #         st.info(
+    #             f"Input cost: ${preview_strategy.cost['input_cost']:.4f} ({preview_strategy.tokens['input_tokens']:,} input tokens)"
+    #         )
+    #         with st.expander("Messages"):
+    #             st.json(preview_strategy.messages)
 
     if "testing_strategy" in st.session_state.outputs:
         with st.expander("Testing strategy", expanded=True):
@@ -118,6 +118,11 @@ def display():
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
+
+            # Display messages
+            with st.expander("Messages"):
+                st.json(output.messages)
+
             strategy = output.response.choices[0].message.parsed
 
             # Create a DataFrame for the data editor
@@ -231,21 +236,23 @@ def display_generate_tests():
                     "generated_tests.json",
                 )
 
-    if st.button("Preview", key="preview_tests"):
-        with st.expander("Tests [Preview]", expanded=True):
-            preview = generate_tests_from_strategy(
-                state.llm_client, strategy, preview=True
-            )
-            st.info(
-                f"Input cost: ${preview.cost['input_cost']:.4f} ({preview.tokens['input_tokens']:,} input tokens)"
-            )
-            for path, messages in preview.messages.items():
-                with st.expander(f"{path} [Messages]"):
-                    st.json(messages)
+    # if st.button("Preview", key="preview_tests"):
+    #     with st.expander("Tests [Preview]", expanded=True):
+    #         preview = generate_tests_from_strategy(
+    #             state.llm_client, strategy, preview=True
+    #         )
+    #         st.info(
+    #             f"Input cost: ${preview.cost['input_cost']:.4f} ({preview.tokens['input_tokens']:,} input tokens)"
+    #         )
+    #         for path, messages in preview.messages.items():
+    #             with st.expander(f"{path} [Messages]"):
+    #                 st.json(messages)
 
     if "tests" in st.session_state.outputs:
         with st.expander("Tests", expanded=True):
             output = st.session_state.outputs["tests"]
+            with st.expander("Messages"):
+                st.json(output.messages)
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "

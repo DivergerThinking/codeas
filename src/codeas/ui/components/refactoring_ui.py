@@ -99,18 +99,20 @@ def display():
                     "refactoring_groups.json",
                 )
 
-    if st.button("Preview", key="preview_refactoring_groups"):
-        preview_groups = define_refactoring_files(preview=True)
-        with st.expander("Refactoring groups [Preview]", expanded=True):
-            st.info(
-                f"Input cost: ${preview_groups.cost['input_cost']:.4f} ({preview_groups.tokens['input_tokens']:,} input tokens)"
-            )
-            with st.expander("Messages"):
-                st.json(preview_groups.messages)
+    # if st.button("Preview", key="preview_refactoring_groups"):
+    #     preview_groups = define_refactoring_files(preview=True)
+    #     with st.expander("Refactoring groups [Preview]", expanded=True):
+    #         st.info(
+    #             f"Input cost: ${preview_groups.cost['input_cost']:.4f} ({preview_groups.tokens['input_tokens']:,} input tokens)"
+    #         )
+    #         with st.expander("Messages"):
+    #             st.json(preview_groups.messages)
 
     if "refactoring_groups" in st.session_state.outputs:
         with st.expander("Refactoring groups", expanded=True):
             output = st.session_state.outputs["refactoring_groups"]
+            with st.expander("Messages"):
+                st.json(output.messages)
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
@@ -263,24 +265,29 @@ def display_generate_proposed_changes():
                     "proposed_changes.json",
                 )
 
-    if st.button("Preview", key="preview_proposed_changes"):
-        with st.expander("Proposed changes [Preview]", expanded=True):
-            preview = generate_proposed_changes(groups, preview=True)
-            st.info(
-                f"Input cost: ${preview.cost['input_cost']:.4f} ({preview.tokens['input_tokens']:,} input tokens)"
-            )
-            for group_name, messages in preview.messages.items():
-                with st.expander(f"{group_name} [Messages]"):
-                    st.json(messages)
+    # if st.button("Preview", key="preview_proposed_changes"):
+    #     with st.expander("Proposed changes [Preview]", expanded=True):
+    #         preview = generate_proposed_changes(groups, preview=True)
+    #         st.info(
+    #             f"Input cost: ${preview.cost['input_cost']:.4f} ({preview.tokens['input_tokens']:,} input tokens)"
+    #         )
+    #         for group_name, messages in preview.messages.items():
+    #             with st.expander(f"{group_name} [Messages]"):
+    #                 st.json(messages)
 
     if "proposed_changes" in st.session_state.outputs:
         with st.expander("Proposed changes", expanded=True):
             output = st.session_state.outputs["proposed_changes"]
+            # Display messages
+            with st.expander("Messages"):
+                st.json(output.messages)
+
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
                 f"output tokens: {output.tokens['output_tokens']:,})"
             )
+
             for response in output.response.values():
                 changes = response.choices[0].message.parsed
                 for change in changes.changes:
@@ -294,6 +301,18 @@ def display_apply_changes():
     use_previous_outputs_diffs = st.toggle(
         "Use previous outputs", value=True, key="use_previous_outputs_diffs"
     )
+
+    if "generated_diffs" in st.session_state.outputs:
+        generated_diffs_output = st.session_state.outputs["generated_diffs"]
+        # Display messages
+        with st.expander("Messages"):
+            st.json(generated_diffs_output.messages)
+
+        st.info(
+            f"Total cost: ${generated_diffs_output.cost['total_cost']:.4f} "
+            f"(input tokens: {generated_diffs_output.tokens['input_tokens']:,}, "
+            f"output tokens: {generated_diffs_output.tokens['output_tokens']:,})"
+        )
 
     if st.button("Apply changes", type="primary", key="apply_changes", disabled=True):
         groups_changes = [

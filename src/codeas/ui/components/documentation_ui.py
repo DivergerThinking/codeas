@@ -1,3 +1,5 @@
+import logging
+
 import streamlit as st
 
 from codeas.core.state import state
@@ -42,15 +44,13 @@ def display():
     generate_docs = st.button(
         "Generate documentation", type="primary", key="generate_docs"
     )
-    preview_docs = st.button("Preview", key="preview_docs")
+    # preview_docs = st.button("Preview", key="preview_docs")
     if generate_docs:
         process_sections(
             selected_sections, generate=True, use_previous=use_previous_outputs
         )
-    if preview_docs:
-        process_sections(
-            selected_sections, preview=True, use_previous=use_previous_outputs
-        )
+    # if preview_docs:
+    #     process_sections(selected_sections, preview=True, use_previous=use_previous_outputs)
 
 
 def process_sections(
@@ -93,10 +93,11 @@ def process_sections(
                             output = run_preview(section)
                     else:
                         output = run_preview(section)
-                    total_input_cost += output.cost["input_cost"]
-                    total_input_tokens += output.tokens["input_tokens"]
+                    if output:
+                        total_input_cost += output.cost["input_cost"]
+                        total_input_tokens += output.tokens["input_tokens"]
 
-                display_section(section, preview)
+                display_section(section, generate, preview, use_previous)
 
                 if not preview and section in st.session_state.outputs:
                     cleaned_content = clean_markdown_content(
@@ -170,21 +171,25 @@ def run_preview(section: str):
 
 
 def read_output(section: str):
-    previous_output = state.read_output(f"{section}.json")
-    output = type(
-        "Output",
-        (),
-        {
-            "response": {"content": previous_output["content"]},
-            "cost": previous_output["cost"],
-            "tokens": previous_output["tokens"],
-            "messages": previous_output.get(
-                "messages", [{"content": "Context was not stored with previous output"}]
-            ),  # Use stored messages if available
-        },
-    )
-    st.session_state.outputs[section] = output
-    return output
+    try:
+        previous_output = state.read_output(f"{section}.json")
+        output = type(
+            "Output",
+            (),
+            {
+                "response": {"content": previous_output["content"]},
+                "cost": previous_output["cost"],
+                "tokens": previous_output["tokens"],
+                "messages": previous_output.get(
+                    "messages",
+                    [{"content": "Context was not stored with previous output"}],
+                ),  # Use stored messages if available
+            },
+        )
+        st.session_state.outputs[section] = output
+        return output
+    except FileNotFoundError:
+        logging.warning(f"No previous output found for {section}.")
 
 
 def clean_markdown_content(content: str) -> str:
@@ -194,36 +199,39 @@ def clean_markdown_content(content: str) -> str:
     return content
 
 
-def display_section(section: str, preview: bool = False):
-    output = st.session_state.outputs.get(section) if not preview else None
-
-    if output or preview:
-        expander_label = (
-            f"{section.replace('_', ' ').upper()}{' [Preview]' if preview else ''}"
-        )
-        with st.expander(expander_label, expanded=False):
-            if preview:
-                output = generate_docs_section(
-                    state.llm_client,
-                    section,
-                    state.repo,
-                    state.repo_metadata,
-                    preview=True,
-                )
+def display_section(
+    section: str,
+    generate: bool = False,
+    preview: bool = False,
+    use_previous: bool = False,
+):
+    expander_label = (
+        f"{section.replace('_', ' ').upper()}{' [Preview]' if preview else ''}"
+    )
+    with st.expander(expander_label, expanded=False):
+        if preview:
+            if use_previous:
+                output = read_output(section)
+            else:
+                output = run_preview(section)
+            if output:
                 st.info(
                     f"Input cost: ${output.cost['input_cost']:.4f} ({output.tokens['input_tokens']:,} tokens)"
                 )
-            else:
+        elif generate:
+            output = st.session_state.outputs.get(section)
+            if output:
                 st.info(
                     f"Total cost: ${output.cost['total_cost']:.4f} "
                     f"(input tokens: {output.tokens['input_tokens']:,}, "
                     f"output tokens: {output.tokens['output_tokens']:,})"
                 )
-
+        if output:
             with st.expander("Messages", expanded=False):
                 st.json(output.messages)
 
-            if not preview:
+        if generate:
+            if output:
                 content = output.response["content"]
                 content = clean_markdown_content(content)
                 st.code(content, language="markdown")

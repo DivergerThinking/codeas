@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-# from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI, OpenAI
 from tenacity import retry, stop_after_attempt
 
 from codeas.configs.llm_params import OPENAI_PARAMS  # Import the parameters
@@ -21,7 +21,7 @@ class LLMClient:
     max_retries: int = 5
 
     def __init__(self):
-        self._client = ...  # OpenAI(max_retries=self.max_retries)
+        self._client = OpenAI(max_retries=self.max_retries)
         self.temperature = OPENAI_PARAMS["temperature"]
         self.top_p = OPENAI_PARAMS["top_p"]
         self.stream = OPENAI_PARAMS["stream"]
@@ -86,7 +86,7 @@ class LLMClient:
         self, batch_messages: dict, model: str, **kwargs
     ) -> dict:
         """runs completions by batch asynchronously"""
-        async with ... as client:  # AsyncOpenAI(max_retries=self.max_retries) as client:
+        async with AsyncOpenAI(max_retries=self.max_retries) as client:
             coroutines = [
                 self._run_async_completions(client, messages, model, **kwargs)
                 for messages in batch_messages.values()
