@@ -6,7 +6,6 @@ import streamlit as st
 
 from codeas.core.state import state
 from codeas.use_cases.testing import (
-    TestingStep,
     TestingStrategy,
     define_testing_strategy,
     generate_tests_from_strategy,
@@ -83,7 +82,6 @@ def display():
                 st.session_state.outputs["testing_strategy"] = define_testing_strategy(
                     state.llm_client, state.repo, state.repo_metadata
                 )
-                # Write the output to a file
                 state.write_output(
                     {
                         "content": st.session_state.outputs["testing_strategy"]
@@ -134,7 +132,7 @@ def display():
             ]
 
             df = pd.DataFrame(data)
-            edited_df = st.data_editor(
+            st.data_editor(
                 df,
                 column_config={
                     "selected": st.column_config.CheckboxColumn(
@@ -152,23 +150,8 @@ def display():
                     ),
                 },
                 hide_index=True,
+                disabled=True,
             )
-
-            # Update the strategy based on the edited DataFrame
-            updated_strategy = TestingStrategy(
-                strategy=[
-                    TestingStep(
-                        type_of_test=step["type_of_test"],
-                        test_file_path=step["test_file_path"],
-                        files_paths=step["files_to_test"],
-                        guidelines=step["guidelines"],
-                    )
-                    for step in edited_df.to_dict("records")
-                ]
-            )
-            st.session_state.outputs["testing_strategy"].response.choices[
-                0
-            ].message.parsed = updated_strategy
 
         display_generate_tests()
 
@@ -181,6 +164,7 @@ def display_generate_tests():
     strategy = (
         st.session_state.outputs["testing_strategy"].response.choices[0].message.parsed
     )
+
     if st.button("Generate tests", type="primary", key="generate_tests"):
         with st.spinner("Generating tests..."):
             if use_previous_outputs_tests:
@@ -197,9 +181,9 @@ def display_generate_tests():
                         },
                     )
                 except FileNotFoundError:
-                    st.warning(
-                        "No previous output found for generated tests. Running generation..."
-                    )
+                    # st.warning(
+                    #     "No previous output found for generated tests. Running generation..."
+                    # )
                     st.session_state.outputs["tests"] = generate_tests_from_strategy(
                         state.llm_client, strategy
                     )

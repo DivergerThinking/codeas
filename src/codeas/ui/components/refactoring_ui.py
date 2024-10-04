@@ -6,7 +6,6 @@ import streamlit as st
 from codeas.core.state import state
 from codeas.ui.utils import apply_diffs
 from codeas.use_cases.refactoring import (
-    FileGroup,
     ProposedChanges,
     RefactoringGroups,
     define_refactoring_files,
@@ -131,7 +130,7 @@ def display():
             ]
 
             df = pd.DataFrame(data)
-            edited_df = st.data_editor(
+            st.data_editor(
                 df,
                 column_config={
                     "selected": st.column_config.CheckboxColumn(
@@ -147,18 +146,8 @@ def display():
                     ),
                 },
                 hide_index=True,
+                disabled=True,
             )
-
-            # Update the groups based on the edited DataFrame, keeping all rows
-            updated_groups = RefactoringGroups(
-                groups=[
-                    FileGroup(name=row["name"], files_paths=row["files_paths"])
-                    for row in edited_df.to_dict("records")
-                ]
-            )
-            st.session_state.outputs["refactoring_groups"].response.choices[
-                0
-            ].message.parsed = updated_groups
 
         display_generate_proposed_changes()
 
@@ -218,9 +207,9 @@ def display_generate_proposed_changes():
                         },
                     )
                 except FileNotFoundError:
-                    st.warning(
-                        "No previous output found for proposed changes. Running generation..."
-                    )
+                    # st.warning(
+                    #     "No previous output found for proposed changes. Running generation..."
+                    # )
                     st.session_state.outputs[
                         "proposed_changes"
                     ] = generate_proposed_changes(groups)
