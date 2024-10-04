@@ -295,7 +295,7 @@ def display_apply_changes():
         "Use previous outputs", value=True, key="use_previous_outputs_diffs"
     )
 
-    if st.button("Apply changes", type="primary", key="apply_changes"):
+    if st.button("Apply changes", type="primary", key="apply_changes", disabled=True):
         groups_changes = [
             groups_changes.choices[0].message.parsed
             for groups_changes in st.session_state.outputs[
@@ -386,16 +386,6 @@ def display_apply_changes():
                 st.success(f"{new_file_path} successfully written!")
                 with st.expander(f"Generated changes [{file_path}]"):
                     st.code(diff)
-
-        # Display generated diffs
-        # with st.expander("Generated diffs", expanded=True):
-        #     output = st.session_state.outputs["generated_diffs"]
-        #     st.info(
-        #         f"Total cost: ${output.cost['total_cost']:.4f} "
-        #         f"(input tokens: {output.tokens['input_tokens']:,}, "
-        #         f"output tokens: {output.tokens['output_tokens']:,})"
-        #     )
-
-        #     for file_path, response in output.response.items():
-        #         with st.expander(file_path):
-        #             st.code(response["content"])
+    st.caption(
+        "_Applying changes can only be done when Codeas is running on your local machine_"
+    )

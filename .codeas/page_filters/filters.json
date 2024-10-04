@@ -1,0 +1,1 @@
+{"Documentation": {"include": "", "exclude": "*egg-info*, *__init__.py, *main.py"}, "Testing": {"include": "*.py", "exclude": "*egg-info*, *__init__.py, *main.py"}, "Refactoring": {"include": "*.py", "exclude": "*egg-info*, *__init__.py, *main.py"}, "Deployment": {"include": "", "exclude": "*egg-info*, *__init__.py, *main.py"}}

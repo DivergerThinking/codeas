@@ -259,7 +259,7 @@ def display_generate_tests():
 
 
 def display_write_tests():
-    if st.button("Write tests", type="primary", key="write_tests"):
+    if st.button("Write tests", type="primary", key="write_tests", disabled=True):
         for path, response in st.session_state.outputs["tests"].response.items():
             code = parse_code_blocks(response["content"])
             if not os.path.exists(path):
@@ -267,6 +267,9 @@ def display_write_tests():
             with open(path, "w") as f:
                 f.write(code)
             st.success(f"{path} successfully written!")
+    st.caption(
+        "_Writing tests can only be done when Codeas is running on your local machine_"
+    )
 
 
 def parse_code_blocks(markdown_content):

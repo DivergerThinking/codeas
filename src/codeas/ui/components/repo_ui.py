@@ -76,6 +76,7 @@ def display_filters():
             key="include_input",
             on_change=lambda: update_filter("include"),
             placeholder="*.py, src/*, etc.",
+            disabled=True,
         )
     with col_exclude:
         st.text_input(
@@ -84,6 +85,7 @@ def display_filters():
             key="exclude_input",
             on_change=lambda: update_filter("exclude"),
             placeholder="debug/*, *.ipynb, etc.",
+            disabled=True,
         )
     filter_files()
 
