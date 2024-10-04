@@ -156,6 +156,7 @@ def display():
                     ),
                 },
                 hide_index=True,
+                disabled=True,
             )
 
             # Update the strategy based on the edited DataFrame

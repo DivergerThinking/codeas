@@ -147,6 +147,7 @@ def display():
                     ),
                 },
                 hide_index=True,
+                disabled=True,
             )
 
             # Update the groups based on the edited DataFrame, keeping all rows
