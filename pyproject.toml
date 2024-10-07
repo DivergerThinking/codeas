@@ -6,9 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "codeas"
 authors = [
     {name = "Manuel Renner", email = "manuel.renner@diverger.ai"},
+    {name = "Diverger Thinking", email = "info@diverger.ai"},
 ]
 license = {text = "MIT License"}
-description = "Improve your codebase with LLMs using the right context for the right prompts."
+description = "Boost your software development processes with generative AI."
 requires-python = ">=3.9,<3.12"
 dynamic = ["version", "readme", "dependencies"]
 
@@ -17,7 +18,7 @@ Source = 'https://github.com/DivergerThinking/codeas'
 Homepage = 'https://diverger.ai'
 
 [project.scripts]
-codeas = 'codeas.terminal:start_terminal'
+codeas = 'codeas.main:start_ui'
 
 [tool.setuptools.dynamic]
 version = {attr = "codeas.__version__"}
@@ -27,5 +28,5 @@ dependencies = {file = ["requirements.txt"]}
 [tool.isort]
 profile = "black"
 
-[tool.ruff.per-file-ignores]
-"src/codeas/cli.py" = ["E402"]
+[tool.ruff.lint.per-file-ignores]
+"src/codeas/ui/page_ui.py" = ["F401"]

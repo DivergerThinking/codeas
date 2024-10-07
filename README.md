@@ -7,6 +7,14 @@ codeas stands for CODEbase ASsistant. It boosts your software development proces
 There are a lot of existing AI tools for software development, each of which has its capabilities and limitations. <br>
 At [Diverger](https://diverger.ai/) we decided to build our own AI tool for software development to help us where other tools can't. We chose to share it with the open-source community so that other developers can benefit from it. Any feedback and/or contribution is welcome. Happy coding!
 
+## Demo
+
+To view the core functionalities of codeas without setting up anything, you can check out our live demo:
+
+[Codeas Demo](https://codeas-diverger.streamlit.app/)
+
+This demo showcases the main features of codeas, allowing you to explore its capabilities before installation.
+
 ##  🛠️ Installation
 
 ```bash
@@ -23,113 +31,96 @@ export OPENAI_API_KEY="..."
 
 ## 💻 Usage
 
-### Chat interface
+### Streamlit interface
 
-You can start the chat interface by running the following command in your terminal:
+Codeas provides a user-friendly Streamlit interface to interact with your codebase. To launch the interface, run the following command in your terminal:
 
 ```bash
 codeas
 ```
 
-This will open a chat interface that you can use to ask questions to your assistant, interact with your codebase through agents and run commands.
+The Streamlit interface offers several features:
 
-```text
-> [ask the assistant what you want]
-```
+1. **Documentation Generation**: Automatically generate comprehensive documentation for your project.
+2. **Deployment Strategy**: Define deployment requirements and generate Terraform code for your infrastructure.
+3. **Testing**: Create test suites and generate test cases for your codebase.
+4. **Refactoring**: Identify areas for refactoring and apply changes to improve your code quality.
 
-### Agents
+Each feature provides options to:
+- Previewing fetched codebase context and estimated costs before executing the generation process
+- Viewing each generation step and selecting only the relevant sections 
+- Applying generated changes to your codebase
 
-Agents use OpenAI's function calling to interact with the codebase. They are triggered through the use of "@" in your prompts. Example:
-```text
-> @add src/codeas/codebase.py structure
-```
-The above command adds the structure of src/codeas/codebase.py as context to the chat conversation. To view the context currently added to the conversation you can use the /view command.
+The interface also allows you to:
+- Select specific files or directories to include in the analysis
+- View and manage metadata for your codebase
+- Monitor token usage and costs for AI operations
 
-The following agents are currently supported:
-- `@add`: adds context from your codebase to the conversation
-- `@write` - writes content to files in your codebase
-- `@search` - searches through your codebase for given code
+To get started, simply navigate through the different pages in the sidebar and follow the on-screen instructions for each feature.
 
-See **Agents Usage Examples** for more info on how to use agents
+## How does it work
 
-### Commands
+Codeas operates by leveraging metadata generation to create a more efficient and context-specific AI-assisted development process. Here's an overview of how the application functions:
 
-Commands can be used to perform specific actions that add some functionalities to the tool yet do not require the use of LLMs. The following commands are available
+### Metadata Generation
 
-- `/view`: prints the context currently used in the conversation to the console. Use this command to check that the correct context for your request was added to the conversation properly
-- `/clear`: clears the context and chat history from the conversation. Use this command when you don't need the previous context anymore, this helps reduce costs by removing unnecessary tokens given to the LLM
-- `/copy`: adds the last message to your clipboard.
-- `/tree`: prints the tree directory currently used by the codebase parser. See codebase settings for more information. 
-- `/exit`: exits the chat interface. The same can be achieved using `ctrl + C`
+1. **File Analysis**: The application analyzes each file in your repository to determine its type, usage, and content.
 
-### Settings
+2. **Metadata Extraction**: For each file, Codeas generates metadata including:
+   - File usage (e.g., code, configuration, testing)
+   - File description
+   - Code details (for code files)
+   - Testing details (for test files)
 
-Settings are stored inside ``.codeas/settings.yaml`` after the first time. <br>
-**IMPORTANT NOTE**: restart the chat interface after changing. <br>
+3. **Efficient Storage**: This metadata is stored in a structured format, allowing for quick retrieval and reducing the need to re-analyze files for each operation.
 
-The following settings are available:
-- ``chat_config``: configures model and temperature to use for chat assistant. gpt-3.5-turbo-1106 is used by default as it is faster, cheaper and produces reasonably good results.
-- ``agent_configs``: configures model and temperature to use for each agent. gpt-4-1106-preview is used by default as it works best for function calls. 
-- ``codebase_config``: configures which files are parsed when retrieving context from your codebase. By default, only **file extensions [.py, .java, .js, .ts, .cs, .rs, .rb, .c, .go, .php] are included** and **files starting with "." and "__" are excluded**. <br> **IMPORTANT NOTE**: parsing of the code structure of the files, functions and classes is currently only **supported for **python** files**. Use `/tree` command to check which files are included.
+### Context Retrieval
 
-### Agent Usage Examples:
+When performing operations, Codeas uses the generated metadata to retrieve relevant context:
 
-**`@add` examples**:
+1. **Selective Inclusion**: Based on the operation type, only relevant files are included in the context (ex. documenting the DB will only used files related to database).
+2. **Detailed or Summary Information**: Depending on the task, either detailed code information or summary descriptions are used.
 
-Adding a file:
-```text
-> @add src/codeas/codebase.py
-```
-Adding the code structure of a file 
-```text
-> @add structure of src/codeas/codebase.py
-```
-Adding all files in a directory 
-```text
-> @add files under src/codeas directory
-```
-Adding given lines of a file 
-```text
-> @add src/codeas/codebase.py l1-100
-```
-Adding specific class/function 
-```text
-> @add src/codeas/codebase Codebase class
-```
+This approach allows Codeas to provide more specific context to the AI model while reducing the overall token count, leading to more accurate and cost-effective results.
 
-NOTE: you can combine the above prompts in one request and use your own wording.
+### Use Cases
 
-**`@write` examples**:
-Writing markdown documentation to a new file:
-```text
-> @write markdown documentation for the given context inside docs/my_docu.md
-```
-Writing tests to a new file:
-```text
-> @write tests for the given classes using pytest. Write the tests inside tests/my_class.py
-```
-Writing functions to an existing file:
-```text
-> @write a function to read a file and append it to src/codeas/utils.py
-```
+Codeas currently supports four main use cases:
 
-NOTE: you can also first generate docs, tests, etc. without the @write and use /copy command to add the output to your clipboard
+1. **Documentation Generation**
+   - Analyzes the codebase structure and metadata
+   - Generates comprehensive documentation sections (e.g., project overview, architecture, API)
+   - Allows for selective generation and preview of documentation sections
+  
+2. **Deployment Strategy**
+   - Examines the project structure and requirements
+   - Suggests an appropriate deployment strategy (currently focused on AWS)
+   - Generates Terraform code based on the defined strategy
 
-**`@search` examples**:
-Searching through some functionality:
-```text
-> @search the sections of code related to parsing a codebase
-```
-Searching for a given class/function:
-```text
-> @search which class or function is responsible for starting the terminal interface
-```
+3. **Testing**
+   - Analyzes the codebase to define a comprehensive testing strategy
+   - Generates test cases based on the defined strategy
+   - Supports various types of tests (unit, integration, etc.)
 
-NOTE: this feature is relatively experimental and may not work so well on large codebases.
+4. **Refactoring**
+   - Identifies areas of the codebase that could benefit from refactoring
+   - Suggests refactoring strategies for selected code groups
+   - Generates detailed refactoring proposals and can apply changes
+
+For each use case, Codeas provides options to preview the AI-generated content, estimate costs, and selectively apply changes to your codebase. This approach ensures that you have full control over the AI-assisted development process while benefiting from the efficiency and insights provided by the tool.
 
 ## 🚀 Releases
 
-### v0.3.0 (15.01.2023)
+### v0.4.0
+
+**Release notes**
+- Introduces a new Streamlit-based user interface for improved user experience
+- Tailored to specific software development processes: Documentation, Deployment, Testing, and Refactoring
+- Improves context retrieval via metadata generation
+- Implements a preview feature for viewing fetched context and estimating costs before running operations
+- Adds support for applying generated changes to the codebase
+
+### v0.3.0
 Use AI agents to better interact with the codebase
 
 **Release notes**
@@ -138,7 +129,7 @@ Use AI agents to better interact with the codebase
 - Improves context retrieval options with possibility to only add file structure or sections of a file
 - Improves console output for better UX
 
-### v0.2.0 (22.11.2023)
+### v0.2.0
 Enables context retrieval and file creation to be more dynamic, making the tool act as an agent on your codebase.
 
 **Release notes**
@@ -148,7 +139,7 @@ Enables context retrieval and file creation to be more dynamic, making the tool 
 - Cross-language support: automatic file parsing for the most popular programming languages (.ts, .js, .py, .cs, .rb, .rs, .java, .go, .c, .php)
 - Multiple file context: multiple files can be used at once within the context
 
-### v0.1.0 (24.10.2023)
+### v0.1.0
 First release that supports simple use cases.
 
 **Release notes**:
