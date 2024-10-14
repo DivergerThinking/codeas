@@ -17,6 +17,7 @@ class ContextRetriever(BaseModel):
     include_ui_files: bool = False
     include_api_files: bool = False
     use_descriptions: bool = False
+    use_relationships: bool = False
     use_details: bool = False
 
     def retrieve(
@@ -67,6 +68,23 @@ class ContextRetriever(BaseModel):
                             description = f"{file_header}:\n{details.description}"
                             if details.external_imports:
                                 description += f"\nExternal imports: {', '.join(details.external_imports)}"
+                            context.append(description)
+                    else:
+                        description = metadata.get_file_description(file_path)
+                        context.append(f"{file_header}:\n{description}")
+                elif self.use_relationships:
+                    if file_usage.is_code:
+                        details = (
+                            metadata.get_code_details(file_path)
+                            if not file_usage.testing_related
+                            else metadata.get_testing_details(file_path)
+                        )
+                        if details:
+                            description = f"{file_header}:\n{details.description}"
+                            if details.internal_imports:
+                                description += f"\nInternal imports: {', '.join(details.internal_imports)}"
+                            if details.functionalities:
+                                description += f"\nFunctionalities: {', '.join(details.functionalities)}"
                             context.append(description)
                     else:
                         description = metadata.get_file_description(file_path)
