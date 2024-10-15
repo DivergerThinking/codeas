@@ -16,11 +16,11 @@ def display_repo_path():
 
 
 def display_files():
+    display_filters()
     num_selected_files, total_files, selected_tokens = get_selected_files_info()
     with st.expander(
         f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
     ):
-        display_filters()
         display_files_editor()
 
 
