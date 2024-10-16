@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_nested_layout  # noqa
 
 from codeas.configs.templates import TEMPLATES
-from codeas.core.agent import Agent
+from codeas.core.clients import LLMClients
 from codeas.core.retriever import ContextRetriever
 from codeas.core.state import state
 from codeas.ui.components import metadata_ui, repo_ui
@@ -28,10 +28,9 @@ def display_clear_history_button():
 
 
 def display_config_section():
-    with st.expander("💻 CONFIGS", expanded=True):
+    with st.popover("SETTINGS", icon="⚙️", use_container_width=True):
         repo_ui.display_files()
         display_file_options()
-        display_model_options()
 
 
 def display_file_options():
@@ -105,21 +104,29 @@ def get_selected_models():
 
 
 def display_chat_history():
-    for entry in st.session_state.chat_history:
+    for i, entry in enumerate(st.session_state.chat_history):
         if entry["role"] == "user":
-            with st.expander("👤 USER", expanded=True):
+            with st.expander("USER", icon="👤", expanded=True):
                 st.write(entry["content"])
         else:
             model_name = entry.get("model", "")
             with st.expander(
-                f"🤖 ASSISTANT {'[' + model_name + ']' if model_name else ''}",
+                f"ASSISTANT {'[' + model_name + ']' if model_name else ''}",
                 expanded=True,
+                icon="🤖",
             ):
-                st.write(entry["content"])
+                if entry.get("content") is None:
+                    agent_output = run_agent(entry["model"])
+                    st.session_state.chat_history[i]["content"] = agent_output
+                else:
+                    st.write(entry["content"])
 
 
 def display_user_input():
-    with st.expander("👤 NEW MESSAGE", expanded=True):
+    with st.expander(
+        "NEW MESSAGE", icon="👤", expanded=not any(st.session_state.chat_history)
+    ):
+        display_model_options()
         initialize_input_reset()
         display_template_selector()
         display_input_area()
@@ -162,68 +169,57 @@ def display_action_buttons():
         handle_send_button()
 
     if st.button("Preview", type="secondary"):
-        preview_assistant()
+        handle_preview_button()
 
 
 def handle_send_button():
     user_input = st.session_state.instructions.strip()
     if user_input:
         st.session_state.chat_history.append({"role": "user", "content": user_input})
-        run_assistant()
+        for model in get_selected_models():
+            st.session_state.chat_history.append(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "model": model,
+                    "multiple_models": len(get_selected_models()) > 1,
+                }
+            )
         st.session_state.input_reset = True
     st.rerun()
 
 
-def preview_assistant():
-    with st.spinner("Previewing..."):
-        user_input = st.session_state.instructions.strip()
-        if user_input:
-            for model in get_selected_models():
-                with st.expander(f"🤖 PREVIEW [{model}]", expanded=True):
-                    agent_preview = run_agent(model, preview=True)
-                    display_preview(agent_preview)
+def handle_preview_button():
+    user_input = st.session_state.instructions.strip()
+    if user_input:
+        for model in get_selected_models():
+            with st.expander(f"🤖 PREVIEW [{model}]", expanded=True):
+                with st.spinner("Previewing..."):
+                    messages = get_history_messages(model)
+                    messages.append({"role": "user", "content": user_input})
+                    st.json(messages, expanded=False)
 
 
-def run_assistant():
-    for model in get_selected_models():
-        agent_output = run_agent(model)
-        st.session_state.chat_history.append(
-            {
-                "role": "assistant",
-                "content": agent_output.response["content"],
-                "model": model if len(get_selected_models()) > 1 else None,
-            }
-        )
+def run_agent(model):
+    llm_client = LLMClients(model=model)
+    messages = get_history_messages(model)
+    return st.write_stream(llm_client.stream(messages))
 
 
-def run_agent(model, preview: bool = False):
-    with st.spinner("Running assistant..."):
-        retriever = ContextRetriever(**get_retriever_args())
-        context = retriever.retrieve(
-            files_paths=state.repo.included_files_paths,
-            files_tokens=state.repo.included_files_tokens,
-            metadata=state.repo_metadata,
-        )
-        Agent.get_messages = get_history_messages
-        agent = Agent(instructions=st.session_state.instructions, model=model)
-        if preview:
-            return agent.preview(context=context)
-        else:
-            return agent.run(llm_client=state.llm_client, context=context)
-
-
-def get_history_messages(self, context):
-    messages = self.get_single_messages(context)
-    last_message = messages.pop(-1)
-
+def get_history_messages(model):
+    retriever = ContextRetriever(**get_retriever_args())
+    context = retriever.retrieve(
+        files_paths=state.repo.included_files_paths,
+        files_tokens=state.repo.included_files_tokens,
+        metadata=state.repo_metadata,
+    )
+    messages = [{"role": "user", "content": context}]
     for entry in st.session_state.chat_history:
         if entry["role"] == "user":
             messages.append({"role": entry["role"], "content": entry["content"]})
-        elif entry["role"] == "assistant":
-            if entry.get("model") is None or entry.get("model") == self.model:
+        elif entry["role"] == "assistant" and entry["content"] is not None:
+            if entry.get("multiple_models") is False or entry.get("model") == model:
                 messages.append({"role": entry["role"], "content": entry["content"]})
-
-    messages.append(last_message)
     return messages
 
 
