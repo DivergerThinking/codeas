@@ -29,8 +29,8 @@ class ContextRetriever(BaseModel):
         for i, file_path in enumerate(files_paths):
             if metadata:
                 file_usage = metadata.get_file_usage(file_path)
-                if not file_usage:
-                    raise ValueError(f"File {file_path} not found in metadata")
+                # if not file_usage:
+                #     raise ValueError(f"File {file_path} not found in metadata")
             else:
                 file_usage = None
 
