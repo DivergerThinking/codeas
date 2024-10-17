@@ -3,6 +3,7 @@ import os
 
 import google.generativeai as genai
 import openai
+import tokencost
 from anthropic import Anthropic
 from pydantic import BaseModel
 
@@ -28,7 +29,7 @@ MODELS = {
 class LLMClients(BaseModel):
     model: str
     provider: str = ""
-    max_tokens: int = 8192
+    max_tokens: int = -1
 
     def model_post_init(self, _):
         self.provider = MODELS.get(self.model)
@@ -38,6 +39,8 @@ class LLMClients(BaseModel):
         if self.model == "claude-3-haiku":
             self.model = "claude-3-haiku-20240307"
             self.max_tokens = 4096
+        if self.model == "gpt-4o":
+            self.model = "gpt-4o-2024-08-06"
 
     def run(self, messages: list):
         """Run a non-streaming request."""
@@ -117,10 +120,51 @@ class LLMClients(BaseModel):
                 google_messages.append({"role": "model", "parts": [message["content"]]})
         return google_messages
 
+    def extract_strings(self, messages: list):
+        return " ".join([message["content"] for message in messages])
+
+    def calculate_cost(self, messages: list, completion: str = None):
+        if completion:
+            costs = tokencost.calculate_all_costs_and_tokens(
+                self.extract_strings(messages), completion, self.model
+            )
+            return {
+                "input_tokens": costs["prompt_tokens"],
+                "input_cost": float(costs["prompt_cost"]),
+                "output_tokens": costs["completion_tokens"],
+                "output_cost": float(costs["completion_cost"]),
+                "total_cost": float(costs["prompt_cost"])
+                + float(costs["completion_cost"]),
+            }
+        else:
+            costs = {
+                "input_tokens": tokencost.count_string_tokens(
+                    self.extract_strings(messages), self.model
+                ),
+            }
+            costs["input_cost"] = float(
+                tokencost.calculate_cost_by_tokens(
+                    costs["input_tokens"], self.model, "input"
+                )
+            )
+            return costs
+
+    def estimate_cost(self, messages: list, oi_ratio: float):
+        costs = self.calculate_cost(messages)
+        costs["output_tokens"] = int(costs["input_tokens"] * oi_ratio)
+        costs["output_cost"] = float(
+            tokencost.calculate_cost_by_tokens(
+                costs["output_tokens"], self.model, "output"
+            )
+        )
+        costs["total_cost"] = costs["input_cost"] + costs["output_cost"]
+        return costs
+
 
 if __name__ == "__main__":
-    clients = LLMClients(model="gpt-4o-mini")
-    # test the stream method
-    for chunk in clients.stream([{"role": "user", "content": "Hello, world!"}]):
-        print(chunk, end="", flush=True)
+    clients = LLMClients(model="o1-preview")
+    print(
+        "o1-preview",
+        clients.calculate_cost([{"role": "user", "content": "Hello, world!"}], "hello"),
+    )
     ...

@@ -19,12 +19,22 @@ def chat():
     display_chat_history()
     display_user_input()
     display_clear_history_button()
+    display_conversation_costs()
 
 
 def display_clear_history_button():
     if st.button("Clear history"):
         st.session_state.chat_history = []
         st.rerun()
+
+
+def display_conversation_costs():
+    if any([entry.get("cost") for entry in st.session_state.chat_history]):
+        conversation_cost = 0
+        for entry in st.session_state.chat_history:
+            if entry.get("cost"):
+                conversation_cost += entry["cost"]["total_cost"]
+        st.info(f"Conversation cost: ${conversation_cost:.4f}")
 
 
 def display_config_section():
@@ -109,17 +119,19 @@ def display_chat_history():
             with st.expander("USER", icon="👤", expanded=True):
                 st.write(entry["content"])
         else:
-            model_name = entry.get("model", "")
             with st.expander(
-                f"ASSISTANT {'[' + model_name + ']' if model_name else ''}",
+                f"ASSISTANT [{entry['model']}]",
                 expanded=True,
                 icon="🤖",
             ):
                 if entry.get("content") is None:
-                    agent_output = run_agent(entry["model"])
-                    st.session_state.chat_history[i]["content"] = agent_output
+                    content, cost = run_agent(entry["model"])
+                    st.write(f"💲 **COST**: ${cost['total_cost']:.4f}")
+                    st.session_state.chat_history[i]["content"] = content
+                    st.session_state.chat_history[i]["cost"] = cost
                 else:
                     st.write(entry["content"])
+                    st.write(f"**Cost**: ${entry['cost']['total_cost']:.4f}")
 
 
 def display_user_input():
@@ -180,7 +192,6 @@ def handle_send_button():
             st.session_state.chat_history.append(
                 {
                     "role": "assistant",
-                    "content": None,
                     "model": model,
                     "multiple_models": len(get_selected_models()) > 1,
                 }
@@ -198,12 +209,19 @@ def handle_preview_button():
                     messages = get_history_messages(model)
                     messages.append({"role": "user", "content": user_input})
                     st.json(messages, expanded=False)
+                    llm_client = LLMClients(model=model)
+                    cost = llm_client.calculate_cost(messages)
+                    st.write(
+                        f"💲 **INPUT COST**: ${cost['input_cost']:.4f} ({cost['input_tokens']:,} input tokens)"
+                    )
 
 
 def run_agent(model):
     llm_client = LLMClients(model=model)
     messages = get_history_messages(model)
-    return st.write_stream(llm_client.stream(messages))
+    completion = st.write_stream(llm_client.stream(messages))
+    cost = llm_client.calculate_cost(messages, completion)
+    return completion, cost
 
 
 def get_history_messages(model):
@@ -217,7 +235,7 @@ def get_history_messages(model):
     for entry in st.session_state.chat_history:
         if entry["role"] == "user":
             messages.append({"role": entry["role"], "content": entry["content"]})
-        elif entry["role"] == "assistant" and entry["content"] is not None:
+        elif entry["role"] == "assistant" and entry.get("content") is not None:
             if entry.get("multiple_models") is False or entry.get("model") == model:
                 messages.append({"role": entry["role"], "content": entry["content"]})
     return messages
