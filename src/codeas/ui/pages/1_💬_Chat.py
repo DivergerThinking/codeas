@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_nested_layout  # noqa
 
 from codeas.configs.templates import TEMPLATES
-from codeas.core.clients import LLMClients
+from codeas.core.clients import MODELS, LLMClients
 from codeas.core.retriever import ContextRetriever
 from codeas.core.state import state
 from codeas.ui.components import metadata_ui, repo_ui
@@ -65,7 +65,7 @@ def display_file_options():
 
 
 def display_model_options():
-    all_models = ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini"]
+    all_models = MODELS.keys()
 
     col1, col2, col3 = st.columns(3)
     with col1:
