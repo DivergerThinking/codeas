@@ -32,7 +32,7 @@ class LLMClients(BaseModel):
     max_tokens: int = -1
 
     def model_post_init(self, _):
-        self.provider = MODELS.get(self.model)
+        self.provider = MODELS[self.model]
         if self.model == "claude-3-5-sonnet":
             self.model = "claude-3-5-sonnet-20240620"
             self.max_tokens = 8192
@@ -162,9 +162,6 @@ class LLMClients(BaseModel):
 
 
 if __name__ == "__main__":
-    clients = LLMClients(model="o1-preview")
-    print(
-        "o1-preview",
-        clients.calculate_cost([{"role": "user", "content": "Hello, world!"}], "hello"),
-    )
+    clients = LLMClients(model="claude-3-5-sonnet")
+    response = clients.run([{"role": "user", "content": "Hello, world!"}])
     ...

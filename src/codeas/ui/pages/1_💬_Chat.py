@@ -159,11 +159,13 @@ def display_template_selector():
 
 
 def initialize_input_reset():
+    # used to empty user input and templates after user sends a message
     if "input_reset" not in st.session_state:
         st.session_state.input_reset = False
 
 
 def reset_input_flag():
+    # used to empty user input and templates after user sends a message
     if st.session_state.input_reset:
         st.session_state.input_reset = False
 
@@ -239,14 +241,6 @@ def get_history_messages(model):
             if entry.get("multiple_models") is False or entry.get("model") == model:
                 messages.append({"role": entry["role"], "content": entry["content"]})
     return messages
-
-
-def display_preview(agent_preview):
-    st.info(
-        f"Input cost: ${agent_preview.cost['input_cost']:.4f} ({agent_preview.tokens['input_tokens']:,} input tokens)"
-    )
-    st.write("Messages:")
-    st.json(agent_preview.messages, expanded=False)
 
 
 def get_retriever_args():
