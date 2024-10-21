@@ -184,23 +184,31 @@ def display_generators():
 
 def display_generated_prompts():
     if st.session_state.get("standard_prompt"):
-        display_generated_prompt("standard", st.session_state.standard_prompt)
+        display_generated_prompt("standard", st.session_state.standard_prompt, True)
     if st.session_state.get("advanced_prompt"):
-        display_generated_prompt("advanced", st.session_state.advanced_prompt)
+        display_generated_prompt("advanced", st.session_state.advanced_prompt, True)
     if st.session_state.get("chain_of_thought_prompt"):
         display_generated_prompt(
-            "chain_of_thought", st.session_state.chain_of_thought_prompt
+            "chain_of_thought", st.session_state.chain_of_thought_prompt, True
         )
 
 
-def display_generated_prompt(generator, prompt):
+def display_generated_prompt(generator, prompt, enable_actions):
     with st.expander(f"{generator}", icon="📝", expanded=True):
         st.text_area("Prompt", value=prompt, height=300)
-        if st.button("Save", icon="💾", key=f"save_{generator}"):
+        if st.button(
+            "Save", icon="💾", key=f"save_{generator}", disabled=not enable_actions
+        ):
             prompt_name = f"{ICONS[st.session_state.get('prompt_type')]} {st.session_state.get('prompt_name')}"
             save_prompt(prompt_name, prompt)
             delete_prompt(generator)
-        if st.button("Delete", icon="🗑️", type="primary", key=f"delete_{generator}"):
+        if st.button(
+            "Delete",
+            icon="🗑️",
+            type="primary",
+            key=f"delete_{generator}",
+            disabled=not enable_actions,
+        ):
             delete_prompt(generator)
 
 
@@ -246,23 +254,26 @@ def generate_prompts():
         with st.spinner("Running Standard Generator..."):
             response = generate_prompt(prompts.meta_prompt_basic)
             st.session_state.standard_prompt = response.content[0].text
-            display_generated_prompt("standard", st.session_state.standard_prompt)
+        display_generated_prompt("standard", st.session_state.standard_prompt, False)
+
     if st.session_state.advanced_generator:
         with st.spinner("Running Advanced Generator..."):
             response = generate_prompt(prompts.meta_prompt_advanced)
             st.session_state.advanced_prompt = parse_markup(
                 response.content[0].text, "prompt"
             )
-            display_generated_prompt("advanced", st.session_state.advanced_prompt)
+        display_generated_prompt("advanced", st.session_state.advanced_prompt, False)
+
     if st.session_state.chain_of_thought_generator:
         with st.spinner("Running Chain-of-Thought..."):
             response = generate_prompt(prompts.meta_prompt_chain_of_thought)
             st.session_state.chain_of_thought_prompt = parse_markup(
                 response.content[0].text, "Instructions"
             )
-            display_generated_prompt(
-                "chain_of_thought", st.session_state.chain_of_thought_prompt
-            )
+        display_generated_prompt(
+            "chain_of_thought", st.session_state.chain_of_thought_prompt, False
+        )
+    st.rerun()
 
 
 def parse_markup(completion: str, tag_name: str):
