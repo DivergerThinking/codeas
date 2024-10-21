@@ -1,15 +1,16 @@
 import streamlit as st
 import streamlit_nested_layout  # noqa
 
-from codeas.configs.templates import TEMPLATES
 from codeas.core.clients import MODELS, LLMClients
 from codeas.core.retriever import ContextRetriever
 from codeas.core.state import state
 from codeas.ui.components import metadata_ui, repo_ui
+from codeas.ui.utils import read_prompts
 
 
 def chat():
     st.subheader("💬 Chat")
+    state.update_current_page("Chat")
     repo_ui.display_repo_path()
     display_config_section()
 
@@ -80,7 +81,7 @@ def display_model_options():
     col1, col2, col3 = st.columns(3)
     with col1:
         st.selectbox(
-            "Model 1",
+            "Model",
             options=all_models,
             key="model1",
         )
@@ -115,12 +116,13 @@ def get_selected_models():
 
 def display_chat_history():
     for i, entry in enumerate(st.session_state.chat_history):
+        template_label = f"[{entry['template']}]" if entry.get("template") else ""
         if entry["role"] == "user":
-            with st.expander("USER", icon="👤", expanded=True):
+            with st.expander(f"USER {template_label}", icon="👤", expanded=False):
                 st.write(entry["content"])
         else:
             with st.expander(
-                f"ASSISTANT [{entry['model']}]",
+                f"ASSISTANT [{entry['model']}] {template_label}",
                 expanded=True,
                 icon="🤖",
             ):
@@ -140,21 +142,77 @@ def display_user_input():
     ):
         display_model_options()
         initialize_input_reset()
-        display_template_selector()
-        display_input_area()
+        display_template_options()
+        display_input_areas()
         reset_input_flag()
         display_action_buttons()
 
 
-def display_template_selector():
-    col1, _ = st.columns(2)
+def display_template_options():
+    prompt_options = [""] + list(read_prompts().keys())
+
+    col1, col2, col3 = st.columns(3)
     with col1:
-        prompt_options = [""] + list(TEMPLATES.keys())
         st.selectbox(
-            "Templates",
+            "Template",
             options=prompt_options,
-            key="template_selector",
+            key="template1",
             index=0 if st.session_state.input_reset else None,
+        )
+
+    remaining_options = [
+        opt for opt in prompt_options if opt != st.session_state.template1
+    ]
+    with col2:
+        st.selectbox(
+            "Template 2",
+            options=remaining_options,
+            key="template2",
+            index=0 if st.session_state.input_reset else None,
+            disabled=not st.session_state.template1,
+        )
+
+    final_options = [
+        opt for opt in remaining_options if opt != st.session_state.template2
+    ]
+    with col3:
+        st.selectbox(
+            "Template 3",
+            options=final_options,
+            key="template3",
+            index=0 if st.session_state.input_reset else None,
+            disabled=not st.session_state.template2,
+        )
+
+
+def display_input_areas():
+    prompts = read_prompts()
+    selected_templates = [
+        st.session_state.get(f"template{i}")
+        for i in range(1, 4)
+        if st.session_state.get(f"template{i}")
+    ]
+
+    if len(selected_templates) > 1:
+        for i, template in enumerate(selected_templates, 1):
+            instruction_key = f"instructions{i}"
+            if st.session_state.input_reset:
+                st.session_state[instruction_key] = ""
+            prompt_content = prompts.get(template, "")
+            with st.expander(f"Template {i}: {template}", expanded=True):
+                st.text_area(
+                    "Instructions",
+                    value=prompt_content,
+                    height=200,
+                    key=instruction_key,
+                )
+    else:
+        if st.session_state.input_reset:
+            st.session_state.instructions = ""
+        template = selected_templates[0] if selected_templates else ""
+        prompt_content = prompts.get(template, "")
+        st.text_area(
+            "Instructions", value=prompt_content, key="instructions", height=200
         )
 
 
@@ -170,14 +228,6 @@ def reset_input_flag():
         st.session_state.input_reset = False
 
 
-def display_input_area():
-    selected_prompt = st.session_state.get("template_selector")
-    if st.session_state.input_reset:
-        st.session_state.instructions = ""
-    prompt_content = TEMPLATES.get(selected_prompt, "") if selected_prompt else ""
-    st.text_area("Instructions", value=prompt_content, height=200, key="instructions")
-
-
 def display_action_buttons():
     if st.button("Send", type="primary"):
         handle_send_button()
@@ -187,35 +237,74 @@ def display_action_buttons():
 
 
 def handle_send_button():
-    user_input = st.session_state.instructions.strip()
-    if user_input:
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
-        for model in get_selected_models():
-            st.session_state.chat_history.append(
-                {
-                    "role": "assistant",
-                    "model": model,
-                    "multiple_models": len(get_selected_models()) > 1,
-                }
-            )
+    selected_templates = [
+        st.session_state.get(f"template{i}")
+        for i in range(1, 4)
+        if st.session_state.get(f"template{i}")
+    ]
+
+    if len(selected_templates) > 1:
+        user_inputs = [
+            st.session_state.get(f"instructions{i}").strip()
+            for i in range(1, len(selected_templates) + 1)
+        ]
+    else:
+        user_inputs = [st.session_state.instructions.strip()]
+
+    if any(user_inputs):
+        for i, user_input in enumerate(user_inputs):
+            if user_input:
+                template = selected_templates[i] if len(selected_templates) > 1 else ""
+                st.session_state.chat_history.append(
+                    {"role": "user", "content": user_input, "template": template}
+                )
+        for i, user_input in enumerate(user_inputs):
+            for model in get_selected_models():
+                st.session_state.chat_history.append(
+                    {
+                        "role": "assistant",
+                        "model": model,
+                        "template": template,
+                        "multiple_models": len(get_selected_models()) > 1,
+                    }
+                )
         st.session_state.input_reset = True
     st.rerun()
 
 
 def handle_preview_button():
-    user_input = st.session_state.instructions.strip()
-    if user_input:
-        for model in get_selected_models():
-            with st.expander(f"🤖 PREVIEW [{model}]", expanded=True):
-                with st.spinner("Previewing..."):
-                    messages = get_history_messages(model)
-                    messages.append({"role": "user", "content": user_input})
-                    st.json(messages, expanded=False)
-                    llm_client = LLMClients(model=model)
-                    cost = llm_client.calculate_cost(messages)
-                    st.write(
-                        f"💲 **INPUT COST**: ${cost['input_cost']:.4f} ({cost['input_tokens']:,} input tokens)"
-                    )
+    selected_templates = [
+        st.session_state.get(f"template{i}")
+        for i in range(1, 4)
+        if st.session_state.get(f"template{i}")
+    ]
+
+    if len(selected_templates) > 1:
+        user_inputs = [
+            st.session_state.get(f"instructions{i}").strip()
+            for i in range(1, len(selected_templates) + 1)
+        ]
+    else:
+        user_inputs = [st.session_state.instructions.strip()]
+
+    for i, user_input in enumerate(user_inputs):
+        if user_input:
+            template_label = (
+                f"[{selected_templates[i]}]" if len(selected_templates) > 1 else ""
+            )
+            for model in get_selected_models():
+                with st.expander(
+                    f"🤖 PREVIEW [{model}] {template_label}", expanded=True
+                ):
+                    with st.spinner("Previewing..."):
+                        messages = get_history_messages(model)
+                        messages.append({"role": "user", "content": user_input})
+                        st.json(messages, expanded=False)
+                        llm_client = LLMClients(model=model)
+                        cost = llm_client.calculate_cost(messages)
+                        st.write(
+                            f"💲 **INPUT COST**: ${cost['input_cost']:.4f} ({cost['input_tokens']:,} input tokens)"
+                        )
 
 
 def run_agent(model):

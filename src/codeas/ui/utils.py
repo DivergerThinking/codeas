@@ -1,4 +1,5 @@
 import difflib
+import json
 import os
 from pathlib import Path
 
@@ -7,6 +8,14 @@ from diff_match_patch import diff_match_patch
 
 class SearchTextNotUnique(ValueError):
     pass
+
+
+def read_prompts(path=".codeas/prompts.json"):
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return json.load(f)
+    else:
+        return {}
 
 
 def apply_diffs(file_content, diff_content):

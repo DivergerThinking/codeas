@@ -1,15 +1,26 @@
 import json
-import os
 
 import streamlit as st
 import streamlit_nested_layout  # noqa
 
 from codeas.configs import prompts
-
-# from appdirs import user_data_dir
 from codeas.core.clients import LLMClients
+from codeas.ui.utils import read_prompts
 
-PROMPT_TYPES = ["DOCS", "TESTING", "REFACTOR", "DEPLOY", "TRANSLATE", "OTHER"]
+PROMPT_TYPES = [
+    "📚 DOCUMENTATION",
+    "🧪 TESTING",
+    "🔄 REFACTORING",
+    "🚀 DEPLOYMENT",
+    "❔ OTHER",
+]
+ICONS = {
+    "📚 DOCUMENTATION": "📚",
+    "🧪 TESTING": "🧪",
+    "🔄 REFACTORING": "🔄",
+    "🚀 DEPLOYMENT": "🚀",
+    "❔ OTHER": "❔",
+}
 
 
 def page():
@@ -19,7 +30,7 @@ def page():
 
 
 def display_saved_prompts():
-    prompts = read_prompts(".codeas/prompts.json")
+    prompts = read_prompts()
     st.subheader("📝 Saved Prompts")
     if prompts:
         for prompt_name, prompt in prompts.items():
@@ -95,7 +106,7 @@ def display_modify_prompt(prompt_name, prompt_to_modify):
 
 
 def save_existing_prompt(existing_name, new_name, new_prompt):
-    prompts = read_prompts(".codeas/prompts.json")
+    prompts = read_prompts()
     prompts[new_name] = new_prompt
     if existing_name != new_name:
         del prompts[existing_name]
@@ -107,7 +118,7 @@ def save_existing_prompt(existing_name, new_name, new_prompt):
 
 
 def delete_saved_prompt(prompt_name):
-    prompts = read_prompts(".codeas/prompts.json")
+    prompts = read_prompts()
     del prompts[prompt_name]
     with open(".codeas/prompts.json", "w") as f:
         json.dump(prompts, f)
@@ -186,7 +197,7 @@ def display_generated_prompt(generator, prompt):
     with st.expander(f"{generator}", icon="📝", expanded=True):
         st.text_area("Prompt", value=prompt, height=300)
         if st.button("Save", icon="💾", key=f"save_{generator}"):
-            prompt_name = f"[{st.session_state.get('prompt_type')}] {st.session_state.get('prompt_name')}"
+            prompt_name = f"{ICONS[st.session_state.get('prompt_type')]} {st.session_state.get('prompt_name')}"
             save_prompt(prompt_name, prompt)
             delete_prompt(generator)
         if st.button("Delete", icon="🗑️", type="primary", key=f"delete_{generator}"):
@@ -223,14 +234,6 @@ def extract_name_version(existing_names):
         else:
             name_version_map[name] = version
     return name_version_map
-
-
-def read_prompts(path):
-    if os.path.exists(path):
-        with open(path, "r") as f:
-            return json.load(f)
-    else:
-        return {}
 
 
 def delete_prompt(generator):
