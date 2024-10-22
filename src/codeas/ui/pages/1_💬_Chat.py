@@ -1,3 +1,8 @@
+import datetime
+import json
+import uuid
+from pathlib import Path
+
 import streamlit as st
 import streamlit_nested_layout  # noqa
 
@@ -26,6 +31,8 @@ def chat():
 def display_clear_history_button():
     if st.button("Clear history"):
         st.session_state.chat_history = []
+        if "conversation_id" in st.session_state:
+            del st.session_state.conversation_id
         st.rerun()
 
 
@@ -312,6 +319,7 @@ def run_agent(model):
     messages = get_history_messages(model)
     completion = st.write_stream(llm_client.stream(messages))
     cost = llm_client.calculate_cost(messages, completion)
+    log_agent_execution(model, messages, cost)
     return completion, cost
 
 
@@ -347,6 +355,51 @@ def get_retriever_args():
         "use_descriptions": content_types == "Descriptions",
         "use_details": content_types == "Details",
     }
+
+
+def log_agent_execution(model, messages, cost):
+    # Get or create a conversation ID
+    if "conversation_id" not in st.session_state:
+        st.session_state.conversation_id = str(uuid.uuid4())
+
+    # Get the content of the last message
+    prompt = messages[-1]["content"] if messages else ""
+
+    # Get template information
+    selected_templates = [
+        st.session_state.get(f"template{i}")
+        for i in range(1, 4)
+        if st.session_state.get(f"template{i}")
+    ]
+    using_template = any(selected_templates)
+    using_multiple_templates = len(selected_templates) > 1
+
+    # Check if multiple models are being used
+    using_multiple_models = len(get_selected_models()) > 1
+
+    # Log the agent execution
+    log_entry = {
+        "timestamp": datetime.datetime.now().isoformat(),
+        "conversation_id": st.session_state.conversation_id,
+        "model": model,
+        "prompt": prompt,
+        "cost": cost,
+        "using_template": using_template,
+        "using_multiple_templates": using_multiple_templates,
+        "using_multiple_models": using_multiple_models,
+    }
+
+    log_file = Path(".codeas/agent_executions.json")
+
+    if log_file.exists():
+        with open(log_file, "r+") as f:
+            data = json.load(f)
+            data.append(log_entry)
+            f.seek(0)
+            json.dump(data, f, indent=2)
+    else:
+        with open(log_file, "w") as f:
+            json.dump([log_entry], f, indent=2)
 
 
 chat()

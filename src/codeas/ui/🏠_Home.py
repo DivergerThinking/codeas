@@ -18,6 +18,8 @@ def home_page():
     st.page_link("pages/3_🚀_Deployment.py", label="Deployment", icon="🚀")
     st.page_link("pages/4_🧪_Testing.py", label="Testing", icon="🧪")
     st.page_link("pages/5_🔄_Refactoring.py", label="Refactoring", icon="🔄")
+    st.page_link("pages/6_🔨_Prompt-Builder.py", label="Prompt Builder", icon="🔨")
+    st.page_link("pages/7_🔍_Usage.py", label="Usage", icon="🔍")
     st.markdown(
         """
     For more information about the tool, visit the [GitHub repository](https://github.com/DivergerThinking/codeas).
