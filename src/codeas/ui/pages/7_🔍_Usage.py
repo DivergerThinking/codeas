@@ -5,8 +5,8 @@ import pandas as pd
 import streamlit as st
 
 
-def read_usage_data():
-    log_file = Path(".codeas/agent_executions.json")
+def read_usage_data(file_path: str):
+    log_file = Path(file_path)
     if log_file.exists():
         with open(log_file, "r") as f:
             return json.load(f)
@@ -62,13 +62,13 @@ def calculate_usage_by_model(usage_data):
 
 
 def display_usage_metrics(usage_data):
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("🔢 Total requests", count_n_requests(usage_data))
         st.metric("💬 Total conversations", count_n_conversations(usage_data))
-
     with col2:
+        st.metric("🔢 Total requests", count_n_requests(usage_data))
+    with col3:
         total_cost = calculate_total_cost(usage_data)
         st.metric("💰 Total cost", f"${total_cost:.2f}")
 
@@ -116,7 +116,7 @@ def display_usage_by_model(model_df):
 
 
 def display_chat_usage():
-    usage_data = read_usage_data()
+    usage_data = read_usage_data(".codeas/agent_executions.json")
 
     display_usage_metrics(usage_data)
 
@@ -129,10 +129,111 @@ def display_chat_usage():
     display_usage_by_model(usage_by_model_df)
 
 
+def display_use_cases_usage():
+    usage_data = read_usage_data(".codeas/use_cases_usage.json")
+    display_documentation_usage(usage_data)
+    display_deployment_usage(usage_data)
+    display_testing_usage(usage_data)
+    display_refactoring_usage(usage_data)
+
+
+def display_documentation_usage(usage_data):
+    st.subheader("📚 Documentation")
+    docs_data = usage_data.get("generate_docs", {})
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("🔢 Total requests", docs_data.get("count", 0))
+    with col2:
+        st.metric("💰 Total cost", f"${docs_data.get('total_cost', 0):.2f}")
+
+    with st.expander("Sections"):
+        sections = [
+            "project_overview",
+            "setup_and_development",
+            "architecture",
+            "ui",
+            "db",
+            "api",
+            "testing",
+            "deployment",
+            "security",
+        ]
+
+        sections_data = []
+        for section in sections:
+            section_data = usage_data.get(f"generate_{section}", {})
+            sections_data.append(
+                {
+                    "Section": section.replace("_", " ").title(),
+                    "Requests": section_data.get("count", 0),
+                    "Cost": section_data.get("total_cost", 0),
+                }
+            )
+
+        df = pd.DataFrame(sections_data)
+        st.dataframe(
+            df.set_index("Section").style.format(
+                {"Requests": "{:,d}", "Cost": "${:.2f}"}
+            ),
+        )
+
+
+def display_deployment_usage(usage_data):
+    st.subheader("🚀 Deployment")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Defining deployment strategy**:")
+        define_data = usage_data.get("define_deployment", {})
+        st.metric("🔢 Total requests", define_data.get("count", 0))
+        st.metric("💰 Total cost", f"${define_data.get('total_cost', 0):.2f}")
+    with col2:
+        st.write("**Generating deployment**:")
+        generate_data = usage_data.get("generate_deployment", {})
+        st.metric("🔢 Total requests", generate_data.get("count", 0))
+        st.metric("💰 Total cost", f"${generate_data.get('total_cost', 0):.2f}")
+
+
+def display_testing_usage(usage_data):
+    st.subheader("🧪 Testing")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Defining testing strategy**:")
+        strategy_data = usage_data.get("define_testing_strategy", {})
+        st.metric("🔢 Total requests", strategy_data.get("count", 0))
+        st.metric("💰 Total cost", f"${strategy_data.get('total_cost', 0):.2f}")
+    with col2:
+        st.write("**Generating tests from strategy**:")
+        tests_data = usage_data.get("generate_tests_from_strategy", {})
+        st.metric("🔢 Total requests", tests_data.get("count", 0))
+        st.metric("💰 Total cost", f"${tests_data.get('total_cost', 0):.2f}")
+
+
+def display_refactoring_usage(usage_data):
+    st.subheader("🔄 Refactoring")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write("**Defining refactoring files**:")
+        define_data = usage_data.get("define_refactoring_files", {})
+        st.metric("🔢 Total requests", define_data.get("count", 0))
+        st.metric("💰 Total cost", f"${define_data.get('total_cost', 0):.2f}")
+    with col2:
+        st.write("**Generating proposed changes**:")
+        propose_data = usage_data.get("generate_proposed_changes", {})
+        st.metric("🔢 Total requests", propose_data.get("count", 0))
+        st.metric("💰 Total cost", f"${propose_data.get('total_cost', 0):.2f}")
+    with col3:
+        st.write("**Generating diffs**:")
+        diffs_data = usage_data.get("generate_diffs", {})
+        st.metric("🔢 Total requests", diffs_data.get("count", 0))
+        st.metric("💰 Total cost", f"${diffs_data.get('total_cost', 0):.2f}")
+
+
 def usage_page():
-    st.subheader("🔍 Usage Statistics")
-    with st.expander("Chat usage", icon="💬", expanded=True):
+    st.subheader("🔍 Usage")
+    with st.expander("Chat", icon="💬", expanded=True):
         display_chat_usage()
+    with st.expander("Use cases", icon="🤖", expanded=True):
+        display_use_cases_usage()
 
 
 usage_page()

@@ -8,6 +8,7 @@ from codeas.core.llm import LLMClient
 from codeas.core.metadata import RepoMetadata
 from codeas.core.repo import Repo
 from codeas.core.retriever import ContextRetriever
+from codeas.core.usage_tracker import usage_tracker
 
 
 class TestingStep(BaseModel):
@@ -40,7 +41,9 @@ def define_testing_strategy(
     if preview:
         return agent.preview(context=context)
     else:
-        return agent.run(llm_client, context=context)
+        result = agent.run(llm_client, context=context)
+        usage_tracker.record_usage("define_testing_strategy", result.cost["total_cost"])
+        return result
 
 
 def parse_response(response: object):
@@ -62,7 +65,11 @@ def generate_tests_from_strategy(
     if preview:
         return agent.preview(context=contexts)
     else:
-        return agent.run(llm_client, context=contexts)
+        result = agent.run(llm_client, context=contexts)
+        usage_tracker.record_usage(
+            "generate_tests_from_strategy", result.cost["total_cost"]
+        )
+        return result
 
 
 if __name__ == "__main__":

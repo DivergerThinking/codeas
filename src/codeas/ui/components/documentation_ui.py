@@ -1,6 +1,7 @@
 import streamlit as st
 
 from codeas.core.state import state
+from codeas.core.usage_tracker import usage_tracker
 from codeas.use_cases.documentation import SECTION_CONFIG, generate_docs_section
 
 
@@ -111,6 +112,8 @@ def process_sections(
             f"(input tokens: {total_input_tokens:,}, "
             f"output tokens: {total_output_tokens:,})"
         )
+        if not use_previous:
+            usage_tracker.record_usage("generate_docs", total_cost)
     elif preview:
         st.info(
             f"Total input cost: ${total_input_cost:.4f} ({total_input_tokens:,} tokens)"
