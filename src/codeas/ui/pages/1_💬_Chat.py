@@ -44,9 +44,47 @@ def display_conversation_costs():
 
 
 def display_config_section():
-    with st.popover("SETTINGS", icon="⚙️", use_container_width=True):
-        repo_ui.display_files()
+    with st.expander("CONTEXT", icon="⚙️", expanded=False):
+        repo_ui.display_filters()
         display_file_options()
+
+        if (
+            st.session_state.get("file_types") != "All files"
+            or st.session_state.get("content_types") != "Full content"
+        ):
+            files_missing_metadata = metadata_ui.display()
+            if not any(files_missing_metadata):
+                retriever = ContextRetriever(**get_retriever_args())
+                files_metadata = retriever.retrieve_files_data(
+                    files_paths=state.repo.included_files_paths,
+                    metadata=state.repo_metadata,
+                )
+                num_selected_files = sum(files_metadata["Incl."])
+                selected_tokens = sum(
+                    token
+                    for incl, token in zip(
+                        files_metadata["Incl."], files_metadata["Tokens"]
+                    )
+                    if incl
+                )
+                st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
+                repo_ui.display_metadata_editor(files_metadata)
+        else:
+            files_missing_metadata = []
+            num_selected_files, _, selected_tokens = repo_ui.get_selected_files_info()
+            st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
+            repo_ui.display_files_editor()
+
+        if not any(files_missing_metadata):
+            if st.button("Show context"):
+                context = retriever.retrieve(
+                    files_paths=state.repo.included_files_paths,
+                    files_tokens=state.repo.included_files_tokens,
+                    metadata=state.repo_metadata,
+                )
+                st.text_area("Context", context, height=300)
+
+    st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
 
 
 def display_file_options():
@@ -72,12 +110,6 @@ def display_file_options():
             options=["Full content", "Descriptions", "Details"],
             key="content_types",
         )
-
-    if (
-        st.session_state.get("file_types") != "All files"
-        or st.session_state.get("content_types") != "Full content"
-    ):
-        metadata_ui.display()
 
 
 def display_model_options():
