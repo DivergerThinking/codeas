@@ -4,16 +4,21 @@ from typing import Dict
 
 
 class UsageTracker:
-    def __init__(self, file_path: str = ".codeas/use_cases_usage.json"):
+    def __init__(self, file_path: str = ".codeas/usage.json"):
         self.file_path = file_path
         self.usage_data = self.load_data()
 
     def load_data(self) -> Dict:
         try:
             with open(self.file_path, "r") as f:
-                return json.load(f)
+                data = json.load(f)
+                if "chat" not in data:
+                    data["chat"] = []
+                if "generator" not in data:
+                    data["generator"] = []
+                return data
         except FileNotFoundError:
-            return {}
+            return {"chat": [], "generator": []}
 
     def save_data(self):
         with open(self.file_path, "w") as f:
@@ -32,6 +37,45 @@ class UsageTracker:
 
     def get_usage_stats(self) -> Dict[str, Dict]:
         return self.usage_data
+
+    def log_agent_execution(
+        self,
+        model: str,
+        prompt: str,
+        cost: Dict,
+        conversation_id: str = None,
+        using_template: bool = False,
+        using_multiple_templates: bool = False,
+        using_multiple_models: bool = False,
+    ):
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "conversation_id": conversation_id,
+            "model": model,
+            "prompt": prompt,
+            "cost": cost,
+            "using_template": using_template,
+            "using_multiple_templates": using_multiple_templates,
+            "using_multiple_models": using_multiple_models,
+        }
+
+        self.usage_data["chat"].append(log_entry)
+        self.save_data()
+
+    def log_prompt_generator(
+        self, model: str, prompt: str, cost: float, generator: str, action: str
+    ):
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "model": model,
+            "prompt": prompt,
+            "cost": cost,
+            "generator": generator,
+            "action": action,
+        }
+
+        self.usage_data["generator"].append(log_entry)
+        self.save_data()
 
 
 usage_tracker = UsageTracker()

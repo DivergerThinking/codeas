@@ -10,7 +10,7 @@ def read_usage_data(file_path: str):
     if log_file.exists():
         with open(log_file, "r") as f:
             return json.load(f)
-    return []
+    return {}
 
 
 def count_n_requests(usage_data):
@@ -61,6 +61,17 @@ def calculate_usage_by_model(usage_data):
     return usage_by_model
 
 
+def calculate_usage_by_generator(usage_data):
+    usage_by_generator = {}
+    for item in usage_data:
+        generator = item["generator"]
+        if generator not in usage_by_generator:
+            usage_by_generator[generator] = {"Requests": 0, "Cost": 0}
+        usage_by_generator[generator]["Requests"] += 1
+        usage_by_generator[generator]["Cost"] += item["cost"]["total_cost"]
+    return usage_by_generator
+
+
 def display_usage_metrics(usage_data):
     col1, col2, col3 = st.columns(3)
 
@@ -71,6 +82,29 @@ def display_usage_metrics(usage_data):
     with col3:
         total_cost = calculate_total_cost(usage_data)
         st.metric("💰 Total cost", f"${total_cost:.2f}")
+
+
+def display_generator_metrics(usage_data):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("🔢 Total requests", count_n_requests(usage_data))
+    with col2:
+        total_cost = calculate_total_cost(usage_data)
+        st.metric("💰 Total cost", f"${total_cost:.2f}")
+
+
+def display_generator_by_generator(usage_data):
+    usage_by_generator = calculate_usage_by_generator(usage_data)
+    df = pd.DataFrame.from_dict(usage_by_generator, orient="index").reset_index()
+    df.columns = ["Generator", "Requests", "Cost"]
+    df = df.sort_values("Requests", ascending=False)
+    total_requests = df["Requests"].sum()
+    df["Percentage"] = df["Requests"] / total_requests * 100
+    st.dataframe(
+        df.set_index("Generator").style.format(
+            {"Cost": "${:.2f}", "Requests": "{:,d}", "Percentage": "{:.2f}%"}
+        )
+    )
 
 
 def prepare_usage_by_day_df(usage_data):
@@ -101,9 +135,9 @@ def prepare_usage_by_model_df(usage_data):
     usage_by_model = calculate_usage_by_model(usage_data)
     model_df = pd.DataFrame.from_dict(usage_by_model, orient="index").reset_index()
     model_df.columns = ["Model", "Requests", "Cost"]
-    model_df = model_df.sort_values("Cost", ascending=False)
-    total_cost = model_df["Cost"].sum()
-    model_df["Percentage"] = model_df["Cost"] / total_cost * 100
+    model_df = model_df.sort_values("Requests", ascending=False)
+    total_requests = model_df["Requests"].sum()
+    model_df["Percentage"] = model_df["Requests"] / total_requests * 100
     return model_df
 
 
@@ -116,21 +150,29 @@ def display_usage_by_model(model_df):
 
 
 def display_chat_usage():
-    usage_data = read_usage_data(".codeas/agent_executions.json")
+    usage_data = read_usage_data(".codeas/usage.json").get("chat", [])
 
     display_usage_metrics(usage_data)
+    if any(usage_data):
+        st.subheader("📅 Usage by day")
+        usage_by_day_df = prepare_usage_by_day_df(usage_data)
+        display_usage_by_day(usage_by_day_df)
+    if any(usage_data):
+        st.subheader("🤖 Usage by model")
+        usage_by_model_df = prepare_usage_by_model_df(usage_data)
+        display_usage_by_model(usage_by_model_df)
 
-    st.subheader("📅 Usage by day")
-    usage_by_day_df = prepare_usage_by_day_df(usage_data)
-    display_usage_by_day(usage_by_day_df)
 
-    st.subheader("🤖 Usage by model")
-    usage_by_model_df = prepare_usage_by_model_df(usage_data)
-    display_usage_by_model(usage_by_model_df)
+def display_prompt_generator_usage():
+    usage_data = read_usage_data(".codeas/usage.json").get("generator", [])
+    display_generator_metrics(usage_data)
+    if any(usage_data):
+        st.subheader("🤖 Usage by generator")
+        display_generator_by_generator(usage_data)
 
 
 def display_use_cases_usage():
-    usage_data = read_usage_data(".codeas/use_cases_usage.json")
+    usage_data = read_usage_data(".codeas/usage.json")
     display_documentation_usage(usage_data)
     display_deployment_usage(usage_data)
     display_testing_usage(usage_data)
@@ -232,6 +274,8 @@ def usage_page():
     st.subheader("🔍 Usage")
     with st.expander("Chat", icon="💬", expanded=True):
         display_chat_usage()
+    with st.expander("Prompt generator", icon="📝", expanded=True):
+        display_prompt_generator_usage()
     with st.expander("Use cases", icon="🤖", expanded=True):
         display_use_cases_usage()
 

@@ -4,7 +4,8 @@ import streamlit as st
 import streamlit_nested_layout  # noqa
 
 from codeas.configs import prompts
-from codeas.core.clients import LLMClients
+from codeas.core.clients import MODELS, LLMClients
+from codeas.core.usage_tracker import usage_tracker
 from codeas.ui.utils import read_prompts
 
 PROMPT_TYPES = [
@@ -24,14 +25,14 @@ ICONS = {
 
 
 def page():
-    display_prompt_builder()
+    display_prompt_generator()
     display_add_manually()
     display_saved_prompts()
 
 
 def display_saved_prompts():
     prompts = read_prompts()
-    st.subheader("📝 Saved Prompts")
+    st.subheader("📝 Prompts")
     if prompts:
         for prompt_name, prompt in prompts.items():
             display_saved_prompt(prompt_name, prompt)
@@ -88,21 +89,37 @@ def display_modify_prompt(prompt_name, prompt_to_modify):
             placeholder="How would you like to modify the prompt?",
             key=f"modify_{prompt_name}",
         )
+        st.selectbox(
+            "Model",
+            options=MODELS.keys(),
+            index=4,
+            key=f"modify_model_{prompt_name}",
+            disabled=True,
+        )
         if st.button(
             "Run", key=f"run_{prompt_name}", disabled=modify_instructions == ""
         ):
             with st.spinner("Modifying prompt..."):
-                llm_client = LLMClients(model="claude-3-5-sonnet")
+                llm_client = LLMClients(model=st.session_state.modify_model)
                 messages = [{"role": "user", "content": prompts.meta_prompt_modify}]
                 messages.append({"role": "assistant", "content": prompt_to_modify})
                 messages.append({"role": "user", "content": modify_instructions})
                 response = llm_client.run(messages)
+                cost = llm_client.calculate_cost(messages, response.content[0].text)
+                usage_tracker.log_prompt_generator(
+                    st.session_state.modify_model,
+                    prompt_to_modify,
+                    cost,
+                    "meta_prompt_modify",
+                    "Modify",
+                )
                 st.text_area(
                     "Modified Prompt",
                     value=response.content[0].text,
                     height=200,
                     key="modified_prompt",
                 )
+                st.write(f"💰 ${cost['total_cost']:.4f}")
 
 
 def save_existing_prompt(existing_name, new_name, new_prompt):
@@ -125,10 +142,8 @@ def delete_saved_prompt(prompt_name):
     st.rerun()
 
 
-def display_prompt_builder():
-    st.subheader("🔨 Prompt-Builder")
-
-    with st.expander("BUILDER", icon="🤖", expanded=True):
+def display_prompt_generator():
+    with st.expander("PROMPT GENERATOR", icon="🤖", expanded=True):
         display_prompt_name()
         st.text_area(
             "Instructions",
@@ -138,11 +153,23 @@ def display_prompt_builder():
         )
         display_generators()
 
+        # Add model selection
+        col1, _ = st.columns([1, 2])
+        with col1:
+            st.selectbox(
+                "Model",
+                options=MODELS.keys(),
+                index=4,
+                key="prompt_generation_model",
+                disabled=True,
+            )
+
         # Check if all fields are filled and at least one generator is selected
         all_fields_filled = (
             st.session_state.prompt_name
             and st.session_state.prompt_type
             and st.session_state.instructions
+            and st.session_state.prompt_generation_model
         )
         any_generator_selected = (
             st.session_state.standard_generator
@@ -252,13 +279,13 @@ def delete_prompt(generator):
 def generate_prompts():
     if st.session_state.standard_generator:
         with st.spinner("Running Standard Generator..."):
-            response = generate_prompt(prompts.meta_prompt_basic)
+            response = generate_prompt(prompts.meta_prompt_basic, "standard")
             st.session_state.standard_prompt = response.content[0].text
         display_generated_prompt("standard", st.session_state.standard_prompt, False)
 
     if st.session_state.advanced_generator:
         with st.spinner("Running Advanced Generator..."):
-            response = generate_prompt(prompts.meta_prompt_advanced)
+            response = generate_prompt(prompts.meta_prompt_advanced, "advanced")
             st.session_state.advanced_prompt = parse_markup(
                 response.content[0].text, "prompt"
             )
@@ -266,7 +293,9 @@ def generate_prompts():
 
     if st.session_state.chain_of_thought_generator:
         with st.spinner("Running Chain-of-Thought..."):
-            response = generate_prompt(prompts.meta_prompt_chain_of_thought)
+            response = generate_prompt(
+                prompts.meta_prompt_chain_of_thought, "chain_of_thought"
+            )
             st.session_state.chain_of_thought_prompt = parse_markup(
                 response.content[0].text, "Instructions"
             )
@@ -277,16 +306,25 @@ def generate_prompts():
 
 
 def parse_markup(completion: str, tag_name: str):
-    return completion.split(f"<{tag_name}>")[1].split(f"</{tag_name}")[0]
+    return completion.split(f"<{tag_name}>")[1].split(f"</{tag_name}")[0].strip()
 
 
-def generate_prompt(generator_prompt: str):
-    llm_client = LLMClients(model="claude-3-5-sonnet")
+def generate_prompt(generator_prompt: str, generator: str):
+    llm_client = LLMClients(model=st.session_state.prompt_generation_model)
     messages = [{"role": "user", "content": generator_prompt}]
     messages.append(
         {"role": "user", "content": f"<Task>{st.session_state.instructions}</Task>"}
     )
-    return llm_client.run(messages)
+    response = llm_client.run(messages)
+    cost = llm_client.calculate_cost(messages, response.content[0].text)
+    usage_tracker.log_prompt_generator(
+        st.session_state.prompt_generation_model,
+        st.session_state.instructions,
+        cost,
+        generator,
+        "Generate",
+    )
+    return response
 
 
 page()

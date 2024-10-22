@@ -1,7 +1,4 @@
-import datetime
-import json
 import uuid
-from pathlib import Path
 
 import streamlit as st
 import streamlit_nested_layout  # noqa
@@ -9,6 +6,7 @@ import streamlit_nested_layout  # noqa
 from codeas.core.clients import MODELS, LLMClients
 from codeas.core.retriever import ContextRetriever
 from codeas.core.state import state
+from codeas.core.usage_tracker import usage_tracker
 from codeas.ui.components import metadata_ui, repo_ui
 from codeas.ui.utils import read_prompts
 
@@ -134,10 +132,11 @@ def display_chat_history():
                 icon="🤖",
             ):
                 if entry.get("content") is None:
-                    content, cost = run_agent(entry["model"])
-                    st.write(f"💲 **COST**: ${cost['total_cost']:.4f}")
-                    st.session_state.chat_history[i]["content"] = content
-                    st.session_state.chat_history[i]["cost"] = cost
+                    with st.spinner("Running agent..."):
+                        content, cost = run_agent(entry["model"])
+                        st.write(f"💰 ${cost['total_cost']:.4f}")
+                        st.session_state.chat_history[i]["content"] = content
+                        st.session_state.chat_history[i]["cost"] = cost
                 else:
                     st.write(entry["content"])
                     st.write(f"**Cost**: ${entry['cost']['total_cost']:.4f}")
@@ -310,7 +309,7 @@ def handle_preview_button():
                         llm_client = LLMClients(model=model)
                         cost = llm_client.calculate_cost(messages)
                         st.write(
-                            f"💲 **INPUT COST**: ${cost['input_cost']:.4f} ({cost['input_tokens']:,} input tokens)"
+                            f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
                         )
 
 
@@ -361,10 +360,8 @@ def log_agent_execution(model, messages, cost):
     # Get or create a conversation ID
     if "conversation_id" not in st.session_state:
         st.session_state.conversation_id = str(uuid.uuid4())
-
     # Get the content of the last message
     prompt = messages[-1]["content"] if messages else ""
-
     # Get template information
     selected_templates = [
         st.session_state.get(f"template{i}")
@@ -373,33 +370,18 @@ def log_agent_execution(model, messages, cost):
     ]
     using_template = any(selected_templates)
     using_multiple_templates = len(selected_templates) > 1
-
     # Check if multiple models are being used
     using_multiple_models = len(get_selected_models()) > 1
-
-    # Log the agent execution
-    log_entry = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "conversation_id": st.session_state.conversation_id,
-        "model": model,
-        "prompt": prompt,
-        "cost": cost,
-        "using_template": using_template,
-        "using_multiple_templates": using_multiple_templates,
-        "using_multiple_models": using_multiple_models,
-    }
-
-    log_file = Path(".codeas/agent_executions.json")
-
-    if log_file.exists():
-        with open(log_file, "r+") as f:
-            data = json.load(f)
-            data.append(log_entry)
-            f.seek(0)
-            json.dump(data, f, indent=2)
-    else:
-        with open(log_file, "w") as f:
-            json.dump([log_entry], f, indent=2)
+    # Log the agent execution using the UsageTracker
+    usage_tracker.log_agent_execution(
+        model=model,
+        prompt=prompt,
+        cost=cost,
+        conversation_id=st.session_state.conversation_id,
+        using_template=using_template,
+        using_multiple_templates=using_multiple_templates,
+        using_multiple_models=using_multiple_models,
+    )
 
 
 chat()
