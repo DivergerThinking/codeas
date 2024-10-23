@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import streamlit_nested_layout  # noqa
 
 from codeas.core.usage_tracker import usage_tracker
 
