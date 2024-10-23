@@ -17,7 +17,11 @@ def display():
     ]
     if len(files_missing_metadata) > 0:
         st.warning(f"{len(files_missing_metadata)} files are missing metadata")
-        st.json(files_missing_metadata, expanded=False)
+        st.dataframe(
+            {"Missing metadata": files_missing_metadata},
+            use_container_width=True,
+            height=300,
+        )
         display_generate_missing_metadata(files_missing_metadata)
     return files_missing_metadata
     # n_files_with_metadata = len(files_with_metadata)

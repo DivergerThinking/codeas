@@ -155,7 +155,7 @@ class ContextRetriever(BaseModel):
                 total_tokens += tokencost.count_string_tokens(details_str, "gpt-4o")
         else:
             # otherwise, return the full files number of tokens
-            state.repo.files_tokens[file_path]
+            total_tokens = state.repo.files_tokens[file_path]
 
         return total_tokens
 

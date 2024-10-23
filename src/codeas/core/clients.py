@@ -66,9 +66,10 @@ class LLMClients(BaseModel):
 
     def _run_openai(self, messages: list):
         client = openai.OpenAI()
-        return client.chat.completions.create(
+        response = client.chat.completions.create(
             model=self.model, messages=messages, stream=False
         )
+        return response.choices[0].message.content
 
     def _stream_openai(self, messages: list):
         client = openai.OpenAI()

@@ -1,10 +1,14 @@
 import json
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import Dict
+
+USAGE_PATH = str(Path.home() / "codeas" / "usage.json")
 
 
 class UsageTracker:
-    def __init__(self, file_path: str = ".codeas/usage.json"):
+    def __init__(self, file_path: str = USAGE_PATH):
         self.file_path = file_path
         self.usage_data = self.load_data()
 
@@ -21,6 +25,8 @@ class UsageTracker:
             return {"chat": [], "generator": []}
 
     def save_data(self):
+        if not os.path.exists(self.file_path):
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         with open(self.file_path, "w") as f:
             json.dump(self.usage_data, f, indent=2)
 

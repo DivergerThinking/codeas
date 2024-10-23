@@ -1,12 +1,15 @@
-import json
-
 import streamlit as st
 import streamlit_nested_layout  # noqa
 
 from codeas.configs import prompts
 from codeas.core.clients import MODELS, LLMClients
 from codeas.core.usage_tracker import usage_tracker
-from codeas.ui.utils import read_prompts
+from codeas.ui.utils import (
+    delete_saved_prompt,
+    read_prompts,
+    save_existing_prompt,
+    save_prompt,
+)
 
 PROMPT_TYPES = [
     "📚 DOCUMENTATION",
@@ -59,6 +62,8 @@ def display_add_manually():
             ):
                 prompt_name = f"[{st.session_state.get('manual_prompt_type')}] {st.session_state.get('manual_prompt_name')}"
                 save_prompt(prompt_name, st.session_state.manual_prompt)
+                st.success("Prompt Saved")
+
             else:
                 st.warning("Please fill in all fields before saving.")
 
@@ -77,8 +82,12 @@ def display_saved_prompt(prompt_name, prompt):
             if st.session_state.get("modified_prompt"):
                 del st.session_state["modified_prompt"]
             save_existing_prompt(prompt_name, input_name, input_prompt)
+            st.info("Changes saved")
+            if st.button("Reload"):
+                st.rerun()
         if st.button("Delete", icon="🗑️", type="primary", key=f"delete_{prompt_name}"):
             delete_saved_prompt(prompt_name)
+            st.rerun()
 
 
 def display_modify_prompt(prompt_name, prompt_to_modify):
@@ -100,17 +109,19 @@ def display_modify_prompt(prompt_name, prompt_to_modify):
             "Run", key=f"run_{prompt_name}", disabled=modify_instructions == ""
         ):
             with st.spinner("Modifying prompt..."):
-                llm_client = LLMClients(model=st.session_state.modify_model)
+                llm_client = LLMClients(
+                    model=st.session_state.get(f"modify_model_{prompt_name}")
+                )
                 messages = [{"role": "user", "content": prompts.meta_prompt_modify}]
                 messages.append({"role": "assistant", "content": prompt_to_modify})
                 messages.append({"role": "user", "content": modify_instructions})
                 response = llm_client.run(messages)
                 cost = llm_client.calculate_cost(messages, response.content[0].text)
                 usage_tracker.log_prompt_generator(
-                    st.session_state.modify_model,
+                    st.session_state.get(f"modify_model_{prompt_name}"),
                     prompt_to_modify,
                     cost,
-                    "meta_prompt_modify",
+                    "prompt_modifications",
                     "Modify",
                 )
                 st.text_area(
@@ -120,26 +131,6 @@ def display_modify_prompt(prompt_name, prompt_to_modify):
                     key="modified_prompt",
                 )
                 st.write(f"💰 ${cost['total_cost']:.4f}")
-
-
-def save_existing_prompt(existing_name, new_name, new_prompt):
-    prompts = read_prompts()
-    prompts[new_name] = new_prompt
-    if existing_name != new_name:
-        del prompts[existing_name]
-    with open(".codeas/prompts.json", "w") as f:
-        json.dump(prompts, f)
-    st.info("Changes saved")
-    if st.button("Reload"):
-        st.rerun()
-
-
-def delete_saved_prompt(prompt_name):
-    prompts = read_prompts()
-    del prompts[prompt_name]
-    with open(".codeas/prompts.json", "w") as f:
-        json.dump(prompts, f)
-    st.rerun()
 
 
 def display_prompt_generator():
@@ -237,38 +228,6 @@ def display_generated_prompt(generator, prompt, enable_actions):
             disabled=not enable_actions,
         ):
             delete_prompt(generator)
-
-
-def save_prompt(name, prompt, path=".codeas/prompts.json"):
-    prompts = read_prompts(path)
-    name_version_map = extract_name_version(prompts.keys())
-
-    full_name = f"{name}"
-    if full_name in name_version_map.keys():
-        full_name = f"{full_name} v.{name_version_map[full_name] + 1}"
-
-    prompts[full_name] = prompt.strip()
-    with open(path, "w") as f:
-        json.dump(prompts, f)
-    st.success("Prompt Saved")
-
-
-def extract_name_version(existing_names):
-    # names can be like {name} or {name} v.1 or {name} v.2 etc.
-    name_version_map = {}
-    for full_name in existing_names:
-        if " v." in full_name:
-            name, version = full_name.rsplit(" v.", 1)
-            version = int(version)
-        else:
-            name = full_name
-            version = 1
-
-        if name in name_version_map:
-            name_version_map[name] = max(name_version_map[name], version)
-        else:
-            name_version_map[name] = version
-    return name_version_map
 
 
 def delete_prompt(generator):

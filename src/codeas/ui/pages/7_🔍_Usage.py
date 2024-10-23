@@ -4,6 +4,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from codeas.core.usage_tracker import usage_tracker
+
 
 def read_usage_data(file_path: str):
     log_file = Path(file_path)
@@ -150,7 +152,7 @@ def display_usage_by_model(model_df):
 
 
 def display_chat_usage():
-    usage_data = read_usage_data(".codeas/usage.json").get("chat", [])
+    usage_data = usage_tracker.load_data().get("chat", [])
 
     display_usage_metrics(usage_data)
     if any(usage_data):
@@ -164,7 +166,7 @@ def display_chat_usage():
 
 
 def display_prompt_generator_usage():
-    usage_data = read_usage_data(".codeas/usage.json").get("generator", [])
+    usage_data = usage_tracker.load_data().get("generator", [])
     display_generator_metrics(usage_data)
     if any(usage_data):
         st.subheader("🤖 Usage by generator")
@@ -172,7 +174,7 @@ def display_prompt_generator_usage():
 
 
 def display_use_cases_usage():
-    usage_data = read_usage_data(".codeas/usage.json")
+    usage_data = usage_tracker.load_data()
     display_documentation_usage(usage_data)
     display_deployment_usage(usage_data)
     display_testing_usage(usage_data)

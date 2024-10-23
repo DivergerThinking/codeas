@@ -2,6 +2,7 @@ import uuid
 
 import streamlit as st
 import streamlit_nested_layout  # noqa
+import tokencost
 
 from codeas.core.clients import MODELS, LLMClients
 from codeas.core.retriever import ContextRetriever
@@ -48,13 +49,13 @@ def display_config_section():
         repo_ui.display_filters()
         display_file_options()
 
+        retriever = ContextRetriever(**get_retriever_args())
         if (
             st.session_state.get("file_types") != "All files"
             or st.session_state.get("content_types") != "Full content"
         ):
             files_missing_metadata = metadata_ui.display()
             if not any(files_missing_metadata):
-                retriever = ContextRetriever(**get_retriever_args())
                 files_metadata = retriever.retrieve_files_data(
                     files_paths=state.repo.included_files_paths,
                     metadata=state.repo_metadata,
@@ -84,7 +85,8 @@ def display_config_section():
                 )
                 st.text_area("Context", context, height=300)
 
-    st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
+    if not any(files_missing_metadata):
+        st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
 
 
 def display_file_options():
@@ -348,7 +350,20 @@ def handle_preview_button():
 def run_agent(model):
     llm_client = LLMClients(model=model)
     messages = get_history_messages(model)
-    completion = st.write_stream(llm_client.stream(messages))
+    if model == "claude-3-5-sonnet" or model == "claude-3-haiku":
+        if (
+            tokencost.count_string_tokens(llm_client.extract_strings(messages), model)
+            > 10000
+        ):
+            st.warning(
+                "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors."
+            )
+    if model == "o1-preview" or model == "o1-mini":
+        st.caption("Streaming is not supported for o1 models.")
+        completion = llm_client.run(messages)
+        st.markdown(completion)
+    else:
+        completion = st.write_stream(llm_client.stream(messages))
     cost = llm_client.calculate_cost(messages, completion)
     log_agent_execution(model, messages, cost)
     return completion, cost

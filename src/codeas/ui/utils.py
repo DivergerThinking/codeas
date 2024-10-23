@@ -5,17 +5,66 @@ from pathlib import Path
 
 from diff_match_patch import diff_match_patch
 
+PROMPTS_PATH = str(Path.home() / "codeas" / "prompts.json")
+
 
 class SearchTextNotUnique(ValueError):
     pass
 
 
-def read_prompts(path=".codeas/prompts.json"):
-    if os.path.exists(path):
-        with open(path, "r") as f:
+def read_prompts():
+    if os.path.exists(PROMPTS_PATH):
+        with open(PROMPTS_PATH, "r") as f:
             return json.load(f)
     else:
         return {}
+
+
+def save_existing_prompt(existing_name, new_name, new_prompt):
+    prompts = read_prompts()
+    prompts[new_name] = new_prompt
+    if existing_name != new_name:
+        del prompts[existing_name]
+    with open(PROMPTS_PATH, "w") as f:
+        json.dump(prompts, f)
+
+
+def delete_saved_prompt(prompt_name):
+    prompts = read_prompts()
+    del prompts[prompt_name]
+    with open(PROMPTS_PATH, "w") as f:
+        json.dump(prompts, f)
+
+
+def save_prompt(name, prompt):
+    prompts = read_prompts()
+    name_version_map = extract_name_version(prompts.keys())
+
+    full_name = f"{name}"
+    if full_name in name_version_map.keys():
+        full_name = f"{full_name} v.{name_version_map[full_name] + 1}"
+
+    prompts[full_name] = prompt.strip()
+    with open(PROMPTS_PATH, "w") as f:
+        json.dump(prompts, f)
+
+
+def extract_name_version(existing_names):
+    # names can be like {name} or {name} v.1 or {name} v.2 etc.
+    name_version_map = {}
+    for full_name in existing_names:
+        if " v." in full_name:
+            name, version = full_name.rsplit(" v.", 1)
+            version = int(version)
+        else:
+            name = full_name
+            version = 1
+
+        if name in name_version_map:
+            name_version_map[name] = max(name_version_map[name], version)
+        else:
+            name_version_map[name] = version
+    return name_version_map
 
 
 def apply_diffs(file_content, diff_content):
