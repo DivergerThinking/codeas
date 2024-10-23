@@ -173,7 +173,7 @@ def display_chat_history():
                         st.session_state.chat_history[i]["cost"] = cost
                 else:
                     st.write(entry["content"])
-                    st.write(f"**Cost**: ${entry['cost']['total_cost']:.4f}")
+                    st.write(f"💰 ${entry['cost']['total_cost']:.4f}")
 
 
 def display_user_input():
@@ -191,7 +191,7 @@ def display_user_input():
 def display_template_options():
     prompt_options = [""] + list(read_prompts().keys())
 
-    col1, col2, col3 = st.columns(3)
+    col1, _ = st.columns(2)
     with col1:
         st.selectbox(
             "Template",
@@ -200,29 +200,29 @@ def display_template_options():
             index=0 if st.session_state.input_reset else None,
         )
 
-    remaining_options = [
-        opt for opt in prompt_options if opt != st.session_state.template1
-    ]
-    with col2:
-        st.selectbox(
-            "Template 2",
-            options=remaining_options,
-            key="template2",
-            index=0 if st.session_state.input_reset else None,
-            disabled=not st.session_state.template1,
-        )
+    # remaining_options = [
+    #     opt for opt in prompt_options if opt != st.session_state.template1
+    # ]
+    # with col2:
+    #     st.selectbox(
+    #         "Template 2",
+    #         options=remaining_options,
+    #         key="template2",
+    #         index=0 if st.session_state.input_reset else None,
+    #         disabled=not st.session_state.template1,
+    #     )
 
-    final_options = [
-        opt for opt in remaining_options if opt != st.session_state.template2
-    ]
-    with col3:
-        st.selectbox(
-            "Template 3",
-            options=final_options,
-            key="template3",
-            index=0 if st.session_state.input_reset else None,
-            disabled=not st.session_state.template2,
-        )
+    # final_options = [
+    #     opt for opt in remaining_options if opt != st.session_state.template2
+    # ]
+    # with col3:
+    #     st.selectbox(
+    #         "Template 3",
+    #         options=final_options,
+    #         key="template3",
+    #         index=0 if st.session_state.input_reset else None,
+    #         disabled=not st.session_state.template2,
+    #     )
 
 
 def display_input_areas():
