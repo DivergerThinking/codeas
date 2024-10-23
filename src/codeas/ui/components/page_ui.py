@@ -27,11 +27,10 @@ def display(
     st.subheader(pages[name]["name"])
     state.update_current_page(name)
     repo_ui.display_repo_path()
-    with st.expander("CONTEXT", icon="⚙️", expanded=False):
+    with st.expander("CONTEXT", icon="⚙️", expanded=True):
         repo_ui.display_filters()
         num_selected_files, _, selected_tokens = repo_ui.get_selected_files_info()
         st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
         repo_ui.display_files_editor()
-        # repo_ui.display_files()
         metadata_ui.display()
     pages[name]["ui"].display()
