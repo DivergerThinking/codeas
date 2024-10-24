@@ -20,14 +20,19 @@ This demo showcases the main features of codeas, allowing you to explore its cap
 ```bash
 pip install codeas
 ```
+**NOTE**: use python version 3.9, 3.10 or 3.11 (3.12 currently not supported)
+We recommend using anaconda 
 
-#### OpenAI key
-Currently, the tool only supports OpenAI as a provider.
-To add your OpenAI key, export it as an environment variable via the terminal:
+#### API keys
+Currently, the tool support OpenAI, Anthropic and Google Gemini.
+You can add the corresponding API keys using environment variables as such:
 
 ```bash
 export OPENAI_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+export GOOGLE_API_KEY="..."
 ```
+or you can add them in the corresponding text inputs found in the Home page of the user interface.
 
 ## 💻 Usage
 
@@ -51,10 +56,10 @@ Each feature provides options to:
 - Viewing each generation step and selecting only the relevant sections 
 - Applying generated changes to your codebase
 
-The interface also allows you to:
-- Select specific files or directories to include in the analysis
-- View and manage metadata for your codebase
-- Monitor token usage and costs for AI operations
+The user interface also includes:
+- **Chat interface**: Engage in conversations with AI models about your codebase, leveraging the context of your project for more accurate and relevant responses.
+- **Prompts management**: Create, edit, and manage custom prompts for various software development tasks, enhancing the efficiency of your interactions with the AI.
+- **Usage tracking**: Monitor your usage of the tool, including costs, number of requests, and breakdowns by different features and models.
 
 To get started, simply navigate through the different pages in the sidebar and follow the on-screen instructions for each feature.
 

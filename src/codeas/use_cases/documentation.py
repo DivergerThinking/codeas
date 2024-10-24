@@ -4,6 +4,7 @@ from codeas.core.llm import LLMClient
 from codeas.core.metadata import RepoMetadata
 from codeas.core.repo import Repo
 from codeas.core.retriever import ContextRetriever
+from codeas.core.usage_tracker import usage_tracker
 
 DOCS_MODEL = "gpt-4o"
 SECTION_CONFIG = {
@@ -74,7 +75,9 @@ def generate_docs_section(
     if preview:
         return agent.preview(context=context)
     else:
-        return agent.run(llm_client, context=context)
+        result = agent.run(llm_client, context=context)
+        usage_tracker.record_usage(f"generate_{section}", result.cost["total_cost"])
+        return result
 
 
 if __name__ == "__main__":

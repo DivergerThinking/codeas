@@ -2,6 +2,7 @@ from codeas.configs import prompts
 from codeas.core.agent import Agent
 from codeas.core.retriever import ContextRetriever
 from codeas.core.state import state
+from codeas.core.usage_tracker import usage_tracker
 
 
 def define_deployment(preview: bool = False) -> str:
@@ -19,7 +20,9 @@ def define_deployment(preview: bool = False) -> str:
     if preview:
         return agent.preview(context=context)
     else:
-        return agent.run(state.llm_client, context=context)
+        result = agent.run(state.llm_client, context=context)
+        usage_tracker.record_usage("define_deployment", result.cost["total_cost"])
+        return result
 
 
 def generate_deployment(deployment_strategy: str, preview: bool = False) -> str:
@@ -39,4 +42,6 @@ def generate_deployment(deployment_strategy: str, preview: bool = False) -> str:
     if preview:
         return agent.preview(context=context)
     else:
-        return agent.run(state.llm_client, context=context)
+        result = agent.run(state.llm_client, context=context)
+        usage_tracker.record_usage("generate_deployment", result.cost["total_cost"])
+        return result

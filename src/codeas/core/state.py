@@ -93,16 +93,14 @@ class State(BaseModel, arbitrary_types_allowed=True, extra="forbid"):
         page_filters_dict = {
             name: state.model_dump() for name, state in self.page_filters.items()
         }
-        page_filters_dir = os.path.join(self.repo_path, ".codeas", "page_filters")
+        page_filters_dir = os.path.join(self.repo_path, ".codeas")
         os.makedirs(page_filters_dir, exist_ok=True)
         with open(os.path.join(page_filters_dir, "filters.json"), "w") as f:
             json.dump(page_filters_dict, f)
 
     def load_page_filters(self):
         try:
-            page_filters_path = os.path.join(
-                self.repo_path, ".codeas", "page_filters", "filters.json"
-            )
+            page_filters_path = os.path.join(self.repo_path, ".codeas", "filters.json")
             with open(page_filters_path, "r") as f:
                 page_filters_dict = json.load(f)
             self.page_filters = {

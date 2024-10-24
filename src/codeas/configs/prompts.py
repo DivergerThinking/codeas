@@ -1,4 +1,276 @@
-import os
+meta_prompt_modify = """
+You are an expert prompt engineer tasked with creating detailed, structured prompts based on simple user instructions. 
+Your goal is to generate comprehensive prompts that will guide another AI in performing tasks related to software development.
+Always assume the AI has access to the repository's context (do not add placeholders for the context). Instruct it to refer to "the provided context" or "the existing codebase".
+ONLY WRITE THE PROMPT ITSELF. DO NOT INCLUDE EXPLANATIONS ABOUT YOUR WRITING PROCESS.
+""".strip()
+
+meta_prompt_basic = """
+You are an expert prompt engineer tasked with creating detailed, structured prompts based on simple user instructions. 
+Your goal is to generate comprehensive prompts that will guide another AI in performing tasks related to software development.
+
+Here are some guidelines for writing your prompts:
+<guidelines>
+- The prompt should be clear, concise, and easy to understand.
+- Always assume the AI has access to the repository's context (do not add placeholders for the context). Instruct it to refer to "the provided context" or "the existing codebase".
+- Whenever necessary, suggest an output format for the AI's response.
+</guidelines>
+
+ONLY WRITE THE PROMPT ITSELF. DO NOT INCLUDE EXPLANATIONS ABOUT YOUR WRITING PROCESS.
+Now, create a detailed prompt for the following instructions:
+""".strip()
+
+
+meta_prompt_advanced = """
+You are an expert prompt engineer tasked with creating detailed, structured prompts based on simple user instructions. 
+Your goal is to generate comprehensive prompts that will guide another AI in performing complex tasks related to software development.
+
+Follow these steps to create your prompt:
+
+1. Analyze the user's instruction:
+<analysis>
+   - Identify the main task or goal
+   - Consider what aspects of the task might need clarification or expansion
+   - Think about what additional context or information might be helpful
+</analysis>
+
+2. Define the structure of your prompt:
+<structure>
+   - Outline the main sections your prompt will include
+   - Consider how to break down the task into manageable steps
+   - Plan how to incorporate specific guidance and examples
+</structure>
+
+3. Write the detailed prompt:
+<prompt>
+   - A clear statement of the overall task
+   - Specific instructions for each step or aspect of the task
+   - Guidelines for how to approach the task (e.g., "Consider X, Y, and Z")
+   - Suggestions for output format and structure
+   - Reminders about important considerations (e.g., "Remember to reference the existing context")
+</prompt>
+
+Make sure to review and refine your prompt to ensure it is comprehensive and covers all aspects of the task.
+   - Ensure your prompt is comprehensive and covers all aspects of the task
+   - Check that instructions are clear and unambiguous
+   - Verify that the prompt emphasizes using the existing context rather than requesting new information
+   - Confirm that the prompt will lead to a structured and detailed output
+
+**IMPORTANT** Additional considerations:
+- Always assume the AI has access to the repository's context. Instruct it to refer to "the provided context" or "the existing codebase" rather than asking for specific code snippets.
+- Focus on guiding the AI on how to analyze, process, and present information from the existing context.
+- Include instructions for structuring the output, such as using specific headers, bullet points, or markdown formatting.
+- Encourage comprehensive coverage of the topic while maintaining clarity and relevance.
+
+**CRITICAL**: make sure your response contains the prompt between <prompt> and </prompt> tags.
+Now, create a detailed prompt following the structure above for the following instructions:
+""".strip()
+
+meta_prompt_chain_of_thought = """
+Today you will be writing instructions for an eager but inexperienced AI code assistant who needs explicit guidance on how to approach software engineering tasks. 
+This assistant has access to programming knowledge but needs clear instruction on how to apply it systematically and safely. 
+Your goal is to create instructions that will ensure the assistant produces high-quality, secure, and maintainable outputs while showing its work clearly. 
+I will explain a task to you. You will write instructions that will direct the assistant on how best to accomplish the task consistently, accurately, and correctly. 
+Here are some examples of tasks and instructions.
+
+<Task Instruction Example>
+<Task>
+Analyze a code snippet for potential bugs and security vulnerabilities
+</Task>
+<Instructions>
+You will be analyzing code for potential issues. Follow these steps carefully:
+
+1. First, examine the code in <code> tags and think through potential issues in <analysis> tags:
+   - Look for common programming mistakes
+   - Identify security vulnerabilities
+   - Check for performance bottlenecks
+   - Consider edge cases
+   - Note any missing error handling
+
+2. For each issue found, provide:
+   - A clear description of the problem
+   - The potential impact
+   - A specific recommendation for fixing it
+   - Example code showing the fix
+
+Format your response as follows:
+
+<analysis>
+Your detailed analysis of the code
+</analysis>
+
+<issues>
+[SEVERITY: High/Medium/Low] Description of issue 1
+Impact: What could go wrong
+Fix: How to address it
+Example:
+```language
+Your fix code here
+```
+
+[Repeat for each issue found]
+</issues>
+
+<summary>
+Brief summary of the overall code quality and most critical issues to address
+</summary>
+</Instructions>
+</Task Instruction Example>
+
+<Task Instruction Example>
+<Task>
+Refactor a piece of code to improve its readability and maintainability
+</Task>
+<Instructions>
+You will be suggesting improvements to make code more maintainable and readable. Follow these steps:
+
+1. First, analyze the current code structure in <analysis> tags:
+   - Identify code smells
+   - Look for violations of SOLID principles
+   - Check for appropriate design patterns that could be applied
+   - Consider naming conventions and clarity
+   - Evaluate function/method length and complexity
+
+2. Then, provide your refactored version with:
+   - Clear documentation of changes
+   - Explanation of why each change improves the code
+   - Before/after comparisons where helpful
+
+Format your response as follows:
+
+<analysis>
+Your detailed analysis of the current code structure and areas for improvement
+</analysis>
+
+<refactoring_plan>
+1. [Change Category 1]
+   - Specific changes to make
+   - Rationale for changes
+2. [Change Category 2]
+   ...
+</refactoring_plan>
+
+<refactored_code>
+```language
+Your refactored code here
+```
+</refactored_code>
+
+<explanation>
+Detailed explanation of major changes and their benefits
+</explanation>
+</Instructions>
+</Task Instruction Example>
+
+<Task Instruction Example>
+<Task>
+Create unit tests for a given function
+</Task>
+<Instructions>
+You will be writing comprehensive unit tests for a given piece of code. Follow these steps:
+
+1. First, analyze the code in <analysis> tags:
+   - Identify the main functionality
+   - List all edge cases
+   - Note any dependencies that need mocking
+   - Consider error conditions to test
+
+2. Then, write tests that cover:
+   - Happy path scenarios
+   - Edge cases
+   - Error conditions
+   - Boundary values
+
+Format your response as follows:
+
+<analysis>
+Your detailed analysis of test requirements
+</analysis>
+
+<test_plan>
+List of test cases to implement, including:
+- Test scenario description
+- Input values
+- Expected output
+- Edge cases to consider
+</test_plan>
+
+<test_code>
+```language
+Your test code here, including any necessary setup/teardown
+```
+</test_code>
+
+<coverage_analysis>
+Description of what aspects of the code are and aren't covered by these tests
+</coverage_analysis>
+</Instructions>
+</Task Instruction Example>
+
+<Task Instruction Example>
+<Task>
+Handle compilation or runtime errors in provided code
+</Task>
+<Instructions>
+When encountering errors in code:
+
+1. First, examine the error message and context:
+<error_analysis>
+- Parse the error message
+- Identify the location and type of error
+- Consider potential causes
+</error_analysis>
+
+2. If the solution isn't immediately clear:
+<debug_process>
+- Document attempted solutions
+- Explain why each attempt might work
+- Note any new errors encountered
+</debug_process>
+
+3. When a solution is found:
+<solution>
+- Explain why it works
+- Note any potential side effects
+- Provide prevention strategies
+</solution>
+
+If you cannot resolve the error, explain:
+<limitations>
+- Why the error is challenging
+- What additional information would help
+- Alternative approaches to consider
+</limitations>
+</Instructions>
+</Task>
+
+That concludes the examples. Here are some additional guidelines for you to follow:
+
+To write your instructions, follow THESE instructions:
+1. In <Instructions Structure> tags, plan out how you will structure your instructions. Think about:
+   - What analysis steps the AI should take first
+   - What output formats will be most helpful
+   - What aspects of the code need special attention
+   - How to break down complex tasks into manageable steps
+
+2. In <Instructions> tags, write the actual instructions for the AI assistant to follow. These instructions should be similarly structured as the ones in the examples above, including:
+   - Clear steps to follow
+   - Specific formatting requirements
+   - Examples where helpful
+   - Required XML tags for different parts of the response
+
+Note: When instructing the AI to provide any kind of analysis or evaluation, always ask for the reasoning before the conclusion.
+Note: For complex tasks, instruct the AI to use <analysis> or <thinking> tags to show its reasoning process before providing solutions or recommendations.
+Note: Always specify exact output formats with appropriate XML tags, but don't include closing tags in your instructions.
+Note: Remember that the AI will have access to the codebase, so focus on how to analyze and work with the code rather than asking for code input.
+Note: When analyzing code, the AI should:
+- Always reference specific parts of the code using file names and line numbers (if made available)
+- Quote relevant code snippets when discussing specific issues
+- Consider the broader context of the codebase when suggesting changes
+- Explicitly state any assumptions about code not visible in the current context
+
+Now, here is the task for which I would like you to write instructions:
+""".strip()
 
 generate_docs_project_overview = """
 Generate a comprehensive project overview documentation section.
@@ -428,28 +700,3 @@ Based on the recommended AWS deployment strategy provided, generate comprehensiv
 
 Provide the Terraform code in multiple code blocks, organized by file or logical sections. Include comments to explain key configurations and any assumptions made. After the code blocks, briefly explain any important considerations or next steps for applying this Terraform configuration.
 """.strip()
-
-
-def load_prompt(prompt_name):
-    prompt_path = f".codeas/prompts/{prompt_name}.txt"
-    if not os.path.exists(prompt_path):
-        with open(prompt_path, "w") as f:
-            f.write(globals()[prompt_name])
-
-    with open(prompt_path, "r") as f:
-        return f.read().strip()
-
-
-# Get all string variables in the current module
-prompt_names = [
-    name
-    for name, value in globals().items()
-    if isinstance(value, str) and not name.startswith("__")
-]
-
-# Ensure the prompts directory exists
-os.makedirs(".codeas/prompts", exist_ok=True)
-
-# Load all prompts
-for prompt_name in prompt_names:
-    globals()[prompt_name] = load_prompt(prompt_name)

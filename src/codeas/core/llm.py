@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from openai import AsyncOpenAI, OpenAI
-from tenacity import retry, stop_after_attempt
 
 from codeas.configs.llm_params import OPENAI_PARAMS  # Import the parameters
 
@@ -96,7 +95,7 @@ class LLMClient:
                 responses.extend(batch_responses)
             return dict(zip(batch_messages.keys(), responses))
 
-    @retry(stop=stop_after_attempt(3), after=log_retry)
+    # @retry(stop=stop_after_attempt(3), after=log_retry)
     async def _run_async_completions(self, client, messages, model: str, **kwargs):
         """runs completions asynchronously"""
         if kwargs.get("response_format"):

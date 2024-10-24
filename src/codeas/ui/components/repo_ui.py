@@ -16,11 +16,11 @@ def display_repo_path():
 
 
 def display_files():
+    display_filters()
     num_selected_files, total_files, selected_tokens = get_selected_files_info()
     with st.expander(
         f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
     ):
-        display_filters()
         display_files_editor()
 
 
@@ -44,7 +44,7 @@ def display_filters():
             value=page_filter.include,
             key="include_input",
             on_change=lambda: update_filter("include"),
-            placeholder="*.py, src/*, etc.",
+            placeholder="Example: *.py, src/*, etc.",
         )
     with col_exclude:
         st.text_input(
@@ -52,7 +52,7 @@ def display_filters():
             value=page_filter.exclude,
             key="exclude_input",
             on_change=lambda: update_filter("exclude"),
-            placeholder="debug/*, *.ipynb, etc.",
+            placeholder="Example: debug/*, *.ipynb, etc.",
         )
 
 
@@ -73,6 +73,22 @@ def display_files_editor():
             "Tokens": st.column_config.NumberColumn(width=5),
         },
         disabled=True,
+        height=300,
+    )
+
+
+def display_metadata_editor(files_metadata):
+    sort_files_metadata(files_metadata)
+    st.data_editor(
+        files_metadata,
+        use_container_width=True,
+        column_config={
+            "Incl.": st.column_config.CheckboxColumn(width=5),
+            "Path": st.column_config.TextColumn(width="large"),
+            "Tokens": st.column_config.NumberColumn(width=5),
+        },
+        disabled=True,
+        height=300,
     )
 
 
@@ -89,4 +105,20 @@ def sort_files_data():
         state.files_data["Incl."],
         state.files_data["Path"],
         state.files_data["Tokens"],
+    ) = zip(*sorted_data)
+
+
+def sort_files_metadata(files_metadata):
+    sorted_data = sorted(
+        zip(
+            files_metadata["Incl."],
+            files_metadata["Path"],
+            files_metadata["Tokens"],
+        ),
+        key=lambda x: (not x[0], x[1]),
+    )
+    (
+        files_metadata["Incl."],
+        files_metadata["Path"],
+        files_metadata["Tokens"],
     ) = zip(*sorted_data)

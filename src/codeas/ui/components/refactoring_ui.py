@@ -59,9 +59,9 @@ def display():
                         },
                     )
                 except FileNotFoundError:
-                    st.warning(
-                        "No previous output found for refactoring groups. Running generation..."
-                    )
+                    # st.warning(
+                    #     "No previous output found for refactoring groups. Running generation..."
+                    # )
                     st.session_state.outputs[
                         "refactoring_groups"
                     ] = define_refactoring_files()
@@ -311,9 +311,9 @@ def display_apply_changes():
                         },
                     )
                 except FileNotFoundError:
-                    st.warning(
-                        "No previous output found for generated diffs. Running generation..."
-                    )
+                    # st.warning(
+                    #     "No previous output found for generated diffs. Running generation..."
+                    # )
                     st.session_state.outputs["generated_diffs"] = generate_diffs(
                         groups_changes
                     )

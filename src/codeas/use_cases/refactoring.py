@@ -4,6 +4,7 @@ from codeas.configs import prompts
 from codeas.core.agent import Agent
 from codeas.core.retriever import ContextRetriever
 from codeas.core.state import state
+from codeas.core.usage_tracker import usage_tracker
 
 
 class FileGroup(BaseModel):
@@ -31,7 +32,11 @@ def define_refactoring_files(preview: bool = False):
     if preview:
         return agent.preview(context=context)
     else:
-        return agent.run(state.llm_client, context=context)
+        result = agent.run(state.llm_client, context=context)
+        usage_tracker.record_usage(
+            "define_refactoring_files", result.cost["total_cost"]
+        )
+        return result
 
 
 class FileChanges(BaseModel):
@@ -56,7 +61,11 @@ def generate_proposed_changes(groups: RefactoringGroups, preview: bool = False):
     if preview:
         return agent.preview(context=contexts)
     else:
-        return agent.run(state.llm_client, context=contexts)
+        result = agent.run(state.llm_client, context=contexts)
+        usage_tracker.record_usage(
+            "generate_proposed_changes", result.cost["total_cost"]
+        )
+        return result
 
 
 def generate_diffs(groups_changes: list[ProposedChanges], preview: bool = False) -> str:
@@ -77,4 +86,6 @@ def generate_diffs(groups_changes: list[ProposedChanges], preview: bool = False)
     if preview:
         return agent.preview(context=contexts)
     else:
-        return agent.run(state.llm_client, context=contexts)
+        result = agent.run(state.llm_client, context=contexts)
+        usage_tracker.record_usage("generate_diffs", result.cost["total_cost"])
+        return result
