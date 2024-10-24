@@ -7,3 +7,5 @@ tokencost>=0.1.0
 streamlit-nested-layout>=0.1.0
 tenacity>=8.2.2
 diff-match-patch>=20230430
+google-generativeai>=0.8.3
+anthropic>=0.36.1
