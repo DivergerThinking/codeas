@@ -32,6 +32,7 @@ export OPENAI_API_KEY="..."
 export ANTHROPIC_API_KEY="..."
 export GOOGLE_API_KEY="..."
 ```
+or you can add them in the corresponding text inputs found in the Home page of the user interface.
 
 ## 💻 Usage
 
