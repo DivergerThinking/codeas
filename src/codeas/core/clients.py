@@ -34,7 +34,7 @@ class LLMClients(BaseModel):
     def model_post_init(self, _):
         self.provider = MODELS[self.model]
         if self.model == "claude-3-5-sonnet":
-            self.model = "claude-3-5-sonnet-20240620"
+            self.model = "claude-3-5-sonnet-20241022"
             self.max_tokens = 8192
         if self.model == "claude-3-haiku":
             self.model = "claude-3-haiku-20240307"
