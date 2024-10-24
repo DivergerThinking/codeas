@@ -23,12 +23,14 @@ pip install codeas
 **NOTE**: use python version 3.9, 3.10 or 3.11 (3.12 currently not supported)
 We recommend using anaconda 
 
-#### OpenAI key
-Currently, the tool support OpenAI, anthropic and google gemini.
-You can add the corresponding API keys using environment variables as such
+#### API keys
+Currently, the tool support OpenAI, Anthropic and Google Gemini.
+You can add the corresponding API keys using environment variables as such:
 
 ```bash
 export OPENAI_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+export GOOGLE_API_KEY="..."
 ```
 
 ## 💻 Usage
