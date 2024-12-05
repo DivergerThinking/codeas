@@ -3,7 +3,12 @@ import logging
 
 from openai import AsyncOpenAI, OpenAI
 
-from codeas.configs.llm_params import OPENAI_PARAMS  # Import the parameters
+OPENAI_PARAMS = {
+    "temperature": 0.3,
+    "top_p": 0.7,
+    "stream": True,
+    "timeout": 10,
+}
 
 
 def log_retry(retry_state):
@@ -15,7 +20,7 @@ def log_retry(retry_state):
     )
 
 
-class LLMClient:
+class LLMClientOpenai:
     batch_size: int = 100
     max_retries: int = 5
 

@@ -8,25 +8,7 @@ from tokencost import (
     count_message_tokens,
 )
 
-from codeas.core.llm import LLMClient
-
-
-class FilePathsOutput(BaseModel):
-    paths: list[str]
-
-
-class ApplicableResponse(BaseModel):
-    applicable: bool
-    response: str
-
-
-class FileDetailsOutput(BaseModel):
-    technologies_and_dependencies: ApplicableResponse
-    architectural_insights: ApplicableResponse
-    application_layer: ApplicableResponse
-    design_patterns: ApplicableResponse
-    data_models: ApplicableResponse
-    key_components: ApplicableResponse
+from codeas.core.client_azure import LLMClientAzure
 
 
 class AgentOutput(BaseModel):
@@ -43,17 +25,14 @@ class AgentPreview(BaseModel):
 
 
 class Agent(BaseModel):
-    instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
 
     def run(
         self,
-        llm_client: LLMClient,
-        context: Union[dict, list, str] = [],
+        messages: Union[list, dict],
+        llm_client: LLMClientAzure,
     ) -> AgentOutput:
-        messages = self.get_messages(context)
         response = llm_client.run(
             messages, model=self.model, response_format=self.response_format
         )
@@ -62,45 +41,9 @@ class Agent(BaseModel):
             messages=messages, response=response, tokens=tokens, cost=cost
         )
 
-    def preview(self, context: Union[dict, list, str]) -> AgentPreview:
-        messages = self.get_messages(context)
+    def preview(self, messages: list) -> AgentPreview:
         tokens, cost = self.calculate_tokens_and_cost(messages)
         return AgentPreview(messages=messages, tokens=tokens, cost=cost)
-
-    def get_messages(self, context: Union[dict, list, str]):
-        if isinstance(context, dict):
-            return self.get_batch_messages(context)
-        elif isinstance(context, list):
-            return self.get_multi_messages(context)
-        elif isinstance(context, str):
-            return self.get_single_messages(context)
-
-    def get_batch_messages(self, batch_contexts: dict):
-        return {
-            key: self._create_messages(context)
-            for key, context in batch_contexts.items()
-        }
-
-    def get_multi_messages(self, contexts: list):
-        return self._create_messages(contexts)
-
-    def get_single_messages(self, context: str):
-        return self._create_messages(context)
-
-    def _create_messages(self, context):
-        messages = (
-            [{"role": "system", "content": self.system_prompt}]
-            if self.system_prompt
-            else []
-        )
-
-        if isinstance(context, list):
-            messages.extend({"role": "user", "content": c} for c in context)
-        elif isinstance(context, str):
-            messages.append({"role": "user", "content": context})
-
-        messages.append({"role": "user", "content": self.instructions})
-        return messages
 
     def calculate_tokens_and_cost(self, messages: Union[list, dict], response=None):
         if isinstance(messages, dict):
@@ -188,7 +131,7 @@ class Agent(BaseModel):
             return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
             tokens_and_cost = calculate_all_costs_and_tokens(
-                messages, response["content"], self.model
+                messages, response, self.model
             )
             return (
                 {
@@ -206,16 +149,3 @@ class Agent(BaseModel):
                     ),
                 },
             )
-
-
-if __name__ == "__main__":
-    from codeas.configs.agents_configs import AGENTS_CONFIGS
-    from codeas.core.llm import LLMClient
-    from codeas.core.repo import Repo
-
-    llm_client = LLMClient()
-    agent = Agent(**AGENTS_CONFIGS["extract_files_detail"])
-    repo = Repo(repo_path=".")
-    incl_files = repo.filter_files()
-    files_paths = [path for path, incl in zip(repo.files_paths, incl_files) if incl]
-    ...

@@ -1,4 +1,3 @@
-import os
 from typing import Literal
 
 import streamlit as st
@@ -6,20 +5,16 @@ import streamlit as st
 from codeas.core.state import state
 
 
-def display():
-    display_repo_path()
-    display_files()
-
-
 def display_repo_path():
-    st.markdown(f"**Repo**: {os.path.abspath(state.repo_path)}")
+    st.markdown(f"**Repo**: {state.repo_path}")
 
 
 def display_files():
     display_filters()
     num_selected_files, total_files, selected_tokens = get_selected_files_info()
     with st.expander(
-        f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens"
+        f"{num_selected_files}/{total_files} files selected | {selected_tokens:,} tokens",
+        expanded=True,
     ):
         display_files_editor()
 
@@ -37,11 +32,10 @@ def get_selected_files_info():
 
 def display_filters():
     col_include, col_exclude = st.columns(2)
-    page_filter = state.get_page_filter()
     with col_include:
         st.text_input(
             "Include",
-            value=page_filter.include,
+            value=state.page_filter.include,
             key="include_input",
             on_change=lambda: update_filter("include"),
             placeholder="Example: *.py, src/*, etc.",
@@ -49,7 +43,7 @@ def display_filters():
     with col_exclude:
         st.text_input(
             "Exclude",
-            value=page_filter.exclude,
+            value=state.page_filter.exclude,
             key="exclude_input",
             on_change=lambda: update_filter("exclude"),
             placeholder="Example: debug/*, *.ipynb, etc.",

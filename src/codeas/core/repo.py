@@ -17,13 +17,21 @@ class Repo(BaseModel):
     def __init__(self, **data):
         super().__init__(**data)
         self.repo_path = os.path.abspath(self.repo_path)
-        self.files_paths = self.get_files_paths()
+        self.set_relative_files_paths()
         self.calculate_files_tokens()
         self.filter_files()
 
-    def get_files_paths(self):
+    def get_file_contents(self, file_paths: List[str] = []):
+        if not any(file_paths):
+            file_paths = self.included_files_paths
+        return {path: self.read_file(path) for path in file_paths}
+
+    def get_file_paths(self):
+        return self.included_files_paths
+
+    def set_relative_files_paths(self):
         absolute_paths = glob.glob(os.path.join(self.repo_path, "**"), recursive=True)
-        return [
+        self.files_paths = [
             os.path.relpath(path, self.repo_path)
             for path in absolute_paths
             if os.path.isfile(path)
