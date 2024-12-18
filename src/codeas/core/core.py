@@ -1,4 +1,4 @@
-from codeas.core import prompts
+from codeas.core import prompts, tools
 from codeas.core.agent import Agent
 from codeas.core.state import state
 
@@ -23,18 +23,10 @@ def vectorize_files_infos(file_infos: dict):
     return state.llm_client.vectorize(file_infos)
 
 
-if __name__ == "__main__":
-    vector = state.llm_client.vectorize("testing")
-    print(vector)
-
-    from codeas.core.repo import Repo
-
-    repo = Repo(repo_path=".")
-    repo.filter_files(include_patterns=["*agent.py"])
-    files_contents = repo.get_file_contents()
-
-    # llm_client = LLMClientAzure()
-    output = generate_file_infos(files_contents)
-    file_infos = output.response
-    embeddings = vectorize_files_infos(file_infos)
-    print(file_infos)
+def run_repo_agent(messages: list):
+    for token in state.llm_client.stream(
+        messages=messages,
+        model="gpt-4o",
+        tools=[tools.TOOL_RETRIEVE_CONTEXT],
+    ):
+        yield token

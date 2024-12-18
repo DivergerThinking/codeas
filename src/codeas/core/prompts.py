@@ -107,3 +107,7 @@ Here is the file content:
 {file_content}
 </file_content>
 """.strip()
+
+REPO_AGENT_PROMPT = """
+
+""".strip()

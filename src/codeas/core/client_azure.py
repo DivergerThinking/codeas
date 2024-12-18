@@ -41,6 +41,40 @@ class LLMClientAzure:
             self._client.close()  # Close the client
             self._client = None
 
+    def stream(self, messages: list, model: str = "gpt-4o-mini", **kwargs):
+        response = self._client.chat.completions.create(
+            model=model, messages=messages, stream=True, **kwargs
+        )
+        tools_called = []
+        for chunk in response:
+            if any(chunk.choices):
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield delta.content
+                elif delta.tool_calls:
+                    self.parse_tool_calls(delta.tool_calls, tools_called)
+        if any(tools_called):
+            yield tools_called
+
+    def parse_tool_calls(self, tool_calls, tools_called):
+        for tchunk in tool_calls:
+            if len(tools_called) <= tchunk.index:
+                tools_called.append(
+                    {
+                        "id": "",
+                        "type": "function",
+                        "function": {"name": "", "arguments": ""},
+                    }
+                )
+            if tchunk.id:
+                tools_called[tchunk.index]["id"] += tchunk.id
+            if tchunk.function.name:
+                tools_called[tchunk.index]["function"]["name"] += tchunk.function.name
+            if tchunk.function.arguments:
+                tools_called[tchunk.index]["function"][
+                    "arguments"
+                ] += tchunk.function.arguments
+
     def run(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         kwargs.setdefault("temperature", OPENAI_PARAMS["temperature"])
         kwargs.setdefault("top_p", OPENAI_PARAMS["top_p"])
@@ -170,3 +204,28 @@ class LLMClientAzure:
     def _batches(self, items, batch_size):
         for i in range(0, len(items), batch_size):
             yield items[i : i + batch_size]
+
+
+if __name__ == "__main__":
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"location": {"type": "string"}},
+                },
+            },
+        }
+    ]
+    from codeas.core import tools
+
+    client = LLMClientAzure()
+    for token in client.stream(
+        messages=[{"role": "user", "content": "which code executes the llm?"}],
+        model="gpt-4o-mini",
+        tools=[tools.TOOL_RETRIEVE_CONTEXT],
+    ):
+        if isinstance(token, list):
+            response = tools.handle_tool_calls(token)
