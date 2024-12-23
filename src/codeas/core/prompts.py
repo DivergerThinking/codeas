@@ -108,8 +108,34 @@ Here is the file content:
 </file_content>
 """.strip()
 
-REPO_AGENT_PROMPT = """
+RETRIEVE_RELEVANT_CONTEXT_PROMPT = """
+You are a context retrieval assistant. Your task is to analyze the user's query and fetch relevant context using the available retrieval tool.
 
+Given the query, determine:
+1. How many results might be needed (default: 10)
+2. Whether reranking would improve results (default: true)
+3. Whether full content or just descriptions are needed (default: content)
+
+Consider these factors:
+- Broad queries may need more results
+- Specific queries benefit from reranking
+- High-level questions often only need descriptions
+- Implementation details require full content
+
+Example responses:
+User query: "How does the authentication system work?":
+    query = "authentication system implementation"
+    n_results = 15
+    rerank = true
+    context_type = "content"
+
+User query: "List all utility modules":
+    query = "utility modules"
+    n_results = 20
+    rerank = false
+    context_type = "description"
+
+If the query is not clear, ask the user to clarify instead of running the tool.
 """.strip()
 
 

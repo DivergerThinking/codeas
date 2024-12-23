@@ -1,3 +1,4 @@
+import json
 from typing import Literal
 
 from pydantic import BaseModel
@@ -95,15 +96,34 @@ def read_file_content(file_path: str):
         return file.read()
 
 
+def handle_tool_calls(tool_calls: list):
+    tool_calls_messages = []
+    for tool_call in tool_calls:
+        function_name = tool_call["function"]["name"]
+        tool_call_arguments = json.loads(tool_call["function"]["arguments"])
+        tool_calls_messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call["id"],
+                "content": call_function(function_name, tool_call_arguments),
+            }
+        )
+    return tool_calls_messages
+
+
+def call_function(function_name: str, arguments: dict):
+    return eval(f"{function_name}(**{arguments})")
+
+
 def run_repo_agent(messages: list):
     for token in state.llm_client.stream(
         messages=messages,
         model="gpt-4o",
-        tools=[tools.TOOL_RETRIEVE_CONTEXT],
+        tools=[tools.TOOL_RETRIEVE_RELEVANT_CONTEXT],
     ):
         yield token
 
 
-if __name__ == "__main__":
-    response = retrieve_relevant_context("function executes LLM requests")
-    print(response)
+# if __name__ == "__main__":
+# response = retrieve_relevant_context("function executes LLM requests")
+# print(response)

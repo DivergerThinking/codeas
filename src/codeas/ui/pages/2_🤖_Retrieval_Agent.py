@@ -1,8 +1,8 @@
 import streamlit as st
 
-from codeas.core.core import run_repo_agent
+from codeas.core.core import handle_tool_calls, run_repo_agent
+from codeas.core.prompts import RETRIEVE_RELEVANT_CONTEXT_PROMPT
 from codeas.core.state import state
-from codeas.core.tools import handle_tool_calls
 from codeas.ui.components import repo_ui
 from codeas.ui.components.shared import find_overlapping_files
 
@@ -45,11 +45,18 @@ def check_missing_embeddings():
 
 def initialize_chat_history():
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        st.session_state.messages = [
+            {
+                "role": "system",
+                "content": RETRIEVE_RELEVANT_CONTEXT_PROMPT,
+            }
+        ]
 
 
 def display_chat_history():
     for message in st.session_state.messages:
+        if message["role"] == "system":
+            continue
         with st.chat_message(message["role"]):
             if "content" in message and "tool_call_id" in message:
                 display_tool_output(message)
@@ -61,7 +68,7 @@ def display_chat_history():
 
 def display_tool_output(message):
     with st.expander(message["tool_call_id"]):
-        st.write(message["content"])
+        st.code(message["content"])
 
 
 def handle_user_input():

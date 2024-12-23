@@ -1,46 +1,4 @@
-import json
-
-
-def handle_tool_calls(tool_calls: list):
-    tool_calls_messages = []
-    for tool_call in tool_calls:
-        function_name = tool_call["function"]["name"]
-        tool_call_arguments = json.loads(tool_call["function"]["arguments"])
-        tool_calls_messages.append(
-            {
-                "role": "tool",
-                "tool_call_id": tool_call["id"],
-                "content": call_function(function_name, tool_call_arguments),
-            }
-        )
-    return tool_calls_messages
-
-
-def call_function(function_name: str, arguments: dict):
-    return eval(f"{function_name}(**arguments)")
-
-
-def get_weather(location: str):
-    ...
-
-
-TOOL_GET_WEATHER = {
-    "type": "function",
-    "function": {
-        "name": "get_weather",
-        "parameters": {
-            "type": "object",
-            "properties": {"location": {"type": "string"}},
-        },
-    },
-}
-
-
-def retrieve_relevant_context(query: str):
-    return "this is a dummy tool call output for testing purposes. just pretend you received the correct output and respond to the user with any random code answer"
-
-
-TOOL_RETRIEVE_CONTEXT = {
+TOOL_RETRIEVE_RELEVANT_CONTEXT = {
     "type": "function",
     "function": {
         "name": "retrieve_relevant_context",
@@ -51,7 +9,23 @@ TOOL_RETRIEVE_CONTEXT = {
                 "query": {
                     "type": "string",
                     "description": "The query to retrieve context for",
-                }
+                },
+                "n_results": {
+                    "type": "number",
+                    "description": "The number of results to retrieve",
+                    "default": 10,
+                },
+                "rerank": {
+                    "type": "boolean",
+                    "description": "Whether to rerank the results",
+                    "default": True,
+                },
+                "context_type": {
+                    "type": "string",
+                    "description": "The type of context to retrieve",
+                    "enum": ["content", "description"],
+                    "default": "content",
+                },
             },
             "required": ["query"],
         },
