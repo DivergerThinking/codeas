@@ -9,15 +9,17 @@ TINYDB_CLIENT = TinyDB("./.codeas/tinydb.json")
 
 
 class Storage:
-    def store_file_infos_in_tinydb(self, collection_name: str, file_infos: dict):
+    def store_file_infos_in_tinydb(self, repo_path: str, file_infos: dict):
+        collection_name = self.get_collection_name(repo_path)
         table = TINYDB_CLIENT.table(collection_name)
         for filepath, info in file_infos.items():
             doc = {"filepath": filepath, "infos": info}
             table.upsert(doc, where("filepath") == filepath)
 
     def store_file_infos_in_chromadb(
-        self, collection_name: str, file_infos: dict, embeddings: dict
+        self, repo_path: str, file_infos: dict, embeddings: dict
     ):
+        collection_name = self.get_collection_name(repo_path)
         try:
             collection = CHROMADB_CLIENT.get_collection(collection_name)
         except errors.InvalidCollectionException:
@@ -41,10 +43,15 @@ class Storage:
         collection_name = self.get_collection_name(repo_path)
         CHROMADB_CLIENT.delete_collection(collection_name)
 
-    def fetch_files_in_collection(self, repo_path: str):
+    def fetch_files_in_tinydb(self, repo_path: str):
         collection_name = self.get_collection_name(repo_path)
         table = TINYDB_CLIENT.table(collection_name)
         return [doc["filepath"] for doc in table.all()]
+
+    def fetch_files_in_chromadb(self, repo_path: str):
+        collection_name = self.get_collection_name(repo_path)
+        collection = CHROMADB_CLIENT.get_collection(collection_name)
+        return collection.get()["ids"]
 
     def fetch_files_by_paths(self, repo_path: str, filepaths: list[str]):
         collection_name = self.get_collection_name(repo_path)
@@ -64,7 +71,18 @@ class Storage:
         namespace = uuid.NAMESPACE_URL
         return str(uuid.uuid5(namespace, repo_path))
 
+    def update_collection(self, repo_path: str, filepaths: list[str]):
+        # update chromadb collection
+        collection_name = self.get_collection_name(repo_path)
+        collection = CHROMADB_CLIENT.get_collection(collection_name)
+        collection.delete(ids=filepaths)
+
 
 if __name__ == "__main__":
+    from codeas.core.state import state
+
     storage = Storage()
-    print(storage.fetch_collection_names())
+    collection_name = storage.get_collection_name(state.repo_path)
+    collection = CHROMADB_CLIENT.get_collection(collection_name)
+    ids = collection.get()
+    # print(storage.fetch_collection_names())

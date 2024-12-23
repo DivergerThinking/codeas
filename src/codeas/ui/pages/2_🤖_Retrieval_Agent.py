@@ -28,10 +28,18 @@ def display_files():
 
 
 def check_missing_embeddings():
-    _, files_missing_embeddings = find_overlapping_files()
+    (
+        _,
+        files_missing_embeddings,
+        additional_files_with_embeddings,
+    ) = find_overlapping_files()
     if any(files_missing_embeddings):
         st.warning(
             f"{len(files_missing_embeddings)} files missing embeddings. Generate missing embeddings."
+        )
+    if any(additional_files_with_embeddings):
+        st.error(
+            f"{len(additional_files_with_embeddings)} files with embeddings not found in selected files. Update collection."
         )
 
 
