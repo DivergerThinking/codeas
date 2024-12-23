@@ -111,3 +111,26 @@ Here is the file content:
 REPO_AGENT_PROMPT = """
 
 """.strip()
+
+
+RERANK_RESULTS_PROMPT = """
+Given the user query and file information summaries below, return ONLY the genuinely relevant file paths in ranked order. Exclude any files that aren't directly useful for the query.
+
+Ranking criteria:
+- Direct relevance to query terms/concepts
+- Clear connection to query intent
+- File importance (core > auxiliary)
+- File type appropriateness
+
+IMPORTANT: Omit files if their relevance is questionable. Quality > Quantity.
+
+Query: {query}
+
+File Summaries:
+{file_infos}
+
+Return only a JSON array of relevant file paths, like:
+["path/most/relevant.py", "path/second.py"]
+
+Note: It's perfectly acceptable to return a small number of files or even an empty array [] if no files are truly relevant.
+""".strip()

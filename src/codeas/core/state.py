@@ -94,13 +94,5 @@ class State(BaseModel, arbitrary_types_allowed=True, extra="forbid"):
         except FileNotFoundError:
             self.page_filter = PageFilter()
 
-    # def load_repo_embeddings_map(self):
-    #     try:
-    #         embeddings_map_path = os.path.join(self.repo_path, ".codeas", "repo_embeddings_map.json")
-    #         with open(embeddings_map_path, "r") as f:
-    #             self.repo_embeddings_map = json.load(f)
-    #     except FileNotFoundError:
-    #         self.repo_embeddings_map = {}
-
 
 state = State()

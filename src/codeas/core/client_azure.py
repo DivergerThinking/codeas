@@ -125,7 +125,9 @@ class LLMClientAzure:
 
     def run_completions(self, messages, model="gpt-4o-mini", **kwargs) -> dict:
         """runs completions synchronously"""
-        if kwargs.get("response_format"):
+        if kwargs.get("response_format") and kwargs.get("response_format") != {
+            "type": "json_object"
+        }:
             response = self._client.beta.chat.completions.parse(
                 messages=messages, model=model, **kwargs
             )
@@ -175,7 +177,9 @@ class LLMClientAzure:
     # @retry(stop=stop_after_attempt(3), after=log_retry)
     async def _run_async_completions(self, client, messages, model: str, **kwargs):
         """runs completions asynchronously"""
-        if kwargs.get("response_format"):
+        if kwargs.get("response_format") and kwargs.get("response_format") != {
+            "type": "json_object"
+        }:
             response = await client.beta.chat.completions.parse(
                 messages=messages, model=model, **kwargs
             )

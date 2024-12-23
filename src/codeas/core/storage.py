@@ -1,3 +1,5 @@
+import uuid
+
 from chromadb import PersistentClient, errors
 from tinydb import TinyDB
 from tinydb.queries import where
@@ -31,26 +33,36 @@ class Storage:
         collections = CHROMADB_CLIENT.list_collections()
         return [collection.name for collection in collections]
 
-    def create_collection(self, collection_name: str):
+    def create_collection(self, repo_path: str):
+        collection_name = self.get_collection_name(repo_path)
         CHROMADB_CLIENT.create_collection(collection_name)
 
-    def delete_collection(self, collection_name: str):
+    def delete_collection(self, repo_path: str):
+        collection_name = self.get_collection_name(repo_path)
         CHROMADB_CLIENT.delete_collection(collection_name)
 
-    def fetch_files_in_collection(self, collection_name: str):
+    def fetch_files_in_collection(self, repo_path: str):
+        collection_name = self.get_collection_name(repo_path)
         table = TINYDB_CLIENT.table(collection_name)
         return [doc["filepath"] for doc in table.all()]
 
-    def fetch_files_by_paths(self, collection_name: str, filepaths: list[str]):
+    def fetch_files_by_paths(self, repo_path: str, filepaths: list[str]):
+        collection_name = self.get_collection_name(repo_path)
         table = TINYDB_CLIENT.table(collection_name)
         files_dict = {doc["filepath"]: doc for doc in table.all()}
         return [files_dict[path] for path in filepaths if path in files_dict]
 
     def query_files_embeddings(
-        self, collection_name: str, query_embeddings: list[float], n_results: int = 10
+        self, repo_path: str, query_embeddings: list[float], n_results: int = 10
     ):
+        collection_name = self.get_collection_name(repo_path)
         collection = CHROMADB_CLIENT.get_collection(collection_name)
         return collection.query(query_embeddings=query_embeddings, n_results=n_results)
+
+    def get_collection_name(self, repo_path: str):
+        """Convert path to valid chroma db collection name using UUID"""
+        namespace = uuid.NAMESPACE_URL
+        return str(uuid.uuid5(namespace, repo_path))
 
 
 if __name__ == "__main__":
