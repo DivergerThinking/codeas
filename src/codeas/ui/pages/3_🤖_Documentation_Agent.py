@@ -1,54 +1,59 @@
 import streamlit as st
 
-from codeas.core.state import state
-from codeas.ui.components import repo_ui
-from codeas.ui.components.shared import find_overlapping_files
+from codeas.core.core import handle_tool_calls, run_documentation_agent
+from codeas.core.prompts import DOCUMENTATION_AGENT_PROMPT
+from codeas.ui.components.shared import (
+    check_missing_embeddings,
+    display_chat_history,
+    display_files,
+    display_tool_output,
+    initialize_chat_history,
+)
 
-
-def display_files():
-    state.load_page_filters()
-    state.apply_filters()
-    repo_ui.display_filters()
-    title = f"{len(state.repo.included_files_paths)}/{len(state.repo.files_paths)} files included"
-    st.dataframe({title: state.repo.included_files_paths}, use_container_width=True)
-    _, files_missing_embeddings = find_overlapping_files()
-    if any(files_missing_embeddings):
-        st.warning(
-            f"{len(files_missing_embeddings)} files missing embeddings. Generate missing embeddings."
-        )
+st.subheader("🤖 Documentation Agent")
 
 
 def chat_page():
-    st.subheader("🤖 Context Retriever")
-
     with st.sidebar:
         display_files()
+    check_missing_embeddings()
+    initialize_chat_history(DOCUMENTATION_AGENT_PROMPT)
+    display_chat_history()
+    handle_user_input()
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
 
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # Accept user input
+def handle_user_input():
     if prompt := st.chat_input("What is up?"):
-        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
-        # Display user message in chat message container
+
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Display assistant response in chat message container
-        with st.chat_message("assistant"):
-            response = st.write_stream(response_generator())
-        # Add assistant response to chat history
+        prompt_assistant()
+
+
+def prompt_assistant():
+    with st.chat_message("assistant"):
+        response = st.write_stream(run_documentation_agent(st.session_state.messages))
+
+    if isinstance(response, str):
         st.session_state.messages.append({"role": "assistant", "content": response})
 
+    elif isinstance(response, list):
+        tool_calls = response[0]
+        st.session_state.messages.append(
+            {"role": "assistant", "tool_calls": tool_calls}
+        )
+        tool_calls_messages = handle_tool_calls(tool_calls)
 
-def response_generator():
-    yield "Hello, how can I help you today?"
+        for call_message in tool_calls_messages:
+            st.session_state.messages.append(call_message)
+            with st.chat_message("Tool"):
+                display_tool_output(call_message)
+
+        prompt_assistant()
+    else:
+        raise ValueError(f"Invalid response type: {type(response)}")
 
 
 chat_page()

@@ -136,6 +136,8 @@ User query: "List all utility modules":
     context_type = "description"
 
 If the query is not clear, ask the user to clarify instead of running the tool.
+
+Once the relevant context has been retrieved, respond to the user based on the retrieved information.
 """.strip()
 
 
@@ -150,13 +152,117 @@ Ranking criteria:
 
 IMPORTANT: Omit files if their relevance is questionable. Quality > Quantity.
 
-Query: {query}
+Query: 
+<query>
+{query}
+</query>
 
 File Summaries:
+<file_infos>
 {file_infos}
+</file_infos>
 
 Return only a JSON array of relevant file paths, like:
 ["path/most/relevant.py", "path/second.py"]
 
 Note: It's perfectly acceptable to return a small number of files or even an empty array [] if no files are truly relevant.
+""".strip()
+
+
+DOCUMENTATION_AGENT_PROMPT = """
+
+""".strip()
+
+SUMMARIZE_FILE_INFOS_PROMPT = """
+Given these file information:
+<file_infos>
+{file_infos}
+</file_infos>
+
+Create a condensed summary that preserves information relevant to this task:
+<task>
+{task}
+</task>
+
+Guidelines:
+1. Focus on details that could help accomplish the task
+2. DO NOT attempt to fulfill the task itself
+3. Skip information irrelevant to the task
+4. Maintain original technical details/relationships
+5. Preserve critical dependencies/requirements
+
+Format the response as a detailed summary following a similar style as the file information.
+""".strip()
+
+DEFINE_DOCUMENTATION_STRUCTURE_PROMPT = """
+Given this project information:
+<project_info>
+{project_info}
+</project_info>
+
+Define a clear structure for technical documentation that would help developers understand and use this project.
+
+Guidelines:
+1. Create logical sections that progress from high-level to detailed understanding
+2. Each section should have 2-5 focused sub-sections
+3. Sub-sections must include a specific query to retrieve relevant context
+4. Queries should be precise and targeted to the sub-section's topic
+5. The sections should be comprehensive and cover all relevant aspects of the project
+6. The sub-sections should be detailed and cover all relevant aspects of their corresponding section
+
+Return the structure as JSON matching this format:
+{{
+  "sections": [
+    {{
+      "title": "section name",
+      "sub_sections": [
+        {{
+          "title": "sub-section name",
+          "query": "specific search query to find relevant content",
+          "n_results": "number of results to retrieve",
+          "context_type": "whether to retrieve full content or just descriptions"
+        }}
+      ]
+    }}
+  ]
+}}
+
+Example section structure:
+{{
+  "sections": [
+    {{
+      "title": "Getting Started",
+      "sub_sections": [
+        {{
+          "title": "Installation Requirements",
+          "query": "project dependencies installation requirements setup",
+          "n_results": 10,
+          "context_type": "description"
+        }},
+        {{
+          "title": "Basic Configuration",
+          "query": "initial configuration settings environment variables",
+          "n_results": 10,
+          "context_type": "description"
+        }}
+      ]
+    }}
+  ]
+}}
+
+Focus on creating queries that will effectively retrieve the most relevant content for each sub-section.
+""".strip()
+
+GENERATE_SUBSECTION_CONTENT_PROMPT = """
+You are a senior software engineer with a knack for writing technical documentation.
+
+Given the following retrieved context:
+<context>
+{context}
+</context>
+
+Generate a detailed and comprehensive markdown content for the following section:
+<title>
+{subsection_title}
+</title>
 """.strip()
