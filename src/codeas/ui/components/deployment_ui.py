@@ -3,6 +3,10 @@ import streamlit as st
 from codeas.core.state import state  # Add this import
 from codeas.use_cases.deployment import define_deployment, generate_deployment
 
+# Define constants for file names to avoid duplication
+DEPLOYMENT_STRATEGY_FILENAME = "deployment_strategy.json"
+TERRAFORM_CODE_FILENAME = "terraform_code.json"
+
 
 def display():
     use_previous_outputs_strategy = st.toggle(
@@ -17,7 +21,7 @@ def display():
         with st.spinner("Defining deployment requirements..."):
             if use_previous_outputs_strategy:
                 try:
-                    previous_output = state.read_output("deployment_strategy.json")
+                    previous_output = state.read_output(DEPLOYMENT_STRATEGY_FILENAME)
                     st.session_state.outputs["deployment_strategy"] = type(
                         "Output",
                         (),
@@ -29,10 +33,7 @@ def display():
                         },
                     )
                 except FileNotFoundError:
-                    # st.warning(
-                    #     "No previous output found for deployment strategy. Running generation..."
-                    # )
-                    st.session_state.outputs[
+                    # st.warning(\n                    #     \"No previous output found for deployment strategy. Running generation...\"\n                    # )\n                    st.session_state.outputs[
                         "deployment_strategy"
                     ] = define_deployment()
                     # Write the output to a file
@@ -51,7 +52,7 @@ def display():
                                 "deployment_strategy"
                             ].messages,  # Add this line
                         },
-                        "deployment_strategy.json",
+                        DEPLOYMENT_STRATEGY_FILENAME,
                     )
             else:
                 st.session_state.outputs["deployment_strategy"] = define_deployment()
@@ -69,7 +70,7 @@ def display():
                             "deployment_strategy"
                         ].messages,  # Add this line
                     },
-                    "deployment_strategy.json",
+                    DEPLOYMENT_STRATEGY_FILENAME,
                 )
 
     if st.button("Preview", key="preview_deployment_strategy"):
@@ -87,7 +88,7 @@ def display():
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
-                f"output tokens: {output.tokens['output_tokens']:,})"
+                f"output tokens: {output.tokens['output_tokens']:,})"\
             )
             with st.expander("Messages", expanded=False):
                 st.json(output.messages)
@@ -110,7 +111,7 @@ def display_generate_deployment():
             ].response["content"]
             if use_previous_outputs_deployment:
                 try:
-                    previous_output = state.read_output("terraform_code.json")
+                    previous_output = state.read_output(TERRAFORM_CODE_FILENAME)
                     st.session_state.outputs["terraform_code"] = type(
                         "Output",
                         (),
@@ -122,10 +123,7 @@ def display_generate_deployment():
                         },
                     )
                 except FileNotFoundError:
-                    # st.warning(
-                    #     "No previous output found for Terraform code. Running generation..."
-                    # )
-                    st.session_state.outputs["terraform_code"] = generate_deployment(
+                    # st.warning(\n                    #     \"No previous output found for Terraform code. Running generation...\"\n                    # )\n                    st.session_state.outputs["terraform_code"] = generate_deployment(
                         deployment_strategy
                     )
                     # Write the output to a file
@@ -140,7 +138,7 @@ def display_generate_deployment():
                                 "terraform_code"
                             ].messages,  # Add this line
                         },
-                        "terraform_code.json",
+                        TERRAFORM_CODE_FILENAME,
                     )
             else:
                 st.session_state.outputs["terraform_code"] = generate_deployment(
@@ -158,7 +156,7 @@ def display_generate_deployment():
                             "terraform_code"
                         ].messages,  # Add this line
                     },
-                    "terraform_code.json",
+                    TERRAFORM_CODE_FILENAME,
                 )
 
     if st.button("Preview", key="preview_terraform_code"):
@@ -179,7 +177,7 @@ def display_generate_deployment():
             st.info(
                 f"Total cost: ${output.cost['total_cost']:.4f} "
                 f"(input tokens: {output.tokens['input_tokens']:,}, "
-                f"output tokens: {output.tokens['output_tokens']:,})"
+                f"output tokens: {output.tokens['output_tokens']:,})"\
             )
             with st.expander("Messages", expanded=False):
                 st.json(output.messages)
