@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel
 from tokencost import (
@@ -46,7 +46,7 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
+    system_prompt: Optional[str] = None
 
     def run(
         self,
@@ -185,7 +185,7 @@ class Agent(BaseModel):
         if response is None:
             input_tokens = count_message_tokens(messages, self.model)
             input_cost = float(calculate_prompt_cost(messages, self.model))
-            return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
+            return (({"input_tokens": input_tokens}), ({"input_cost": input_cost}))
         else:
             tokens_and_cost = calculate_all_costs_and_tokens(
                 messages, response["content"], self.model
