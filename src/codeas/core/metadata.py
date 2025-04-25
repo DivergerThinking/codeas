@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel, Field
 
@@ -210,7 +210,7 @@ class RepoMetadata(BaseModel):
         return cls(**data)
 
 
-def get_files_contents(repo: Repo, file_paths: list[str]) -> str:
+def get_files_contents(repo: Repo, file_paths: list[str]) -> Dict[str, str]:
     contents = {}
     for file_path in file_paths:
         with open(os.path.join(repo.repo_path, file_path), "r") as f:
@@ -258,7 +258,7 @@ Analyze the given code and provide the following details:
 6. Functionalities: List the main functionalities present in the file. DO NOT name specific methods or functions.
 
 IMPORTANT:
-Pay particular attention to what are considered internal vs external imports. 
+Pay particular attention to what are considered internal vs external imports.
 External imports are standard external libraries used in the project, while internal imports are modules which are found in the same repository.
 The internal imports are those you should use to generate the relationships between the given file and other files in the repository, which will later on be used to generate the system architecture.
 
@@ -275,7 +275,7 @@ Analyze the given test file and provide the following details:
 5. Test cases: List the main test cases or test groups present in the file. Use general descriptions rather than specific method names.
 
 IMPORTANT:
-Pay particular attention to what are considered internal vs external imports. 
+Pay particular attention to what are considered internal vs external imports.
 External imports are standard testing libraries or external dependencies, while internal imports are modules from the project being tested.
 
 Be concise and focus on key information. Do not write any explanations.
@@ -293,9 +293,5 @@ if __name__ == "__main__":
     files_paths = ["src/codeas/core/repo.py", "requirements.txt"]
 
     metadata = RepoMetadata()
-    # metadata.generate_repo_metadata(llm_client, files_paths)
-    # metadata.export_metadata(repo_path)
     loaded_metadata = RepoMetadata.load_metadata(repo_path)
-    # loaded_metadata.generate_missing_repo_metadata(llm_client, files_paths)
-    # loaded_metadata.export_metadata(repo.repo_path)
     ...
