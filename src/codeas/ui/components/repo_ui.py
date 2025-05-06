@@ -5,10 +5,9 @@ import streamlit as st
 
 from codeas.core.state import state
 
-# Define constants for repeated literals
-INCLUDE_COLUMN_KEY = "Incl."
-PATH_COLUMN_KEY = "Path"
-TOKENS_COLUMN_KEY = "Tokens"
+# Define constants for duplicated literals
+INCLUDED_COLUMN_NAME = "Incl."
+
 
 def display():
     display_repo_path()
@@ -29,11 +28,11 @@ def display_files():
 
 
 def get_selected_files_info():
-    num_selected_files = sum(state.files_data[INCLUDE_COLUMN_KEY])
-    total_files = len(state.files_data[INCLUDE_COLUMN_KEY])
+    num_selected_files = sum(state.files_data[INCLUDED_COLUMN_NAME])
+    total_files = len(state.files_data[INCLUDED_COLUMN_NAME])
     selected_tokens = sum(
         token
-        for incl, token in zip(state.files_data[INCLUDE_COLUMN_KEY], state.files_data[TOKENS_COLUMN_KEY])
+        for incl, token in zip(state.files_data[INCLUDED_COLUMN_NAME], state.files_data["Tokens"])
         if incl
     )
     return num_selected_files, total_files, selected_tokens
@@ -72,9 +71,9 @@ def display_files_editor():
         state.files_data,
         use_container_width=True,
         column_config={
-            INCLUDE_COLUMN_KEY: st.column_config.CheckboxColumn(width=5),
-            PATH_COLUMN_KEY: st.column_config.TextColumn(width="large"),
-            TOKENS_COLUMN_KEY: st.column_config.NumberColumn(width=5),
+            INCLUDED_COLUMN_NAME: st.column_config.CheckboxColumn(width=5),
+            "Path": st.column_config.TextColumn(width="large"),
+            "Tokens": st.column_config.NumberColumn(width=5),
         },
         disabled=True,
         height=300,
@@ -87,9 +86,9 @@ def display_metadata_editor(files_metadata):
         files_metadata,
         use_container_width=True,
         column_config={
-            INCLUDE_COLUMN_KEY: st.column_config.CheckboxColumn(width=5),
-            PATH_COLUMN_KEY: st.column_config.TextColumn(width="large"),
-            TOKENS_COLUMN_KEY: st.column_config.NumberColumn(width=5),
+            INCLUDED_COLUMN_NAME: st.column_config.CheckboxColumn(width=5),
+            "Path": st.column_config.TextColumn(width="large"),
+            "Tokens": st.column_config.NumberColumn(width=5),
         },
         disabled=True,
         height=300,
@@ -99,30 +98,30 @@ def display_metadata_editor(files_metadata):
 def sort_files_data():
     sorted_data = sorted(
         zip(
-            state.files_data[INCLUDE_COLUMN_KEY],
-            state.files_data[PATH_COLUMN_KEY],
-            state.files_data[TOKENS_COLUMN_KEY],
+            state.files_data[INCLUDED_COLUMN_NAME],
+            state.files_data["Path"],
+            state.files_data["Tokens"],
         ),
         key=lambda x: (not x[0], x[1]),
     )
     (
-        state.files_data[INCLUDE_COLUMN_KEY],
-        state.files_data[PATH_COLUMN_KEY],
-        state.files_data[TOKENS_COLUMN_KEY],
+        state.files_data[INCLUDED_COLUMN_NAME],
+        state.files_data["Path"],
+        state.files_data["Tokens"],
     ) = zip(*sorted_data)
 
 
 def sort_files_metadata(files_metadata):
     sorted_data = sorted(
         zip(
-            files_metadata[INCLUDE_COLUMN_KEY],
-            files_metadata[PATH_COLUMN_KEY],
-            files_metadata[TOKENS_COLUMN_KEY],
+            files_metadata[INCLUDED_COLUMN_NAME],
+            files_metadata["Path"],
+            files_metadata["Tokens"],
         ),
         key=lambda x: (not x[0], x[1]),
     )
     (
-        files_metadata[INCLUDE_COLUMN_KEY],
-        files_metadata[PATH_COLUMN_KEY],
-        files_metadata[TOKENS_COLUMN_KEY],
+        files_metadata[INCLUDED_COLUMN_NAME],
+        files_metadata["Path"],
+        files_metadata["Tokens"],
     ) = zip(*sorted_data)
