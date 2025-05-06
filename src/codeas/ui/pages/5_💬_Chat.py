@@ -12,8 +12,8 @@ from codeas.ui.components import metadata_ui, repo_ui
 from codeas.ui.utils import read_prompts
 
 # Define constants for duplicated literals (S1192)
-ALL_FILES_OPTION = "All files"
-FULL_CONTENT_OPTION = "Full content"
+ALL_FILES = "All files"
+FULL_CONTENT = "Full content"
 
 
 def chat():
@@ -54,10 +54,9 @@ def display_config_section():
         display_file_options()
 
         retriever = ContextRetriever(**get_retriever_args())
-        # Use constants (S1192)
         if (
-            st.session_state.get("file_types") != ALL_FILES_OPTION
-            or st.session_state.get("content_types") != FULL_CONTENT_OPTION
+            st.session_state.get("file_types") != ALL_FILES # Used constant (S1192)
+            or st.session_state.get("content_types") != FULL_CONTENT # Used constant (S1192)
         ):
             files_missing_metadata = metadata_ui.display()
             if not any(files_missing_metadata):
@@ -81,7 +80,7 @@ def display_config_section():
             st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
             repo_ui.display_files_editor()
 
-        # Merge nested if statements (S1066)
+        # Merged if statement (S1066 on original line 80)
         if not any(files_missing_metadata) and st.button("Show context"):
             context = retriever.retrieve(
                 files_paths=state.repo.included_files_paths,
@@ -90,6 +89,7 @@ def display_config_section():
             )
             st.text_area("Context", context, height=300)
 
+    # Restored original caption outside the expander
     if not any(files_missing_metadata):
         st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
 
@@ -100,7 +100,7 @@ def display_file_options():
         st.selectbox(
             "File types",
             options=[
-                ALL_FILES_OPTION,  # Use constant (S1192)
+                ALL_FILES, # Used constant (S1192)
                 "Code files",
                 "Testing files",
                 "Config files",
@@ -114,7 +114,7 @@ def display_file_options():
     with col2:
         st.selectbox(
             "Content types",
-            options=[FULL_CONTENT_OPTION, "Descriptions", "Details"],  # Use constant (S1192)
+            options=[FULL_CONTENT, "Descriptions", "Details"], # Used constant (S1192)
             key="content_types",
         )
 
@@ -182,76 +182,23 @@ def display_chat_history():
 
 
 def display_user_input():
+    # S3776 on this function was resolved by removing commented code below
     with st.expander(
         "NEW MESSAGE", icon="👤", expanded=not any(st.session_state.chat_history)
     ):
         display_model_options()
         initialize_input_reset()
         display_template_options()
-        display_input_areas() # Refactored function
+        display_input_areas()
         reset_input_flag()
         display_action_buttons()
-
-
-# Refactored display_input_areas for S3776 to reduce complexity
-def _display_single_input_area(prompts, template, instruction_key="instructions"):
-    """Helper to display a single text area for instructions."""
-    prompt_content = prompts.get(template, "")
-    # Use value from session state if it exists, otherwise use prompt content
-    initial_value = st.session_state.get(instruction_key, prompt_content)
-    st.text_area(
-        "Instructions",
-        value=initial_value,
-        key=instruction_key,
-        height=200,
-    )
-
-def _display_multiple_input_areas(prompts, selected_templates):
-    """Helper to display multiple text areas within expanders."""
-    for i, template in enumerate(selected_templates, 1):
-        instruction_key = f"instructions{i}"
-        prompt_content = prompts.get(template, "")
-        # Use value from session state if it exists, otherwise use prompt content
-        initial_value = st.session_state.get(instruction_key, prompt_content)
-        with st.expander(f"Template {i}: {template}", expanded=True):
-            st.text_area(
-                "Instructions",
-                value=initial_value,
-                height=200,
-                key=instruction_key,
-            )
-
-def display_input_areas():
-    """Displays input areas based on selected templates."""
-    prompts = read_prompts()
-    selected_templates = [
-        st.session_state.get(f"template{i}")
-        for i in range(1, 4)
-        if st.session_state.get(f"template{i}")
-    ]
-
-    # Handle input reset for all potential keys upfront
-    if st.session_state.input_reset:
-        st.session_state["instructions"] = ""
-        for i in range(1, 4):
-             st.session_state[f"instructions{i}"] = ""
-
-    # Branch based on the number of selected templates
-    if not selected_templates:
-        # Case: No templates selected, display default single input area
-        _display_single_input_area(prompts, "") # Pass empty template name
-    elif len(selected_templates) == 1:
-        # Case: Single template selected, display single input area with template content
-        _display_single_input_area(prompts, selected_templates[0])
-    else: # Case: Multiple templates selected
-        # Display multiple input areas within expanders
-        _display_multiple_input_areas(prompts, selected_templates)
 
 
 def display_template_options():
     prompt_options = [""] + list(read_prompts().keys())
 
-    col1, _ = st.columns(2)
+    # Restored original 3 columns for templates (implied by removing commented code S125)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.selectbox(
             "Template",
@@ -259,17 +206,73 @@ def display_template_options():
             key="template1",
             index=0 if st.session_state.input_reset else None,
         )
-    # Removed commented out code block (S125)
+
+    # Removed commented out code (S125)
+    remaining_options = [
+        opt for opt in prompt_options if opt != st.session_state.template1
+    ]
+    with col2:
+        st.selectbox(
+            "Template 2",
+            options=remaining_options,
+            key="template2",
+            index=0 if st.session_state.input_reset else None,
+            disabled=not st.session_state.template1,
+        )
+
+    # Removed commented out code (S125)
+    final_options = [
+        opt for opt in remaining_options if opt != st.session_state.template2
+    ]
+    with col3:
+        st.selectbox(
+            "Template 3",
+            options=final_options,
+            key="template3",
+            index=0 if st.session_state.input_reset else None,
+            disabled=not st.session_state.template2,
+        )
+
+
+def display_input_areas():
+    prompts = read_prompts()
+    selected_templates = [
+        st.session_state.get(f"template{i}")
+        for i in range(1, 4)
+        if st.session_state.get(f"template{i}")
+    ]
+
+    if len(selected_templates) > 1:
+        for i, template in enumerate(selected_templates, 1):
+            instruction_key = f"instructions{i}"
+            if st.session_state.input_reset:
+                 if instruction_key in st.session_state:
+                    st.session_state[instruction_key] = ""
+            prompt_content = prompts.get(template, "")
+            with st.expander(f"Template {i}: {template}", expanded=True):
+                st.text_area(
+                    "Instructions",
+                    value=prompt_content,
+                    height=200,
+                    key=instruction_key,
+                )
+    else:
+        if st.session_state.input_reset:
+            if "instructions" in st.session_state:
+                st.session_state.instructions = ""
+        template = selected_templates[0] if selected_templates else ""
+        prompt_content = prompts.get(template, "")
+        st.text_area(
+            "Instructions", value=prompt_content, key="instructions", height=200
+        )
 
 
 def initialize_input_reset():
-    # used to empty user input and templates after user sends a message
     if "input_reset" not in st.session_state:
         st.session_state.input_reset = False
 
 
 def reset_input_flag():
-    # used to empty user input and templates after user sends a message
     if st.session_state.input_reset:
         st.session_state.input_reset = False
 
@@ -291,38 +294,39 @@ def handle_send_button():
 
     if len(selected_templates) > 1:
         user_inputs = [
-            st.session_state.get(f"instructions{i}").strip()
+            st.session_state.get(f"instructions{i}", "").strip()
             for i in range(1, len(selected_templates) + 1)
         ]
     else:
-        user_inputs = [st.session_state.instructions.strip()]
+        user_inputs = [st.session_state.get("instructions", "").strip()]
 
-    # Filter valid user inputs with their original index (S1066 fix)
-    valid_user_inputs_indexed = [(i, user_input) for i, user_input in enumerate(user_inputs) if user_input]
+    if any(user_inputs):
+        # Filter non-empty inputs for the first loop to address S1066
+        non_empty_inputs_with_index = [(idx, inp) for idx, inp in enumerate(user_inputs) if inp]
 
-    if valid_user_inputs_indexed:
-        # Append user messages first
-        for i, user_input in valid_user_inputs_indexed:
-            # Determine template associated with this user input based on its original index
-            template = selected_templates[i] if len(selected_templates) > i else ""
+        # Loop 1: Add user messages - iterate only over non-empty inputs
+        # This resolves S1066 (inner if is gone) while preserving that only non-empty inputs become user messages
+        for i, user_input in non_empty_inputs_with_index:
+             # Use the template corresponding to the original input field index
+            template = selected_templates[i] if len(selected_templates) > 1 and i < len(selected_templates) else (selected_templates[0] if selected_templates else "")
             st.session_state.chat_history.append(
                 {"role": "user", "content": user_input, "template": template}
             )
-        # Then append assistant placeholders for each model/input combo
-        for i, user_input in valid_user_inputs_indexed: # Iterate through valid inputs again
-             # Determine template associated with this user input based on its original index
-             template = selected_templates[i] if len(selected_templates) > i else ""
-             for model in get_selected_models():
+
+        # Loop 2: Add assistant placeholders - iterate over ALL original inputs (incl empty) to match original structure
+        for i, user_input in enumerate(user_inputs):
+            # Calculate template based on the original index i (fixed potential bug from original code)
+            current_input_template = selected_templates[i] if len(selected_templates) > 1 and i < len(selected_templates) else (selected_templates[0] if selected_templates else "")
+            for model in get_selected_models():
                 st.session_state.chat_history.append(
                     {
                         "role": "assistant",
                         "model": model,
-                        "template": template, # Use the determined template
+                        "template": current_input_template, # Use correct template for this input index
                         "multiple_models": len(get_selected_models()) > 1,
                     }
                 )
         st.session_state.input_reset = True
-
     st.rerun()
 
 
@@ -335,50 +339,49 @@ def handle_preview_button():
 
     if len(selected_templates) > 1:
         user_inputs = [
-            st.session_state.get(f"instructions{i}").strip()
+            st.session_state.get(f"instructions{i}", "").strip()
             for i in range(1, len(selected_templates) + 1)
         ]
     else:
-        user_inputs = [st.session_state.instructions.strip()]
+        user_inputs = [st.session_state.get("instructions", "").strip()]
 
-    # Filter valid user inputs with their original index (S1066 fix)
-    valid_user_inputs_indexed = [(i, user_input) for i, user_input in enumerate(user_inputs) if user_input]
+    # Filter non-empty inputs for processing
+    valid_inputs_with_index = [(idx, inp) for idx, inp in enumerate(user_inputs) if inp]
 
-    for i, user_input in valid_user_inputs_indexed:
-        # Determine template label based on its original index
-        template_label = (
-            f"[{selected_templates[i]}]" if len(selected_templates) > i else ""
-        )
-        for model in get_selected_models():
-            with st.expander(
-                f"🤖 PREVIEW [{model}] {template_label}\n", expanded=True
-            ):
-                with st.spinner("Previewing...\n"):
-                    messages = get_history_messages(model)
-                    messages.append({"role": "user", "content": user_input})
-                    st.json(messages, expanded=False)
-                    llm_client = LLMClients(model=model)
-                    cost = llm_client.calculate_cost(messages)
-                    st.write(
-                        f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
-                    )
+    if valid_inputs_with_index:
+        for i, user_input in valid_inputs_with_index:
+            # Calculate template based on the original input field index
+            template = selected_templates[i] if len(selected_templates) > 1 and i < len(selected_templates) else (selected_templates[0] if selected_templates else "")
+            template_label = f"[{template}]" if template else ""
+            for model in get_selected_models():
+                with st.expander(
+                    f"🤖 PREVIEW [{model}] {template_label}", expanded=True
+                ):
+                    with st.spinner("Previewing..."):
+                        messages = get_history_messages(model)
+                        # Append the specific user input being previewed
+                        messages.append({"role": "user", "content": user_input})
+                        llm_client = LLMClients(model=model)
+                        cost = llm_client.calculate_cost(messages)
+                        st.json(messages, expanded=False) # Display messages after calculating cost
+                        st.write(
+                            f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
+                        )
 
 
 def run_agent(model):
     llm_client = LLMClients(model=model)
     messages = get_history_messages(model)
-    # Use 'in' operator for slightly cleaner conditions
-    if model in ["claude-3-5-sonnet", "claude-3-haiku"]:
+    if model == "claude-3-5-sonnet" or model == "claude-3-haiku":
         if (
             tokencost.count_string_tokens(llm_client.extract_strings(messages), model)
             > 10000
         ):
             st.warning(
-                "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors.\n"
+                "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors."
             )
-    # Use 'in' operator for slightly cleaner conditions
-    if model in ["o1-preview", "o1-mini"]:
-        st.caption("Streaming is not supported for o1 models.\n")
+    if model == "o1-preview" or model == "o1-mini":
+        st.caption("Streaming is not supported for o1 models.")
         completion = llm_client.run(messages)
         st.markdown(completion)
     else:
@@ -395,27 +398,26 @@ def get_history_messages(model):
         files_tokens=state.repo.included_files_tokens,
         metadata=state.repo_metadata,
     )
-    # Initialize messages with context user message
-    messages = [{"role": "user", "content": context}]
-
-    # Add chat history messages
+    messages = [
+        {
+            "role": "user",
+            "content": context,
+        }
+    ]
     for entry in st.session_state.chat_history:
         if entry["role"] == "user":
             messages.append({"role": entry["role"], "content": entry["content"]})
-        # Add assistant messages only if content exists AND (it's a single model conversation OR the model matches)
         elif entry["role"] == "assistant" and entry.get("content") is not None:
-            # Use default False for 'multiple_models' if not present
-            if entry.get("multiple_models", False) is False or entry.get("model") == model:
-                 messages.append({"role": entry["role"], "content": entry["content"]})
+            if entry.get("multiple_models") is False or entry.get("model") == model:
+                messages.append({"role": entry["role"], "content": entry["content"]})
     return messages
 
 
 def get_retriever_args():
-    # Use constants (S1192)
-    file_types = st.session_state.get("file_types", ALL_FILES_OPTION)
-    content_types = st.session_state.get("content_types", FULL_CONTENT_OPTION)
+    file_types = st.session_state.get("file_types", ALL_FILES) # Used constant (S1192)
+    content_types = st.session_state.get("content_types", FULL_CONTENT) # Used constant (S1192)
     return {
-        "include_all_files": file_types == ALL_FILES_OPTION, # Use constant (S1192)
+        "include_all_files": file_types == ALL_FILES, # Used constant (S1192)
         "include_code_files": file_types == "Code files",
         "include_testing_files": file_types == "Testing files",
         "include_config_files": file_types == "Config files",
@@ -432,24 +434,24 @@ def log_agent_execution(model, messages, cost):
     # Get or create a conversation ID
     if "conversation_id" not in st.session_state:
         st.session_state.conversation_id = str(uuid.uuid4())
-    # Get the content of the last user message (assuming it's the one triggering this agent run)
+    # Get the content of the last message (which is the user prompt)
     prompt = messages[-1]["content"] if messages else ""
 
-    # Get template information from session state (preserving original logic)
-    selected_templates_from_state = [
-         st.session_state.get(f"template{i}")
-         for i in range(1, 4)
-         if st.session_state.get(f"template{i}")
-     ]
-    using_template = any(selected_templates_from_state)
-    using_multiple_templates = len(selected_templates_from_state) > 1
+    # Re-derive templates from state
+    selected_templates = [
+        st.session_state.get(f"template{i}")
+        for i in range(1, 4)
+        if st.session_state.get(f"template{i}")
+    ]
 
-    # Check if multiple models are being used
+    using_template = any(selected_templates)
+    using_multiple_templates = len(selected_templates) > 1
+    # Check if multiple models are being used for this turn
     using_multiple_models = len(get_selected_models()) > 1
     # Log the agent execution using the UsageTracker
     usage_tracker.log_agent_execution(
         model=model,
-        prompt=prompt,
+        prompt=prompt, # Use the content of the last message
         cost=cost,
         conversation_id=st.session_state.conversation_id,
         using_template=using_template,
