@@ -10,7 +10,6 @@ INCLUDE_COLUMN_KEY = "Incl."
 PATH_COLUMN_KEY = "Path"
 TOKENS_COLUMN_KEY = "Tokens"
 
-
 def display():
     display_repo_path()
     display_files()
