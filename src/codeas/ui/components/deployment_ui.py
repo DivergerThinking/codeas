@@ -4,6 +4,10 @@ from codeas.core.state import state  # Add this import
 from codeas.use_cases.deployment import define_deployment, generate_deployment
 
 
+DEPLOYMENT_STRATEGY_FILE = "deployment_strategy.json"
+TERRAFORM_CODE_FILE = "terraform_code.json"
+
+
 def display():
     use_previous_outputs_strategy = st.toggle(
         "Use previous outputs", value=True, key="use_previous_outputs_strategy"
@@ -17,7 +21,7 @@ def display():
         with st.spinner("Defining deployment requirements..."):
             if use_previous_outputs_strategy:
                 try:
-                    previous_output = state.read_output("deployment_strategy.json")
+                    previous_output = state.read_output(DEPLOYMENT_STRATEGY_FILE)
                     st.session_state.outputs["deployment_strategy"] = type(
                         "Output",
                         (),
@@ -51,7 +55,7 @@ def display():
                                 "deployment_strategy"
                             ].messages,  # Add this line
                         },
-                        "deployment_strategy.json",
+                        DEPLOYMENT_STRATEGY_FILE,
                     )
             else:
                 st.session_state.outputs["deployment_strategy"] = define_deployment()
@@ -69,7 +73,7 @@ def display():
                             "deployment_strategy"
                         ].messages,  # Add this line
                     },
-                    "deployment_strategy.json",
+                    DEPLOYMENT_STRATEGY_FILE,
                 )
 
     if st.button("Preview", key="preview_deployment_strategy"):
@@ -110,7 +114,7 @@ def display_generate_deployment():
             ].response["content"]
             if use_previous_outputs_deployment:
                 try:
-                    previous_output = state.read_output("terraform_code.json")
+                    previous_output = state.read_output(TERRAFORM_CODE_FILE)
                     st.session_state.outputs["terraform_code"] = type(
                         "Output",
                         (),
@@ -140,7 +144,7 @@ def display_generate_deployment():
                                 "terraform_code"
                             ].messages,  # Add this line
                         },
-                        "terraform_code.json",
+                        TERRAFORM_CODE_FILE,
                     )
             else:
                 st.session_state.outputs["terraform_code"] = generate_deployment(
@@ -158,7 +162,7 @@ def display_generate_deployment():
                             "terraform_code"
                         ].messages,  # Add this line
                     },
-                    "terraform_code.json",
+                    TERRAFORM_CODE_FILE,
                 )
 
     if st.button("Preview", key="preview_terraform_code"):
