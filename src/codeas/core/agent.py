@@ -120,34 +120,34 @@ class Agent(BaseModel):
             results.append(self._get_request_tokens_and_cost(response))
 
         tokens = {\
-            "input_tokens": sum(result[0]["input_tokens"] for result in results),
-            "output_tokens": sum(result[0]["output_tokens"] for result in results),
-            "total_tokens": sum(result[0]["total_tokens"] for result in results),
+            "input_tokens": sum(result[0]["input_tokens"] for result in results),\
+            "output_tokens": sum(result[0]["output_tokens"] for result in results),\
+            "total_tokens": sum(result[0]["total_tokens"] for result in results),\
         }
         cost = {\
-            "input_cost": sum(result[1]["input_cost"] for result in results),
-            "output_cost": sum(result[1]["output_cost"] for result in results),
-            "total_cost": sum(result[1]["total_cost"] for result in results),
+            "input_cost": sum(result[1]["input_cost"] for result in results),\
+            "output_cost": sum(result[1]["output_cost"] for result in results),\
+            "total_cost": sum(result[1]["total_cost"] for result in results),\
         }
         return tokens, cost
 
     def _get_request_tokens_and_cost(self, response):
         tokens = {\
-            "input_tokens": response.usage.prompt_tokens,
-            "output_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens,
+            "input_tokens": response.usage.prompt_tokens,\
+            "output_tokens": response.usage.completion_tokens,\
+            "total_tokens": response.usage.total_tokens,\
         }
         cost = {\
-            "input_cost": float(
-                calculate_cost_by_tokens(
-                    response.usage.prompt_tokens, self.model, "input"
-                )
-            ),
-            "output_cost": float(
-                calculate_cost_by_tokens(
-                    response.usage.completion_tokens, self.model, "output"
-                )
-            ),
+            "input_cost": float(\
+                calculate_cost_by_tokens(\
+                    response.usage.prompt_tokens, self.model, "input"\
+                )\
+            ),\
+            "output_cost": float(\
+                calculate_cost_by_tokens(\
+                    response.usage.completion_tokens, self.model, "output"\
+                )\
+            ),\
         }
         cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
         return tokens, cost
@@ -162,21 +162,21 @@ class Agent(BaseModel):
         cost = {"input_cost": sum(result[1]["input_cost"] for result in results)}
 
         if batch_response:
-            tokens.update(
-                {
-                    "output_tokens": sum(
-                        result[0]["output_tokens"] for result in results
-                    ),
-                    "total_tokens": sum(
-                        result[0]["total_tokens"] for result in results
-                    ),
-                }
+            tokens.update(\
+                {\
+                    "output_tokens": sum(\
+                        result[0]["output_tokens"] for result in results\
+                    ),\
+                    "total_tokens": sum(\
+                        result[0]["total_tokens"] for result in results\
+                    ),\
+                }\
             )
-            cost.update(
-                {
-                    "output_cost": sum(result[1]["output_cost"] for result in results),
-                    "total_cost": sum(result[1]["total_cost"] for result in results),
-                }
+            cost.update(\
+                {\
+                    "output_cost": sum(result[1]["output_cost"] for result in results),\
+                    "total_cost": sum(result[1]["total_cost"] for result in results),\
+                }\
             )
 
         return tokens, cost
@@ -187,24 +187,24 @@ class Agent(BaseModel):
             input_cost = float(calculate_prompt_cost(messages, self.model))
             return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
-            tokens_and_cost = calculate_all_costs_and_tokens(
-                messages, response["content"], self.model
+            tokens_and_cost = calculate_all_costs_and_tokens(\
+                messages, response["content"], self.model\
             )
-            return (
-                {
-                    "input_tokens": tokens_and_cost["prompt_tokens"],
-                    "output_tokens": tokens_and_cost["completion_tokens"],
-                    "total_tokens": tokens_and_cost["prompt_tokens"]
-                    + tokens_and_cost["completion_tokens"],
-                },
-                {
-                    "input_cost": float(tokens_and_cost["prompt_cost"]),
-                    "output_cost": float(tokens_and_cost["completion_cost"]),
-                    "total_cost": float(
-                        tokens_and_cost["prompt_cost"]
-                        + tokens_and_cost["completion_cost"]
-                    ),
-                },
+            return (\
+                {\
+                    "input_tokens": tokens_and_cost["prompt_tokens"],\
+                    "output_tokens": tokens_and_cost["completion_tokens"],\
+                    "total_tokens": tokens_and_cost["prompt_tokens"]\
+                    + tokens_and_cost["completion_tokens"],\
+                },\
+                {\
+                    "input_cost": float(tokens_and_cost["prompt_cost"]),\
+                    "output_cost": float(tokens_and_cost["completion_cost"]),\
+                    "total_cost": float(\
+                        tokens_and_cost["prompt_cost"]\
+                        + tokens_and_cost["completion_cost"]\
+                    ),\
+                },\
             )
 
 
