@@ -28,57 +28,82 @@ class ContextRetriever(BaseModel):
     ) -> str:
         context = []
         for i, file_path in enumerate(files_paths):
-            file_usage = metadata.get_file_usage(file_path) if metadata else None
+            # The commented-out code check is removed as per SonarQube S125
+            if metadata:
+                file_usage = metadata.get_file_usage(file_path)
+            else:
+                file_usage = None
 
             if self.should_include_file(file_path, metadata):
-                file_header = f"# {file_path}"
-                if (self.use_details or self.use_descriptions) and files_tokens:
-                    file_header += f" [{files_tokens[i]} tokens]"
+                # Safely get the token count for the current file if available
+                file_token = files_tokens[i] if files_tokens and i < len(files_tokens) else None
 
-                file_content = self._get_formatted_file_content(
-                    file_path, file_usage, metadata, file_header
+                file_content_str = self._get_file_representation_string(
+                    file_path,
+                    file_usage,
+                    metadata,
+                    file_token,
                 )
-                if file_content is not None:
-                    context.append(file_content)
+                if file_content_str:
+                    context.append(file_content_str)
 
         return "\n\n".join(context)
 
-    def _get_formatted_file_content(
+    def _get_file_representation_string(
         self,
         file_path: str,
-        file_usage: Optional[any], # Use 'any' as RepoMetadata.get_file_usage return type is not specified
+        file_usage,  # Type hint depends on RepoMetadata.get_file_usage return type
         metadata: Optional[RepoMetadata],
-        file_header: str,
+        file_token: Optional[int],
     ) -> Optional[str]:
-        if self.use_details and file_usage and file_usage.is_code and metadata:
-            details = (
-                metadata.get_testing_details(file_path)
-                if file_usage.testing_related
-                else metadata.get_code_details(file_path)
-            )
-            if details:
-                return f"{file_header}:\n{self.parse_json_response(details.model_dump_json())}"
-        elif self.use_descriptions and metadata:
-            if file_usage and file_usage.is_code:
-                details = (
-                    metadata.get_code_details(file_path)
-                    if file_usage and not file_usage.testing_related
-                    else metadata.get_testing_details(file_path)
-                )
-                if details:
-                    description = f"{file_header}:\n{details.description}"
-                    if details.external_imports:
-                        description += f"\nExternal imports: {', '.join(details.external_imports)}"
-                    return description
-            elif metadata.get_file_description(file_path):
-                description = metadata.get_file_description(file_path)
-                return f"{file_header}:\n{description}"
-        else:
-            # otherwise, return the full file content
-            content = state.repo.read_file(file_path)
-            return f"{file_header}:\n{content}"
+        """Helper to get the string representation of a file based on retriever settings."""
+        # Determine if we need metadata/file_usage to proceed based on settings
+        needs_metadata = not self.include_all_files or self.use_details or self.use_descriptions
 
-        return None # Should not be reached in current logic, but good practice
+        if needs_metadata and (not metadata or not file_usage):
+             # If metadata is required but missing for this file, cannot generate representation
+             return None
+
+        file_header = f"# {file_path}"
+        if (self.use_details or self.use_descriptions) and file_token is not None:
+            file_header += f" [{file_token} tokens]"
+
+        content_string = None
+
+        if self.use_details and file_usage and file_usage.is_code:
+            details = ( metadata.get_testing_details(file_path)
+                        if file_usage.testing_related
+                        else metadata.get_code_details(file_path))
+            if details:
+                content_string = self.parse_json_response(details.model_dump_json())
+        elif self.use_descriptions and file_usage:
+            if file_usage.is_code:
+                details = ( metadata.get_code_details(file_path)
+                            if not file_usage.testing_related
+                            else metadata.get_testing_details(file_path))
+                if details:
+                    description = details.description
+                    if details.external_imports:
+                        description += f"\nExternal imports: {', '.join(details.external_imports)}\n" # Added newline for clarity
+                    content_string = description
+            else:
+                content_string = metadata.get_file_description(file_path)
+        elif file_usage: # Fallback to raw content ONLY if metadata and file_usage were available AND details/descriptions are off
+             # This case is for when use_details and use_descriptions are False and metadata was present
+            content_string = state.repo.read_file(file_path)
+        elif self.include_all_files and (not metadata or not file_usage) and not (self.use_details or self.use_descriptions): # Fallback to raw content if include_all_files is True and metadata/file_usage is missing, AND details/descriptions are OFF
+             # This case is for include_all_files=True, use_details/descriptions=False, and metadata/file_usage is None
+             try:
+                 content_string = state.repo.read_file(file_path)
+             except KeyError: # File might not be loaded into state.repo
+                  content_string = None # Cannot get raw content
+
+
+        if content_string is not None:
+             return f"{file_header}:\n{content_string}"
+        else:
+             return None
+
 
     def parse_json_response(self, json_str: str) -> str:
         data = json.loads(json_str)
@@ -107,7 +132,7 @@ class ContextRetriever(BaseModel):
 
             # Determine if the file should be included based on the current settings
             included = self.should_include_file(file_path, metadata)
-            files_data["Incl."].append(True if included else False)
+            files_data["Incl."].append(included)
 
             # Count the number of tokens from the metadata
             tokens = self.count_tokens_from_metadata(file_path, metadata)
@@ -118,58 +143,83 @@ class ContextRetriever(BaseModel):
     def count_tokens_from_metadata(
         self, file_path: str, metadata: Optional[RepoMetadata]
     ) -> int:
-        if not metadata:
-            return 0
+        # Determine if we need metadata/file_usage to proceed based on settings for token counting
+        needs_metadata_for_representation = self.use_details or self.use_descriptions
 
-        file_usage = metadata.get_file_usage(file_path)
-        if not file_usage:
-            return 0
+        file_usage = metadata.get_file_usage(file_path) if metadata else None
 
-        # Count tokens for the file header
+        if needs_metadata_for_representation and (not metadata or not file_usage):
+             # If details/descriptions are required but metadata/file_usage is missing,
+             # we cannot count tokens for that representation type.
+             # If include_all_files is true, we might still count header + raw.
+             if self.include_all_files and not needs_metadata_for_representation:
+                  # Include header + raw tokens if include_all_files is true and we are falling back to raw
+                   total_tokens = tokencost.count_string_tokens(f"# {file_path}", "gpt-4o")
+                   try:
+                       total_tokens += state.repo.files_tokens.get(file_path, 0)
+                   except AttributeError:
+                       pass # state.repo or files_tokens might not exist
+                   return total_tokens
+             return 0 # Otherwise, cannot count tokens meaningfully based on settings
+
+        # Count tokens for the file header (always included if representation is generated)
         file_header = f"# {file_path}"
         total_tokens = tokencost.count_string_tokens(file_header, "gpt-4o")
 
-        content_tokens = self._count_content_tokens(file_path, file_usage, metadata)
+        # Add tokens for the content part based on representation setting
+        content_tokens = self._count_file_representation_tokens(file_path, file_usage, metadata)
+        total_tokens += content_tokens
 
-        return total_tokens + content_tokens
+        return total_tokens
 
-    def _count_content_tokens(
-        self,
-        file_path: str,
-        file_usage: any, # Use 'any' as RepoMetadata.get_file_usage return type is not specified
-        metadata: RepoMetadata,
+    def _count_file_representation_tokens(
+         self,
+         file_path: str,
+         file_usage,
+         metadata: Optional[RepoMetadata]
     ) -> int:
+        """Helper to count tokens for the content part of a file's representation."""
+        # This helper counts tokens based on the representation type (details, descriptions, raw)
+        # It assumes the caller has handled the initial checks for metadata/file_usage
+        # and that file_usage and metadata (if needed) are available where required by the logic below.
+
         if self.use_descriptions:
-            if file_usage.is_code:
-                details = (
-                    metadata.get_code_details(file_path)
-                    if not file_usage.testing_related
-                    else metadata.get_testing_details(file_path)
-                )
+            if file_usage and file_usage.is_code:
+                details = ( metadata.get_code_details(file_path)
+                            if not file_usage.testing_related
+                            else metadata.get_testing_details(file_path))
                 if details:
                     description = details.description
                     if details.external_imports:
                         description += (
-                            f"\nExternal imports: {', '.join(details.external_imports)}"
+                            f"\nExternal imports: {', '.join(details.external_imports)}\n" # Added newline for clarity
                         )
                     return tokencost.count_string_tokens(description, "gpt-4o")
-            else:
+            elif file_usage: # Not code, get description
                 description = metadata.get_file_description(file_path)
                 return tokencost.count_string_tokens(description, "gpt-4o")
-        elif self.use_details and file_usage.is_code:
-            details = (
-                metadata.get_code_details(file_path)
-                if not file_usage.testing_related
-                else metadata.get_testing_details(file_path)
-            )
+            # If use_descriptions is True but file_usage is None, description cannot be generated/counted.
+            return 0
+
+        elif self.use_details and file_usage and file_usage.is_code:
+            details = ( metadata.get_code_details(file_path)
+                        if not file_usage.testing_related
+                        else metadata.get_testing_details(file_path))
             if details:
                 details_str = self.parse_json_response(details.model_dump_json())
                 return tokencost.count_string_tokens(details_str, "gpt-4o")
-        else:
-            # otherwise, return the full files number of tokens
-            return state.repo.files_tokens.get(file_path, 0) # Use .get for safety
+            # If use_details is True and file_usage exists and is code, but no details available
+            return 0
 
-        return 0 # Should not be reached if one of the branches is always taken
+        else:
+            # otherwise, return the full file's number of tokens from state (raw content)
+            # This applies if use_descriptions and use_details are False
+            # Assumes the file was loaded into state.repo.files_tokens
+            try:
+                 return state.repo.files_tokens.get(file_path, 0)
+            except AttributeError: # state.repo or state.repo.files_tokens might not exist
+                 return 0
+
 
     def should_include_file(
         self, file_path: str, metadata: Optional[RepoMetadata]
@@ -178,10 +228,12 @@ class ContextRetriever(BaseModel):
             return True
 
         if not metadata:
+            # If filters are applied and no metadata is available, cannot include
             return False
 
         file_usage = metadata.get_file_usage(file_path)
         if not file_usage:
+            # If filters are applied and file not in metadata, cannot include
             return False
 
         return (
@@ -196,84 +248,7 @@ class ContextRetriever(BaseModel):
 
 
 if __name__ == "__main__":
-    # Assuming necessary setup for state and RepoMetadata exists
-    # Example usage (might require mocking dependencies for execution)
-    class MockRepoMetadata:
-        def load_metadata(self, path):
-            print(f"Loading metadata from {path}...")
-            # Return a mock object with necessary attributes/methods
-            mock_metadata = type('obj', (object,), {})()
-            mock_metadata.descriptions = {"mock/file1.py": "Desc 1", "mock/file2.txt": "Desc 2"}
-            
-            class MockFileUsage:
-                def __init__(self, is_code=False, testing=False, config=False, deployment=False, security=False, ui=False, api=False):
-                    self.is_code = is_code
-                    self.testing_related = testing
-                    self.config_related = config
-                    self.deployment_related = deployment
-                    self.security_related = security
-                    self.ui_related = ui
-                    self.api_related = api
-
-            def get_file_usage(file_path):
-                if file_path == "mock/file1.py":
-                    return MockFileUsage(is_code=True)
-                elif file_path == "mock/file2.txt":
-                    return MockFileUsage(is_code=False)
-                return None
-                
-            def get_file_description(file_path):
-                return mock_metadata.descriptions.get(file_path, "")
-                
-            def get_code_details(file_path):
-                 if file_path == "mock/file1.py":
-                     details = type('obj', (object,), {})()
-                     details.description = "Details desc for file1"
-                     details.external_imports = ["os", "sys"]
-                     details.model_dump_json = lambda: '{"description": "Details desc for file1", "external_imports": ["os", "sys"]}'
-                     return details
-                 return None
-            
-            def get_testing_details(file_path):
-                return None # Mock no testing details
-            
-            mock_metadata.get_file_usage = get_file_usage
-            mock_metadata.get_file_description = get_file_description
-            mock_metadata.get_code_details = get_code_details
-            mock_metadata.get_testing_details = get_testing_details
-
-            return mock_metadata
-
-        # Mock necessary methods/attributes
-
-    class MockState:
-        def __init__(self):
-            self.repo = type('obj', (object,), {})()
-            self.repo.read_file = lambda path: f"Content of {path}"
-            self.repo.files_tokens = {"mock/file1.py": 100, "mock/file2.txt": 50} # Mock token counts
-
-    # Mock global state
-    state = MockState()
-    RepoMetadata.load_metadata = MockRepoMetadata().load_metadata # Monkey patch
-
-    print("--- Test Case 1: include_all_files=True, use_descriptions=True ---")
-    metadata_obj = RepoMetadata.load_metadata(".")
+    metadata = RepoMetadata.load_metadata(".")
     retriever = ContextRetriever(include_all_files=True, use_descriptions=True)
-    files_to_retrieve = list(metadata_obj.descriptions.keys()) + ["mock/file1.py", "mock/file2.txt", "nonexistent.md"] # Add some files
-    context = retriever.retrieve(files_to_retrieve, None, metadata_obj)
+    context = retriever.retrieve(metadata.descriptions.keys(), metadata)
     print(context)
-
-    print("\n--- Test Case 2: include_code_files=True, use_details=True ---")
-    retriever_details = ContextRetriever(include_code_files=True, use_details=True)
-    context_details = retriever_details.retrieve(files_to_retrieve, None, metadata_obj)
-    print(context_details)
-
-    print("\n--- Test Case 3: include_all_files=False (default), raw content ---")
-    retriever_raw = ContextRetriever()
-    context_raw = retriever_raw.retrieve(files_to_retrieve, None, metadata_obj) # Should include nothing as include flags are false
-    print(context_raw)
-
-    print("\n--- Test Case 4: include_all_files=True, raw content ---")
-    retriever_raw_all = ContextRetriever(include_all_files=True)
-    context_raw_all = retriever_raw_all.retrieve(files_to_retrieve, None, metadata_obj)
-    print(context_raw_all)
