@@ -72,7 +72,7 @@ class RepoMetadata(BaseModel):
         preview: bool = False,
     ):
         missing_files_paths = [\
-            file_path for file_path in files_paths if file_path not in self.files_usage
+            file_path for file_path in files_paths if file_path not in self.files_usage\
         ]
         files_usage_preview = self.generate_files_usage(
             llm_client, repo, missing_files_paths, preview
@@ -91,93 +91,93 @@ class RepoMetadata(BaseModel):
         preview: bool = False,
     ):
         context = get_files_contents(repo, files_paths)
-        agent = Agent(
-            instructions=prompt_identify_file_usage,
-            model="gpt-4o-mini",
-            response_format=FileUsage,
+        agent = Agent(\
+            instructions=prompt_identify_file_usage,\
+            model="gpt-4o-mini",\
+            response_format=FileUsage,\
         )
         if preview:
             return agent.preview(context)
         output = agent.run(llm_client, context)
-        self.files_usage.update(
-            {
-                file_path: parse_response(output.response[file_path])
-                for file_path in files_paths
-            }
+        self.files_usage.update(\
+            {\
+                file_path: parse_response(output.response[file_path])\
+                for file_path in files_paths\
+            }\
         )
 
     def generate_descriptions(
         self, llm_client: LLMClient, repo: Repo, files_paths: list[str]
     ):
-        files_to_generate_descriptions = [
-            file_path
-            for file_path in files_paths
-            if file_path in self.files_usage and not self.files_usage[file_path].is_code
+        files_to_generate_descriptions = [\
+            file_path\
+            for file_path in files_paths\
+            if file_path in self.files_usage and not self.files_usage[file_path].is_code\
         ]
         context = get_files_contents(repo, files_to_generate_descriptions)
         agent = Agent(instructions=prompt_generate_descriptions, model="gpt-4o-mini")
         output = agent.run(llm_client, context)
-        self.descriptions.update(
-            {
-                file_path: output.response[file_path]["content"]
-                for file_path in files_to_generate_descriptions
-            }
+        self.descriptions.update(\
+            {\
+                file_path: output.response[file_path]["content"]\
+                for file_path in files_to_generate_descriptions\
+            }\
         )
 
     def generate_code_details(
         self, llm_client: LLMClient, repo: Repo, files_paths: list[str]
     ):
-        files_to_generate_code_details = [
-            file_path
-            for file_path in files_paths
-            if file_path in self.files_usage
-            and self.files_usage[file_path].is_code
-            and not self.files_usage[file_path].testing_related
+        files_to_generate_code_details = [\
+            file_path\
+            for file_path in files_paths\
+            if file_path in self.files_usage\
+            and self.files_usage[file_path].is_code\
+            and not self.files_usage[file_path].testing_related\
         ]
         context = get_files_contents(repo, files_to_generate_code_details)
-        agent = Agent(
-            instructions=prompt_generate_code_details,
-            model="gpt-4o-mini",
-            response_format=CodeDetails,
+        agent = Agent(\
+            instructions=prompt_generate_code_details,\
+            model="gpt-4o-mini",\
+            response_format=CodeDetails,\
         )
         output = agent.run(llm_client, context)
-        self.code_details.update(
-            {
-                file_path: parse_response(output.response[file_path])
-                for file_path in files_to_generate_code_details
-            }
+        self.code_details.update(\
+            {\
+                file_path: parse_response(output.response[file_path])\
+                for file_path in files_to_generate_code_details\
+            }\
         )
 
     def generate_testing_details(
         self, llm_client: LLMClient, repo: Repo, files_paths: list[str]
     ):
-        files_to_generate_testing_details = [
-            file_path
-            for file_path in files_paths
-            if file_path in self.files_usage
-            and self.files_usage[file_path].is_code
-            and self.files_usage[file_path].testing_related
+        files_to_generate_testing_details = [\
+            file_path\
+            for file_path in files_paths\
+            if file_path in self.files_usage\
+            and self.files_usage[file_path].is_code\
+            and self.files_usage[file_path].testing_related\
         ]
         context = get_files_contents(repo, files_to_generate_testing_details)
-        agent = Agent(
-            instructions=prompt_generate_testing_details,
-            model="gpt-4o-mini",
-            response_format=TestingDetails,
+        agent = Agent(\
+            instructions=prompt_generate_testing_details,\
+            model="gpt-4o-mini",\
+            response_format=TestingDetails,\
         )
         output = agent.run(llm_client, context)
-        self.testing_details.update(
-            {
-                file_path: parse_response(output.response[file_path])
-                for file_path in files_to_generate_testing_details
-            }
+        self.testing_details.update(\
+            {\
+                file_path: parse_response(output.response[file_path])\
+                for file_path in files_to_generate_testing_details\
+            }\
         )
 
     def get_file_metadata(self, file_path: str):
-        return {
-            "usage": self.get_file_usage(file_path),
-            "description": self.get_file_description(file_path),
-            "code_details": self.get_code_details(file_path),
-            "testing_details": self.get_testing_details(file_path),
+        return {\
+            "usage": self.get_file_usage(file_path),\
+            "description": self.get_file_description(file_path),\
+            "code_details": self.get_code_details(file_path),\
+            "testing_details": self.get_testing_details(file_path),\
         }
 
     def get_file_usage(self, file_path: str) -> FileUsage:
@@ -287,14 +287,11 @@ Write a single sentence describing what the given file does.
 Add the technologies mentioned inside that file (and their versions if present) after that description.
 """
 
-
 if __name__ == "__main__":
     llm_client = LLMClient()
     repo_path = "."
     files_paths = ["src/codeas/core/repo.py", "requirements.txt"]
 
     metadata = RepoMetadata()
-
     loaded_metadata = RepoMetadata.load_metadata(repo_path)
-
     ...
