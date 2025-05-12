@@ -210,11 +210,11 @@ class RepoMetadata(BaseModel):
         return cls(**data)
 
 
-def get_files_contents(repo: Repo, file_paths: list[str]) -> str:
+def get_files_contents(repo: Repo, file_paths: list[str]) -> dict[str, str]:
     contents = {}
     for file_path in file_paths:
         with open(os.path.join(repo.repo_path, file_path), "r") as f:
-            contents[file_path] = f"# path = {file_path}:\n{f.read()}"
+            contents[file_path] = f"# path = {file_path}:\\n{f.read()}"
     return contents
 
 
@@ -293,9 +293,5 @@ if __name__ == "__main__":
     files_paths = ["src/codeas/core/repo.py", "requirements.txt"]
 
     metadata = RepoMetadata()
-    # metadata.generate_repo_metadata(llm_client, files_paths)
-    # metadata.export_metadata(repo_path)
     loaded_metadata = RepoMetadata.load_metadata(repo_path)
-    # loaded_metadata.generate_missing_repo_metadata(llm_client, files_paths)
-    # loaded_metadata.export_metadata(repo.repo_path)
     ...
