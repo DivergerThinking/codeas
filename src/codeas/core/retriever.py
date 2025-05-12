@@ -20,6 +20,46 @@ class ContextRetriever(BaseModel):
     use_descriptions: bool = False
     use_details: bool = False
 
+    def _get_file_content_string(
+        self, file_path, file_usage, metadata, files_tokens, i
+    ) -> str:
+        """Helper to get the content string for an included file."""
+        file_header = f"# {file_path}"
+        if (self.use_details or self.use_descriptions) and files_tokens:
+            file_header += f" [{files_tokens[i]} tokens]"
+
+        if self.use_details and file_usage and file_usage.is_code:
+            details = metadata.get_testing_details(
+                file_path
+            ) if file_usage.testing_related else metadata.get_code_details(file_path)
+            if details:
+                return f"{file_header}:\\n{self.parse_json_response(details.model_dump_json())}"
+        elif self.use_descriptions and file_usage:
+            if file_usage.is_code:
+                details = metadata.get_code_details(
+                    file_path
+                ) if not file_usage.testing_related else metadata.get_testing_details(
+                    file_path
+                )
+                if details:
+                    description = f"{file_header}:\\n{details.description}"
+                    if details.external_imports:
+                        description += f"\\nExternal imports: {', '.join(details.external_imports)}"
+                    return description
+            else:
+                description = metadata.get_file_description(file_path)
+                return f"{file_header}:\\n{description}"
+        else:
+            content = state.repo.read_file(file_path)
+            return f"{file_header}:\\n{content}"
+
+        # Return empty string if file_usage is None or no details/descriptions used/found
+        # and not falling into the 'else' (read file content) case.
+        # This can happen if metadata/file_usage is None, but should_include_file allows inclusion
+        # based on include_all_files=True. In such cases, _get_file_content_string might be called
+        # but return an empty string if there's no file_usage to guide content retrieval.
+        return ""
+
     def retrieve(
         self,
         files_paths: list[str],
@@ -28,47 +68,18 @@ class ContextRetriever(BaseModel):
     ) -> str:
         context = []
         for i, file_path in enumerate(files_paths):
-            # Use dedicated method to check if file should be included
-            if not self.should_include_file(file_path, metadata):
-                continue
+            # Removed the commented-out code check here
+            if metadata:
+                file_usage = metadata.get_file_usage(file_path)
+            else:
+                file_usage = None
 
-            file_usage = metadata.get_file_usage(file_path) if metadata else None
-
-            # Build file header
-            file_header = f"# {file_path}"
-            # Add tokens to header if needed and available
-            if (self.use_details or self.use_descriptions) and files_tokens is not None and i < len(files_tokens):
-                file_header += f" [{files_tokens[i]} tokens]"
-
-            # Determine the content string based on settings and file type
-            content_string = None
-            if metadata and file_usage:
-                if self.use_details and file_usage.is_code:
-                    details = metadata.get_code_details(file_path) if not file_usage.testing_related else metadata.get_testing_details(file_path)
-                    if details:
-                        # Use the parse_json_response method to format details
-                        content_string = self.parse_json_response(details.model_dump_json())
-                elif self.use_descriptions:
-                    if file_usage.is_code:
-                        details = metadata.get_code_details(file_path) if not file_usage.testing_related else metadata.get_testing_details(file_path)
-                        if details:
-                            content_string = details.description
-                            if details.external_imports:
-                                content_string += f"\\nExternal imports: {', '.join(details.external_imports)}"
-                    else: # Non-code file description
-                        description = metadata.get_file_description(file_path)
-                        if description: # Only add if description exists
-                           content_string = description
-
-            # Append header and content (either specific or full)
-            if content_string is not None:
-                 context.append(f"{file_header}:\\n{content_string}")
-            else: # Fallback to full content if no specific content generated or applicable
-                # Ensure state.repo exists before accessing
-                if hasattr(state, 'repo') and state.repo:
-                    full_content = state.repo.read_file(file_path)
-                    context.append(f"{file_header}:\\n{full_content}")
-
+            if self.should_include_file(file_path, metadata):
+                 file_content = self._get_file_content_string(
+                     file_path, file_usage, metadata, files_tokens, i
+                 )
+                 if file_content:
+                     context.append(file_content)
 
         return "\\n\\n".join(context)
 
@@ -88,7 +99,7 @@ class ContextRetriever(BaseModel):
     def retrieve_files_data(
         self, files_paths: list[str], metadata: Optional[RepoMetadata] = None
     ) -> Dict[str, List]:
-        files_data: Dict[str, List] = {
+        files_data = {
             "Incl.": [],
             "Path": [],
             "Tokens": [],
@@ -99,7 +110,7 @@ class ContextRetriever(BaseModel):
 
             # Determine if the file should be included based on the current settings
             included = self.should_include_file(file_path, metadata)
-            files_data["Incl."].append(included)
+            files_data["Incl."].append(True if included else False)
 
             # Count the number of tokens from the metadata
             tokens = self.count_tokens_from_metadata(file_path, metadata)
@@ -107,65 +118,63 @@ class ContextRetriever(BaseModel):
 
         return files_data
 
+    def _get_countable_content_string(self, file_path, file_usage, metadata) -> Optional[str]:
+        """Helper to get the string content to be token counted (excluding header)."""
+        if not file_usage:
+            return None
+
+        if self.use_descriptions:
+            if file_usage.is_code:
+                details = metadata.get_code_details(
+                    file_path
+                ) if not file_usage.testing_related else metadata.get_testing_details(
+                    file_path
+                )
+                if details:
+                    description = details.description
+                    if details.external_imports:
+                        description += (
+                            f"\\nExternal imports: {', '.join(details.external_imports)}"
+                        )
+                    return description
+            else:
+                return metadata.get_file_description(file_path)
+        elif self.use_details and file_usage.is_code:
+            details = metadata.get_code_details(
+                file_path
+            ) if not file_usage.testing_related else metadata.get_testing_details(
+                file_path
+            )
+            if details:
+                return self.parse_json_response(details.model_dump_json())
+
+        return None # If neither descriptions nor details are used or file type doesn't match
+
+
     def count_tokens_from_metadata(
         self, file_path: str, metadata: Optional[RepoMetadata]
     ) -> int:
-        # If metadata is needed for description/details but not provided,
-        # or if file_usage is missing, we cannot count tokens for those specific types.
-        # The original code seems to return 0 in these metadata-dependent cases.
         if not metadata:
-             return 0
+            return 0
 
         file_usage = metadata.get_file_usage(file_path)
         if not file_usage:
-             # If file_usage is missing, we cannot check file types/usage.
-             return 0
+            return 0
 
-        # Determine the content string based on settings for token counting
-        content_string_for_counting = ""
-        use_specific_content = False # Flag to indicate if we should count specific content
+        # Count tokens for the file header
+        file_header = f"# {file_path}"
+        total_tokens = tokencost.count_string_tokens(file_header, "gpt-4o")
 
-        if self.use_descriptions:
-            use_specific_content = True
-            if file_usage.is_code:
-                details = metadata.get_code_details(file_path) if not file_usage.testing_related else metadata.get_testing_details(file_path)
-                if details:
-                    content_string_for_counting = details.description
-                    if details.external_imports:
-                         content_string_for_counting += f"\\nExternal imports: {', '.join(details.external_imports)}"
-            else: # Non-code file description
-                 description = metadata.get_file_description(file_path)
-                 if description:
-                    content_string_for_counting = description
-                 else:
-                     # If description is None, effectively no specific content to count
-                     use_specific_content = False
-        elif self.use_details and file_usage.is_code:
-             use_specific_content = True
-             details = metadata.get_code_details(file_path) if not file_usage.testing_related else metadata.get_testing_details(file_path)
-             if details:
-                 # For details, the raw content string for counting is the JSON string
-                 content_string_for_counting = details.model_dump_json()
-             else:
-                 # If details are None, no specific content to count
-                 use_specific_content = False
+        countable_content = self._get_countable_content_string(file_path, file_usage, metadata)
 
-        # Count tokens based on whether specific content was determined,
-        # otherwise fall back to full file tokens if state.repo is available.
-        if use_specific_content:
-            file_header = f"# {file_path}"
-            total_tokens = tokencost.count_string_tokens(file_header, "gpt-4o")
-            total_tokens += tokencost.count_string_tokens(content_string_for_counting, "gpt-4o")
-            return total_tokens
+        if countable_content is not None:
+             total_tokens += tokencost.count_string_tokens(countable_content, "gpt-4o")
         else:
-            # otherwise, return the full files number of tokens if state.repo is available
-            if hasattr(state, 'repo') and state.repo:
-                # Use .get() for safety in case file_path is not in files_tokens
-                return state.repo.files_tokens.get(file_path, 0)
-            else:
-                # Cannot get full file tokens without state.repo
-                return 0
+            # otherwise, return the full files number of tokens
+            # Reverted the check to restore original KeyError behavior
+            total_tokens = state.repo.files_tokens[file_path]
 
+        return total_tokens
 
     def should_include_file(
         self, file_path: str, metadata: Optional[RepoMetadata]
@@ -174,18 +183,12 @@ class ContextRetriever(BaseModel):
             return True
 
         if not metadata:
-            # If metadata is missing, we cannot check file types/usage,
-            # so we cannot apply the specific include flags.
-            # Only include_all_files works without metadata.
             return False
 
         file_usage = metadata.get_file_usage(file_path)
         if not file_usage:
-             # If file_usage is missing for a file, we cannot check its type/usage.
-             # We cannot apply specific include flags.
-             return False
+            return False
 
-        # Check specific include flags based on file_usage
         return (
             (self.include_code_files and file_usage.is_code)
             or (self.include_testing_files and file_usage.testing_related)
@@ -198,28 +201,12 @@ class ContextRetriever(BaseModel):
 
 
 if __name__ == "__main__":
-    # Basic example usage - requires a mock or actual state/metadata setup
-    # This block is for demonstration and is not run in a standard import.
-    # Replace with actual setup or mock objects for testing if needed.
-    try:
-        # Assuming state and RepoMetadata are properly initialized elsewhere
-        # For simple execution demonstration, we just show the call structure
-        metadata = RepoMetadata.load_metadata(".") # Requires actual implementation
-        retriever = ContextRetriever(include_all_files=True, use_descriptions=True)
-        # metadata.descriptions.keys() should return iterable of file paths
-        file_paths_example = list(metadata.descriptions.keys()) # Example paths
-        # files_tokens_example = [state.repo.files_tokens.get(f, 0) for f in file_paths_example] # Example tokens if state.repo exists
-
-        # context = retriever.retrieve(file_paths_example, files_tokens_example, metadata)
-        # print(context)
-
-        # print("\n--- Retrieve Files Data Example ---")
-        # files_data = retriever.retrieve_files_data(file_paths_example, metadata)
-        # print(files_data)
-
-        print("ContextRetriever methods defined. Add mock objects or run in environment with state/metadata for full execution.")
-
-    except NameError:
-        print("Skipping __main__ execution: state or RepoMetadata not available.")
-    except Exception as e:
-        print(f"An error occurred during __main__ execution: {e}")
+    # Reverted __main__ block to a minimal state similar to original
+    # or just 'pass' if execution setup is complex and not relevant to the fix.
+    # Assuming metadata and state.repo are properly initialized elsewhere
+    # for the class to function.
+    metadata = RepoMetadata.load_metadata(".")
+    retriever = ContextRetriever(include_all_files=True, use_descriptions=True)
+    # Provide dummy list for files_tokens as it's optional but used in logic
+    context = retriever.retrieve(list(metadata.descriptions.keys()), files_tokens=[0] * len(metadata.descriptions), metadata=metadata)
+    print(context)
