@@ -119,12 +119,12 @@ class Agent(BaseModel):
         for response in responses.values():
             results.append(self._get_request_tokens_and_cost(response))
 
-        tokens = {
+        tokens = {\
             "input_tokens": sum(result[0]["input_tokens"] for result in results),
             "output_tokens": sum(result[0]["output_tokens"] for result in results),
             "total_tokens": sum(result[0]["total_tokens"] for result in results),
         }
-        cost = {
+        cost = {\
             "input_cost": sum(result[1]["input_cost"] for result in results),
             "output_cost": sum(result[1]["output_cost"] for result in results),
             "total_cost": sum(result[1]["total_cost"] for result in results),
@@ -132,12 +132,12 @@ class Agent(BaseModel):
         return tokens, cost
 
     def _get_request_tokens_and_cost(self, response):
-        tokens = {
+        tokens = {\
             "input_tokens": response.usage.prompt_tokens,
             "output_tokens": response.usage.completion_tokens,
             "total_tokens": response.usage.total_tokens,
         }
-        cost = {
+        cost = {\
             "input_cost": float(
                 calculate_cost_by_tokens(
                     response.usage.prompt_tokens, self.model, "input"
@@ -185,7 +185,7 @@ class Agent(BaseModel):
         if response is None:
             input_tokens = count_message_tokens(messages, self.model)
             input_cost = float(calculate_prompt_cost(messages, self.model))
-            return (({"input_tokens": input_tokens}, {"input_cost": input_cost}))
+            return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
             tokens_and_cost = calculate_all_costs_and_tokens(
                 messages, response["content"], self.model
