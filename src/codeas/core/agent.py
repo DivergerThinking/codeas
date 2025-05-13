@@ -156,7 +156,7 @@ class Agent(BaseModel):
         results = []
         for key, messages in batch_messages.items():
             response = batch_response[key] if batch_response else None
-            results.append(self._calculate_tokens_and_cost(messages, response))
+            results.append(self._calculate_tokens_and_and_cost(messages, response))
 
         tokens = {"input_tokens": sum(result[0]["input_tokens"] for result in results)}
         cost = {"input_cost": sum(result[1]["input_cost"] for result in results)}
