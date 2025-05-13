@@ -71,8 +71,8 @@ class RepoMetadata(BaseModel):
         files_paths: list[str],
         preview: bool = False,
     ):
-        missing_files_paths = [
-            file_path for file_path in files_paths if file_path not in self.files_usage
+        missing_files_paths = [\
+            file_path for file_path in files_paths if file_path not in self.files_usage\
         ]
         files_usage_preview = self.generate_files_usage(
             llm_client, repo, missing_files_paths, preview
@@ -210,7 +210,7 @@ class RepoMetadata(BaseModel):
         return cls(**data)
 
 
-def get_files_contents(repo: Repo, file_paths: list[str]) -> dict:
+def get_files_contents(repo: Repo, file_paths: list[str]) -> dict[str, str]:
     contents = {}
     for file_path in file_paths:
         with open(os.path.join(repo.repo_path, file_path), "r") as f:
@@ -287,6 +287,7 @@ Write a single sentence describing what the given file does.
 Add the technologies mentioned inside that file (and their versions if present) after that description.
 """
 
+
 if __name__ == "__main__":
     llm_client = LLMClient()
     repo_path = "."
@@ -294,4 +295,5 @@ if __name__ == "__main__":
 
     metadata = RepoMetadata()
     loaded_metadata = RepoMetadata.load_metadata(repo_path)
+    # loaded_metadata.export_metadata(repo.repo_path)
     ...
