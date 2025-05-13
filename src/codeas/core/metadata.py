@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Optional, Dict
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -210,7 +210,7 @@ class RepoMetadata(BaseModel):
         return cls(**data)
 
 
-def get_files_contents(repo: Repo, file_paths: list[str]) -> Dict[str, str]:
+def get_files_contents(repo: Repo, file_paths: list[str]) -> dict:
     contents = {}
     for file_path in file_paths:
         with open(os.path.join(repo.repo_path, file_path), "r") as f:
@@ -293,7 +293,5 @@ if __name__ == "__main__":
     files_paths = ["src/codeas/core/repo.py", "requirements.txt"]
 
     metadata = RepoMetadata()
-    # metadata.export_metadata(repo_path)
     loaded_metadata = RepoMetadata.load_metadata(repo_path)
-    # loaded_metadata.export_metadata(repo.repo_path)
     ...
