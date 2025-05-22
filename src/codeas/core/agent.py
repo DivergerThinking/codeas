@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel
 from tokencost import (
@@ -46,10 +46,10 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
+    system_prompt: Optional[str] = None
 
     def run(
-        self,
+        self,\
         llm_client: LLMClient,
         context: Union[dict, list, str] = [],
     ) -> AgentOutput:
@@ -89,7 +89,7 @@ class Agent(BaseModel):
 
     def _create_messages(self, context):
         messages = (
-            [{"role": "system", "content": self.system_prompt}]
+            [{"role": "system", "content": self.system_prompt}]\
             if self.system_prompt
             else []
         )
