@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel
 from tokencost import (
@@ -46,7 +46,7 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
+    system_prompt: Union[str, None] = None # Fixed: Changed type hint to allow None
 
     def run(
         self,
