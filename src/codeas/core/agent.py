@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel
 from tokencost import (
@@ -46,7 +46,7 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
+    system_prompt: Optional[str] = None
 
     def run(
         self,
@@ -119,17 +119,7 @@ class Agent(BaseModel):
         for response in responses.values():
             results.append(self._get_request_tokens_and_cost(response))
 
-        tokens = {
-            "input_tokens": sum(result[0]["input_tokens"] for result in results),
-            "output_tokens": sum(result[0]["output_tokens"] for result in results),
-            "total_tokens": sum(result[0]["total_tokens"] for result in results),
-        }
-        cost = {
-            "input_cost": sum(result[1]["input_cost"] for result in results),
-            "output_cost": sum(result[1]["output_cost"] for result in results),
-            "total_cost": sum(result[1]["total_cost"] for result in results),
-        }
-        return tokens, cost
+        tokens = {\n            "input_tokens": sum(result[0]["input_tokens"] for result in results),\n            "output_tokens": sum(result[0]["output_tokens"] for result in results),\n            "total_tokens": sum(result[0]["total_tokens"] for result in results),\n        }\n        cost = {\n            "input_cost": sum(result[1]["input_cost"] for result in results),\n            "output_cost": sum(result[1]["output_cost"] for result in results),\n            "total_cost": sum(result[1]["total_cost"] for result in results),\n        }\n        return tokens, cost
 
     def _get_request_tokens_and_cost(self, response):
         tokens = {
