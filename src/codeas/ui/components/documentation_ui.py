@@ -4,6 +4,12 @@ from codeas.core.state import state
 from codeas.core.usage_tracker import usage_tracker
 from codeas.use_cases.documentation import SECTION_CONFIG, generate_docs_section
 
+# Define constants for repeated literals
+INCL_COLUMN_LABEL = "Incl."
+SECTION_COLUMN_LABEL = "Section"
+MESSAGES_EXPANDER_LABEL = "Messages"
+FULL_DOC_EXPANDER_LABEL = "Full Documentation"
+
 
 def display():
     # Create a list of documentation sections from SECTION_CONFIG
@@ -16,16 +22,16 @@ def display():
 
     # Create a dictionary for the data editor
     doc_data = {
-        "Incl.": [True] * len(doc_sections),  # Default all to True
-        "Section": formatted_sections,
+        INCL_COLUMN_LABEL: [True] * len(doc_sections),  # Default all to True
+        SECTION_COLUMN_LABEL: formatted_sections,
     }
 
     # Display the data editor
     edited_data = st.data_editor(
         doc_data,
         column_config={
-            "Incl.": st.column_config.CheckboxColumn(width="small"),
-            "Section": st.column_config.TextColumn(width="large"),
+            INCL_COLUMN_LABEL: st.column_config.CheckboxColumn(width="small"),
+            SECTION_COLUMN_LABEL: st.column_config.TextColumn(width="large"),
         },
         hide_index=True,
         key="doc_sections_editor",
@@ -33,7 +39,9 @@ def display():
 
     # Get the selected sections
     selected_sections = [
-        section for section, incl in zip(doc_sections, edited_data["Incl."]) if incl
+        section
+        for section, incl in zip(doc_sections, edited_data[INCL_COLUMN_LABEL])
+        if incl
     ]
 
     use_previous_outputs = st.toggle(
@@ -44,14 +52,16 @@ def display():
         "Generate documentation", type="primary", key="generate_docs"
     )
     preview_docs = st.button("Preview", key="preview_docs")
-    if generate_docs:
-        process_sections(
-            selected_sections, generate=True, use_previous=use_previous_outputs
-        )
-    if preview_docs:
-        process_sections(
-            selected_sections, preview=True, use_previous=use_previous_outputs
-        )
+
+    if generate_docs or preview_docs:
+         is_generate = generate_docs
+         is_preview = preview_docs
+         process_sections(
+             selected_sections,
+             generate=is_generate,
+             preview=is_preview,
+             use_previous=use_previous_outputs
+         )
 
 
 def process_sections(
@@ -64,17 +74,17 @@ def process_sections(
     total_input_tokens = 0
     total_output_tokens = 0
     total_input_cost = 0
-    total_input_tokens = 0
+    # Removed duplicate total_input_tokens initialization
     full_documentation = ""
 
-    with st.expander(
-        f"Sections {'[Preview]' if preview else ''}", expanded=not use_previous
-    ):
-        for section in selected_sections:
-            with st.spinner(
-                f"{'Generating' if generate else 'Previewing' if preview else 'Displaying'} {section}..."
-            ):
-                if generate:
+    expander_title = f"Sections {'[Preview]' if preview else ''}"
+    with st.expander(expander_title, expanded=not use_previous):
+        # Separate logic for generate vs preview to reduce complexity
+        if generate:
+            for section in selected_sections:
+                spinner_text = f"Generating {section}..."
+                with st.spinner(spinner_text):
+                    output = None
                     if use_previous:
                         try:
                             output = read_output(section)
@@ -82,48 +92,68 @@ def process_sections(
                             output = run_generation(section)
                     else:
                         output = run_generation(section)
+
                     if output:
-                        total_cost += output.cost["total_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
-                        total_output_tokens += output.tokens["output_tokens"]
-                elif preview:
+                        total_cost += output.cost.get("total_cost", 0)
+                        total_input_tokens += output.tokens.get("input_tokens", 0)
+                        total_output_tokens += output.tokens.get("output_tokens", 0)
+
+                    # Display section output (relies on session_state populated by run_generation/read_output)
+                    display_section(section, generate=True, output=st.session_state.outputs.get(section))
+
+                    # Build full documentation string
+                    if section in st.session_state.outputs:
+                        cleaned_content = clean_markdown_content(
+                            st.session_state.outputs[section].response["content"]
+                        )
+                        full_documentation += f"\n\n{cleaned_content}"
+
+        elif preview:
+             for section in selected_sections:
+                spinner_text = f"Previewing {section}..."
+                with st.spinner(spinner_text):
+                    output = None
                     if use_previous:
                         try:
-                            output = read_output(section)
+                            output = read_output(section) # read_output populates session_state
                         except FileNotFoundError:
                             output = run_preview(section)
                     else:
                         output = run_preview(section)
+
                     if output:
-                        total_input_cost += output.cost["input_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
+                         total_input_cost += output.cost.get("input_cost", 0)
+                         # Note: Original added input tokens in both generate and preview paths
+                         total_input_tokens += output.tokens.get("input_tokens", 0)
 
-                display_section(section, generate, preview, use_previous)
+                    # Display section output (pass the output obtained)
+                    display_section(section, preview=True, output=output)
 
-                if not preview and section in st.session_state.outputs:
-                    cleaned_content = clean_markdown_content(
-                        st.session_state.outputs[section].response["content"]
-                    )
-                    full_documentation += f"\n\n{cleaned_content}"
 
+    # Display totals after the loop
     if generate:
+        # Removed trailing backslash
         st.info(
             f"Total cost: ${total_cost:.4f} "
             f"(input tokens: {total_input_tokens:,}, "
             f"output tokens: {total_output_tokens:,})"
         )
+        # This check was inside the loop in original, moved outside
         if not use_previous:
-            usage_tracker.record_usage("generate_docs", total_cost)
+             usage_tracker.record_usage("generate_docs", total_cost)
     elif preview:
         st.info(
             f"Total input cost: ${total_input_cost:.4f} ({total_input_tokens:,} tokens)"
         )
 
+    # Display full documentation if generated
     if full_documentation:
-        with st.expander("Full Documentation", expanded=True):
+        with st.expander(FULL_DOC_EXPANDER_LABEL, expanded=True):
+            # clean_markdown_content was called on the combined string in original, keep that
             full_documentation = clean_markdown_content(full_documentation)
             st.markdown(full_documentation)
 
+    # Add download button if relevant outputs exist
     if generate or (
         not preview
         and any(section in st.session_state.outputs for section in selected_sections)
@@ -132,6 +162,7 @@ def process_sections(
 
 
 def run_generation(section: str):
+    # Run preview first to check context availability
     preview_output = generate_docs_section(
         state.llm_client,
         section,
@@ -139,7 +170,9 @@ def run_generation(section: str):
         state.repo_metadata,
         preview=True,
     )
-    if preview_output.messages and preview_output.messages[0]["content"].strip():
+
+    if preview_output and preview_output.messages and preview_output.messages[0].get("content", "").strip():
+        # If context exists, run full generation
         output = generate_docs_section(
             state.llm_client,
             section,
@@ -148,6 +181,7 @@ def run_generation(section: str):
             preview=False,
         )
         st.session_state.outputs[section] = output
+        # State write_output expects a dict, not the raw output object
         state.write_output(
             {
                 "content": output.response["content"],
@@ -175,18 +209,23 @@ def run_preview(section: str):
 
 def read_output(section: str):
     previous_output = state.read_output(f"{section}.json")
-    output = type(
-        "Output",
-        (),
-        {
-            "response": {"content": previous_output["content"]},
-            "cost": previous_output["cost"],
-            "tokens": previous_output["tokens"],
-            "messages": previous_output.get(
-                "messages",
-                [{"content": "Context was not stored with previous output"}],
-            ),  # Use stored messages if available
-        },
+    # Create a simple object to mimic the structure expected by display/processing logic
+    # Use a class or namedtuple for clarity instead of type()
+    class Output:
+        def __init__(self, content, cost, tokens, messages):
+            self.response = {"content": content}
+            self.cost = cost
+            self.tokens = tokens
+            self.messages = messages # Use stored messages
+
+    output = Output(
+        previous_output["content"],
+        previous_output["cost"],
+        previous_output["tokens"],
+        previous_output.get(
+            "messages",
+            [{"content": "Context was not stored with previous output"}],
+        ),
     )
     st.session_state.outputs[section] = output
     return output
@@ -203,61 +242,64 @@ def display_section(
     section: str,
     generate: bool = False,
     preview: bool = False,
-    use_previous: bool = False,
+    output=None, # Accept the output object directly
 ):
-    expander_label = (
-        f"{section.replace('_', ' ').upper()}{' [Preview]' if preview else ''}"
-    )
+    expander_label = f"{section.replace('_', ' ').upper()}{' [Preview]' if preview else ''}"
+
+    # Determine the output to display - prefer passed output, fallback to session state for generated
+    output_to_display = output if output is not None else st.session_state.outputs.get(section)
+
     with st.expander(expander_label, expanded=False):
-        if preview:
-            if use_previous:
-                try:
-                    output = read_output(section)
-                except FileNotFoundError:
-                    output = run_preview(section)
-            else:
-                output = run_preview(section)
-            if output:
-                st.info(
-                    f"Input cost: ${output.cost['input_cost']:.4f} ({output.tokens['input_tokens']:,} tokens)"
-                )
-        elif generate:
-            output = st.session_state.outputs.get(section)
-            if output:
-                st.info(
-                    f"Total cost: ${output.cost['total_cost']:.4f} "
-                    f"(input tokens: {output.tokens['input_tokens']:,}, "
-                    f"output tokens: {output.tokens['output_tokens']:,})"
-                )
-        if output:
-            with st.expander("Messages", expanded=False):
-                st.json(output.messages)
+        if output_to_display:
+            # Display cost info
+            if preview:
+                 st.info(
+                     f"Input cost: ${output_to_display.cost.get('input_cost', 0):.4f} ({output_to_display.tokens.get('input_tokens', 0):,} tokens)"
+                 )
+            elif generate:
+                 # Removed trailing backslash
+                 st.info(
+                     f"Total cost: ${output_to_display.cost.get('total_cost', 0):.4f} "
+                     f"(input tokens: {output_to_display.tokens.get('input_tokens', 0):,}, "
+                     f"output tokens: {output_to_display.tokens.get('output_tokens', 0):,})"
+                 )
 
-            if not output.messages or not output.messages[0]["content"].strip():
-                st.warning(f"No context found for {section.upper()}.")
+            # Display messages
+            with st.expander(MESSAGES_EXPANDER_LABEL, expanded=False):
+                st.json(output_to_display.messages)
+            # Check for empty messages content
+            if not output_to_display.messages or not output_to_display.messages[0].get("content", "").strip():
+                 st.warning(f"No context found for {section.upper()}.")
 
-        if generate:
-            if output:
-                content = output.response["content"]
+            # Display content if generating
+            if generate:
+                content = output_to_display.response.get("content", "") # Use .get for safety
                 content = clean_markdown_content(content)
                 st.code(content, language="markdown")
+        else:
+             # Handle case where no output was available to display
+             action = "generation" if generate else "preview"
+             st.warning(f"No output available to display for {section.upper()}. {action.capitalize()} might have failed or found no context.")
 
 
 def add_download_button(selected_sections: list[str]):
+    # Filter for sections actually present in session_state.outputs
+    available_outputs = [
+        st.session_state.outputs[section]
+        for section in selected_sections
+        if section in st.session_state.outputs
+    ]
+
     combined_content = "\n\n".join(
-        [
-            clean_markdown_content(
-                st.session_state.outputs[section].response["content"]
-            )
-            for section in selected_sections
-            if section in st.session_state.outputs
-        ]
+        [clean_markdown_content(output.response.get("content", "")) for output in available_outputs] # Use .get for safety
     )
 
-    st.download_button(
-        label="Download docs",
-        data=combined_content,
-        file_name="docs.md",
-        mime="text/markdown",
-        type="primary",
-    )
+    # Only show button if there is content to download
+    if combined_content:
+        st.download_button(
+            label="Download docs",
+            data=combined_content,
+            file_name="docs.md",
+            mime="text/markdown",
+            type="primary",
+        )
