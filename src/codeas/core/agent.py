@@ -199,7 +199,7 @@ class Agent(BaseModel):
                 },
                 {
                     "input_cost": float(tokens_and_cost["prompt_cost"]),
-                    "output_cost": float(tokens_and_cost["completion_cost"]),
+                    "output_cost": float(tokens_and_cost["completion_cost"]),\
                     "total_cost": float(
                         tokens_and_cost["prompt_cost"]
                         + tokens_and_cost["completion_cost"]
