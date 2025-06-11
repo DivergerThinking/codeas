@@ -46,6 +46,7 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
+    # Fix: Changed type hint from str to Optional[str] because the default value is None
     system_prompt: Optional[str] = None
 
     def run(
