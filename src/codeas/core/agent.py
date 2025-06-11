@@ -119,13 +119,36 @@ class Agent(BaseModel):
         for response in responses.values():
             results.append(self._get_request_tokens_and_cost(response))
 
-        tokens = {\n            "input_tokens": sum(result[0]["input_tokens"] for result in results),\n            "output_tokens": sum(result[0]["output_tokens"] for result in results),\n            "total_tokens": sum(result[0]["total_tokens"] for result in results),\n        }
-        cost = {\n            "input_cost": sum(result[1]["input_cost"] for result in results),\n            "output_cost": sum(result[1]["output_cost"] for result in results),\n            "total_cost": sum(result[1]["total_cost"] for result in results),\n        }
+        tokens = {
+            "input_tokens": sum(result[0]["input_tokens"] for result in results),
+            "output_tokens": sum(result[0]["output_tokens"] for result in results),
+            "total_tokens": sum(result[0]["total_tokens"] for result in results),
+        }
+        cost = {
+            "input_cost": sum(result[1]["input_cost"] for result in results),
+            "output_cost": sum(result[1]["output_cost"] for result in results),
+            "total_cost": sum(result[1]["total_cost"] for result in results),
+        }
         return tokens, cost
 
     def _get_request_tokens_and_cost(self, response):
-        tokens = {\n            "input_tokens": response.usage.prompt_tokens,\n            "output_tokens": response.usage.completion_tokens,\n            "total_tokens": response.usage.total_tokens,\n        }
-        cost = {\n            "input_cost": float(\n                calculate_cost_by_tokens(\n                    response.usage.prompt_tokens, self.model, "input"\n                )\n            ),\n            "output_cost": float(\n                calculate_cost_by_tokens(\n                    response.usage.completion_tokens, self.model, "output"\n                )\n            ),\n        }
+        tokens = {
+            "input_tokens": response.usage.prompt_tokens,
+            "output_tokens": response.usage.completion_tokens,
+            "total_tokens": response.usage.total_tokens,
+        }
+        cost = {
+            "input_cost": float(
+                calculate_cost_by_tokens(
+                    response.usage.prompt_tokens, self.model, "input"
+                )
+            ),
+            "output_cost": float(
+                calculate_cost_by_tokens(
+                    response.usage.completion_tokens, self.model, "output"
+                )
+            ),
+        }
         cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
         return tokens, cost
 
