@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel
 from tokencost import (
@@ -46,7 +46,8 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
+    # Fix applied: Changed type hint from 'str' to 'Optional[str]' as it can be None
+    system_prompt: Optional[str] = None
 
     def run(
         self,
@@ -90,7 +91,7 @@ class Agent(BaseModel):
     def _create_messages(self, context):
         messages = (
             [{"role": "system", "content": self.system_prompt}]
-            if self.system_prompt
+            if self.system_prompt is not None # Added explicit check for None
             else []
         )
 
