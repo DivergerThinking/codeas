@@ -13,7 +13,7 @@ from codeas.ui.utils import read_prompts
 
 
 def chat():
-    st.subheader("\ud83d\udcac Chat")
+    st.subheader("💬 Chat")
     state.update_current_page("Chat")
     repo_ui.display_repo_path()
     display_config_section()
@@ -45,7 +45,7 @@ def display_conversation_costs():
 
 
 def display_config_section():
-    with st.expander("CONTEXT", icon="\u2699\ufe0f", expanded=False):
+    with st.expander("CONTEXT", icon="⚙️", expanded=False):
         repo_ui.display_filters()
         display_file_options()
 
@@ -144,7 +144,6 @@ def display_model_options():
             "Model 3",
             options=[""] + final_models,
             key="model3",
-            index=0 if st.session_state.get("input_reset", False) else None,
             disabled=not st.session_state.model2,
         )
 
@@ -158,28 +157,28 @@ def display_chat_history():
     for i, entry in enumerate(st.session_state.chat_history):
         template_label = f"[{entry['template']}]" if entry.get("template") else ""
         if entry["role"] == "user":
-            with st.expander(f"USER {template_label}", icon="\ud83d\udc64", expanded=False):
+            with st.expander(f"USER {template_label}", icon="👤", expanded=False):
                 st.write(entry["content"])
         else:
             with st.expander(
                 f"ASSISTANT [{entry['model']}] {template_label}",
                 expanded=True,
-                icon="\ud83e\udd16",
+                icon="🤖",
             ):
                 if entry.get("content") is None:
                     with st.spinner("Running agent..."):
                         content, cost = run_agent(entry["model"])
-                        st.write(f"\ud83d\udcb0 ${cost['total_cost']:.4f}")
+                        st.write(f"💰 ${cost['total_cost']:.4f}")
                         st.session_state.chat_history[i]["content"] = content
                         st.session_state.chat_history[i]["cost"] = cost
                 else:
                     st.write(entry["content"])
-                    st.write(f"\ud83d\udcb0 ${entry['cost']['total_cost']:.4f}")
+                    st.write(f"💰 ${entry['cost']['total_cost']:.4f}")
 
 
 def display_user_input():
     with st.expander(
-        "NEW MESSAGE", icon="\ud83d\udc64", expanded=not any(st.session_state.chat_history)
+        "NEW MESSAGE", icon="👤", expanded=not any(st.session_state.chat_history)
     ):
         display_model_options()
         initialize_input_reset()
@@ -228,9 +227,7 @@ def display_input_areas():
             st.session_state.instructions = ""
         template = selected_templates[0] if selected_templates else ""
         prompt_content = prompts.get(template, "")
-        st.text_area(
-            "Instructions", value=prompt_content, key="instructions", height=200
-        )
+        st.text_area("Instructions", value=prompt_content, key="instructions", height=200)
 
 
 def initialize_input_reset():
@@ -311,7 +308,7 @@ def handle_preview_button():
             )
             for model in get_selected_models():
                 with st.expander(
-                    f"\ud83e\udd16 PREVIEW [{model}] {template_label}", expanded=True
+                    f"🤖 PREVIEW [{model}] {template_label}", expanded=True
                 ):
                     with st.spinner("Previewing..."):
                         messages = get_history_messages(model)
@@ -320,7 +317,7 @@ def handle_preview_button():
                         llm_client = LLMClients(model=model)
                         cost = llm_client.calculate_cost(messages)
                         st.write(
-                            f"\ud83d\udcb0 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
+                            f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
                         )
 
 
