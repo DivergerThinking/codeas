@@ -46,7 +46,7 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: str = None
+    system_prompt: Union[str, None] = None
 
     def run(
         self,
