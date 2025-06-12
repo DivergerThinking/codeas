@@ -227,7 +227,9 @@ def display_input_areas():
             st.session_state.instructions = ""
         template = selected_templates[0] if selected_templates else ""
         prompt_content = prompts.get(template, "")
-        st.text_area("Instructions", value=prompt_content, key="instructions", height=200)
+        st.text_area(
+            "Instructions", value=prompt_content, key="instructions", height=200
+        )
 
 
 def initialize_input_reset():
