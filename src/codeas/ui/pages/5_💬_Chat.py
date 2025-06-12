@@ -312,7 +312,7 @@ def handle_preview_button():
                 with st.expander(
                     f"\ud83e\udd16 PREVIEW [{model}] {template_label}", expanded=True
                 ):
-                    with st.spinner("Previewing..."):
+                    with st.spinner("Previewing...\ud83d\udd0d"):
                         messages = get_history_messages(model)
                         messages.append({"role": "user", "content": user_input})
                         st.json(messages, expanded=False)
