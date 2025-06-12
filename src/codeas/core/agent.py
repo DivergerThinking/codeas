@@ -119,37 +119,24 @@ class Agent(BaseModel):
         for response in responses.values():
             results.append(self._get_request_tokens_and_cost(response))
 
-        tokens = {
-            "input_tokens": sum(result[0]["input_tokens"] for result in results),
-            "output_tokens": sum(result[0]["output_tokens"] for result in results),
-            "total_tokens": sum(result[0]["total_tokens"] for result in results),
-        }
-        cost = {
-            "input_cost": sum(result[1]["input_cost"] for result in results),
-            "output_cost": sum(result[1]["output_cost"] for result in results),
-            "total_cost": sum(result[1]["total_cost"] for result in results),
-        }
+        tokens = {\n            \"input_tokens\": sum(result[0][\"input_tokens\"] for result in results),\n            \"output_tokens\": sum(result[0][\"output_tokens\"] for result in results),\n            \"total_tokens\": sum(result[0][\"total_tokens\"] for result in results),\n        }
+        cost = {\n            \"input_cost\": sum(result[1][\"input_cost\"] for result in results),\n            \"output_cost\": sum(result[1][\"output_cost\"] for result in results),\n            \"total_cost\": sum(result[1][\"total_cost\"] for result in results),\n        }
         return tokens, cost
 
     def _get_request_tokens_and_cost(self, response):
         tokens = {
-            "input_tokens": response.usage.prompt_tokens,
-            "output_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens,
-        }
+            \"input_tokens\": response.usage.prompt_tokens,\n            \"output_tokens\": response.usage.completion_tokens,\n            \"total_tokens\": response.usage.total_tokens,\n        }
         cost = {
-            "input_cost": float(
+            \"input_cost\": float(
                 calculate_cost_by_tokens(
-                    response.usage.prompt_tokens, self.model, "input"
+                    response.usage.prompt_tokens, self.model, \"input\"
                 )
-            ),
-            "output_cost": float(
+            ),\n            \"output_cost\": float(
                 calculate_cost_by_tokens(
-                    response.usage.completion_tokens, self.model, "output"
+                    response.usage.completion_tokens, self.model, \"output\"
                 )
-            ),
-        }
-        cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
+            ),\n        }
+        cost[\"total_cost\"] = cost[\"input_cost\"] + cost[\"output_cost\"]
         return tokens, cost
 
     def _sum_calculate_tokens_and_cost(self, batch_messages: dict, batch_response=None):
@@ -158,25 +145,15 @@ class Agent(BaseModel):
             response = batch_response[key] if batch_response else None
             results.append(self._calculate_tokens_and_cost(messages, response))
 
-        tokens = {"input_tokens": sum(result[0]["input_tokens"] for result in results)}
-        cost = {"input_cost": sum(result[1]["input_cost"] for result in results)}
+        tokens = {\"input_tokens\": sum(result[0][\"input_tokens\"] for result in results)}
+        cost = {\"input_cost\": sum(result[1][\"input_cost\"] for result in results)}
 
         if batch_response:
             tokens.update(
-                {
-                    "output_tokens": sum(
-                        result[0]["output_tokens"] for result in results
-                    ),
-                    "total_tokens": sum(
-                        result[0]["total_tokens"] for result in results
-                    ),
-                }
+                {\n                    \"output_tokens\": sum(\n                        result[0][\"output_tokens\"] for result in results\n                    ),\n                    \"total_tokens\": sum(\n                        result[0][\"total_tokens\"] for result in results\n                    ),\n                }
             )
             cost.update(
-                {
-                    "output_cost": sum(result[1]["output_cost"] for result in results),
-                    "total_cost": sum(result[1]["total_cost"] for result in results),
-                }
+                {\n                    \"output_cost\": sum(result[1][\"output_cost\"] for result in results),\n                    \"total_cost\": sum(result[1][\"total_cost\"] for result in results),\n                }
             )
 
         return tokens, cost
@@ -185,37 +162,21 @@ class Agent(BaseModel):
         if response is None:
             input_tokens = count_message_tokens(messages, self.model)
             input_cost = float(calculate_prompt_cost(messages, self.model))
-            return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
+            return ({\"input_tokens\": input_tokens}, {\"input_cost\": input_cost})
         else:
             tokens_and_cost = calculate_all_costs_and_tokens(
-                messages, response["content"], self.model
+                messages, response[\"content\"], self.model
             )
             return (
-                {
-                    "input_tokens": tokens_and_cost["prompt_tokens"],
-                    "output_tokens": tokens_and_cost["completion_tokens"],
-                    "total_tokens": tokens_and_cost["prompt_tokens"]
-                    + tokens_and_cost["completion_tokens"],
-                },
-                {
-                    "input_cost": float(tokens_and_cost["prompt_cost"]),
-                    "output_cost": float(tokens_and_cost["completion_cost"]),
-                    "total_cost": float(
-                        tokens_and_cost["prompt_cost"]
-                        + tokens_and_cost["completion_cost"]
-                    ),
-                },
-            )
+                {\n                    \"input_tokens\": tokens_and_cost[\"prompt_tokens\"],\n                    \"output_tokens\": tokens_and_cost[\"completion_tokens\"],\n                    \"total_tokens\": tokens_and_cost[\"prompt_tokens\"]\n                    + tokens_and_cost[\"completion_tokens\"],\n                },
+                {\n                    \"input_cost\": float(tokens_and_cost[\"prompt_cost\"]),\n                    \"output_cost\": float(tokens_and_cost[\"completion_cost\"]),\n                    \"total_cost\": float(
+                        tokens_and_cost[\"prompt_cost\"]\n                        + tokens_and_cost[\"completion_cost\"]\n                    ),\n                },\n            )
 
 
-if __name__ == "__main__":
+if __name__ == \"__main__\":
     from codeas.configs.agents_configs import AGENTS_CONFIGS
     from codeas.core.llm import LLMClient
     from codeas.core.repo import Repo
 
     llm_client = LLMClient()
-    agent = Agent(**AGENTS_CONFIGS["extract_files_detail"])
-    repo = Repo(repo_path=".")
-    incl_files = repo.filter_files()
-    files_paths = [path for path, incl in zip(repo.files_paths, incl_files) if incl]
-    ...
+    agent = Agent(**AGENTS_CONFIGS[\"extract_files_detail\"])\n    repo = Repo(repo_path=\".\")\n    incl_files = repo.filter_files()\n    files_paths = [path for path, incl in zip(repo.files_paths, incl_files) if incl]\n    ...\n
