@@ -144,6 +144,7 @@ def display_model_options():
             "Model 3",
             options=[""] + final_models,
             key="model3",
+            index=0,
             disabled=not st.session_state.model2,
         )
 
@@ -168,12 +169,12 @@ def display_chat_history():
                 if entry.get("content") is None:
                     with st.spinner("Running agent..."):
                         content, cost = run_agent(entry["model"])
-                        st.write(f"💰 ${cost['total_cost']:.4f}")
+                        st.write(f"💸 ${cost['total_cost']:.4f}")
                         st.session_state.chat_history[i]["content"] = content
                         st.session_state.chat_history[i]["cost"] = cost
                 else:
                     st.write(entry["content"])
-                    st.write(f"💰 ${entry['cost']['total_cost']:.4f}")
+                    st.write(f"💸 ${entry['cost']['total_cost']:.4f}")
 
 
 def display_user_input():
@@ -317,7 +318,7 @@ def handle_preview_button():
                         llm_client = LLMClients(model=model)
                         cost = llm_client.calculate_cost(messages)
                         st.write(
-                            f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
+                            f"💸 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
                         )
 
 
