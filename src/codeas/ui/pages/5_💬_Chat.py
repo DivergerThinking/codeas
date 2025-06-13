@@ -144,7 +144,6 @@ def display_model_options():
             "Model 3",
             options=[""] + final_models,
             key="model3",
-            index=0,
             disabled=not st.session_state.model2,
         )
 
@@ -228,9 +227,7 @@ def display_input_areas():
             st.session_state.instructions = ""
         template = selected_templates[0] if selected_templates else ""
         prompt_content = prompts.get(template, "")
-        st.text_area(
-            "Instructions", value=prompt_content, key="instructions", height=200
-        )
+        st.text_area("Instructions", value=prompt_content, key="instructions", height=200)
 
 
 def initialize_input_reset():
