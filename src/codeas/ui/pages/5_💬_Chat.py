@@ -144,7 +144,6 @@ def display_model_options():
             "Model 3",
             options=[""] + final_models,
             key="model3",
-            index=0,
             disabled=not st.session_state.model2,
         )
 
@@ -201,6 +200,30 @@ def display_template_options():
             index=0 if st.session_state.input_reset else None,
         )
 
+    # remaining_options = [
+    #     opt for opt in prompt_options if opt != st.session_state.template1
+    # ]
+    # with col2:
+    #     st.selectbox(
+    #         "Template 2",
+    #         options=remaining_options,
+    #         key="template2",
+    #         index=0 if st.session_state.input_reset else None,
+    #         disabled=not st.session_state.template1,
+    #     )
+
+    # final_options = [
+    #     opt for opt in remaining_options if opt != st.session_state.template2
+    # ]
+    # with col3:
+    #     st.selectbox(
+    #         "Template 3",
+    #         options=final_options,
+    #         key="template3",
+    #         index=0 if st.session_state.input_reset else None,
+    #         disabled=not st.session_state.template2,
+    #     )
+
 
 def display_input_areas():
     prompts = read_prompts()
@@ -228,7 +251,9 @@ def display_input_areas():
             st.session_state.instructions = ""
         template = selected_templates[0] if selected_templates else ""
         prompt_content = prompts.get(template, "")
-        st.text_area("Instructions", value=prompt_content, key="instructions", height=200)
+        st.text_area(
+            "Instructions", value=prompt_content, key="instructions", height=200
+        )
 
 
 def initialize_input_reset():
@@ -355,9 +380,8 @@ def get_history_messages(model):
     for entry in st.session_state.chat_history:
         if entry["role"] == "user":
             messages.append({"role": entry["role"], "content": entry["content"]})
-        elif entry["role"] == "assistant" and entry.get("content") is not None:
-            if entry.get("multiple_models") is False or entry.get("model") == model:
-                messages.append({"role": entry["role"], "content": entry["content"]})
+        elif entry["role"] == "assistant" and entry.get("content") is not None and (entry.get("multiple_models") is False or entry.get("model") == model):
+            messages.append({"role": entry["role"], "content": entry["content"]})
     return messages
 
 
