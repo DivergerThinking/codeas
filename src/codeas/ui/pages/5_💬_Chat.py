@@ -86,6 +86,9 @@ def display_config_section():
                 st.text_area("Context", context, height=300)
 
     if not any(files_missing_metadata):
+        # This caption seems redundant with the one inside the expander when "All files" and "Full content" are selected.
+        # However, the original code had it, so keeping it to avoid regression.
+        # The values num_selected_files and selected_tokens are assigned correctly in both branches above.
         st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
 
 
@@ -168,12 +171,12 @@ def display_chat_history():
                 if entry.get("content") is None:
                     with st.spinner("Running agent..."):
                         content, cost = run_agent(entry["model"])
-                        st.write(f"💸 ${cost['total_cost']:.4f}")
+                        st.write(f"💰 ${cost['total_cost']:.4f}")
                         st.session_state.chat_history[i]["content"] = content
                         st.session_state.chat_history[i]["cost"] = cost
                 else:
                     st.write(entry["content"])
-                    st.write(f"💸 ${entry['cost']['total_cost']:.4f}")
+                    st.write(f"💰 ${entry['cost']['total_cost']:.4f}")
 
 
 def display_user_input():
@@ -343,21 +346,19 @@ def handle_preview_button():
                         llm_client = LLMClients(model=model)
                         cost = llm_client.calculate_cost(messages)
                         st.write(
-                            f"💸 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
+                            f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
                         )
 
 
 def run_agent(model):
     llm_client = LLMClients(model=model)
     messages = get_history_messages(model)
-    if model == "claude-3-5-sonnet" or model == "claude-3-haiku":
-        if (
-            tokencost.count_string_tokens(llm_client.extract_strings(messages), model)
-            > 10000
-        ):
-            st.warning(
-                "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors."
-            )
+    # Fix S1066: Merge this if statement with the enclosing one.
+    if (model == "claude-3-5-sonnet" or model == "claude-3-haiku") and \
+       tokencost.count_string_tokens(llm_client.extract_strings(messages), model) > 10000:
+        st.warning(
+            "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors."
+        )
     if model == "o1-preview" or model == "o1-mini":
         st.caption("Streaming is not supported for o1 models.")
         completion = llm_client.run(messages)
@@ -380,8 +381,9 @@ def get_history_messages(model):
     for entry in st.session_state.chat_history:
         if entry["role"] == "user":
             messages.append({"role": entry["role"], "content": entry["content"]})
-        elif entry["role"] == "assistant" and entry.get("content") is not None and (entry.get("multiple_models") is False or entry.get("model") == model):
-            messages.append({"role": entry["role"], "content": entry["content"]})
+        elif entry["role"] == "assistant" and entry.get("content") is not None:
+            if entry.get("multiple_models") is False or entry.get("model") == model:
+                messages.append({"role": entry["role"], "content": entry["content"]})
     return messages
 
 
