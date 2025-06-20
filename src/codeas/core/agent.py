@@ -46,7 +46,7 @@ class Agent(BaseModel):
     instructions: str
     model: str
     response_format: object = None
-    system_prompt: Optional[str] = None  # Fix: Changed type hint to Optional[str]
+    system_prompt: Optional[str] = None
 
     def run(
         self,
@@ -187,7 +187,6 @@ class Agent(BaseModel):
             input_cost = float(calculate_prompt_cost(messages, self.model))
             return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
-            # Assuming response is a dictionary with a 'content' key when calculate_all_costs_and_tokens is needed
             tokens_and_cost = calculate_all_costs_and_tokens(
                 messages, response["content"], self.model
             )
