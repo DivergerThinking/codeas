@@ -76,9 +76,7 @@ def display_config_section():
             st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
             repo_ui.display_files_editor()
 
-        # SonarQube violation S1066: Merge this if statement with the enclosing one.
-        # The original code had 'if not any(files_missing_metadata):' followed by 'if st.button("Show context"):'.
-        # We merge these into a single 'if' statement using 'and'.
+        # Merged the nested if statements as per SonarQube rule S1066
         if not any(files_missing_metadata) and st.button("Show context"):
             context = retriever.retrieve(
                 files_paths=state.repo.included_files_paths,
@@ -87,6 +85,9 @@ def display_config_section():
             )
             st.text_area("Context", context, height=300)
 
+    # This caption is outside the expander and relies on num_selected_files/selected_tokens
+    # being set within the expander, regardless of which branch of the if/else was taken,
+    # and only displays if files_missing_metadata is not true.
     if not any(files_missing_metadata):
         st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
 
@@ -146,7 +147,6 @@ def display_model_options():
             "Model 3",
             options=[""] + final_models,
             key="model3",
-            index=0 if not st.session_state.model2 else None,
             disabled=not st.session_state.model2,
         )
 
@@ -202,30 +202,6 @@ def display_template_options():
             key="template1",
             index=0 if st.session_state.input_reset else None,
         )
-
-    # remaining_options = [
-    #     opt for opt in prompt_options if opt != st.session_state.template1
-    # ]
-    # with col2:
-    #     st.selectbox(
-    #         "Template 2",
-    #         options=remaining_options,
-    #         key="template2",
-    #         index=0 if st.session_state.input_reset else None,
-    #         disabled=not st.session_state.template1,
-    #     )
-
-    # final_options = [
-    #     opt for opt in remaining_options if opt != st.session_state.template2
-    # ]
-    # with col3:
-    #     st.selectbox(
-    #         "Template 3",
-    #         options=final_options,
-    #         key="template3",
-    #         index=0 if st.session_state.input_reset else None,
-    #         disabled=not st.session_state.template2,
-    #     )
 
 
 def display_input_areas():
@@ -301,13 +277,13 @@ def handle_send_button():
                 st.session_state.chat_history.append(
                     {"role": "user", "content": user_input, "template": template}
                 )
-        for i, user_input in enumerate(user_inputs):
+        for i, user_input in enumerate(user_inputs): # Original loop structure preserved
             for model in get_selected_models():
                 st.session_state.chat_history.append(
                     {
                         "role": "assistant",
                         "model": model,
-                        "template": template,
+                        "template": template, # Original code reused 'template' from the user message loop
                         "multiple_models": len(get_selected_models()) > 1,
                     }
                 )
@@ -337,6 +313,7 @@ def handle_preview_button():
             )
             for model in get_selected_models():
                 with st.expander(
+                    # Original code used template_label from the user input loop
                     f"🤖 PREVIEW [{model}] {template_label}", expanded=True
                 ):
                     with st.spinner("Previewing..."):
