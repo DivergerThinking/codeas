@@ -1,10 +1,12 @@
 from typing import Union
 
 from pydantic import BaseModel
-from tokencost import calculate_all_costs_and_tokens
-from tokencost import calculate_cost_by_tokens
-from tokencost import calculate_prompt_cost
-from tokencost import count_message_tokens
+from tokencost import (
+    calculate_all_costs_and_tokens,
+    calculate_cost_by_tokens,
+    calculate_prompt_cost,
+    count_message_tokens,
+)
 
 from codeas.core.llm import LLMClient
 
@@ -135,25 +137,27 @@ class Agent(BaseModel):
             "output_tokens": response.usage.completion_tokens,
             "total_tokens": response.usage.total_tokens,
         }
+        input_cost = float(
+            calculate_cost_by_tokens(
+                response.usage.prompt_tokens, self.model, "input"
+            )
+        )
+        output_cost = float(
+            calculate_cost_by_tokens(
+                response.usage.completion_tokens, self.model, "output"
+            )
+        )
         cost = {
-            "input_cost": float(
-                calculate_cost_by_tokens(
-                    response.usage.prompt_tokens, self.model, "input"
-                )
-            ),
-            "output_cost": float(
-                calculate_cost_by_tokens(
-                    response.usage.completion_tokens, self.model, "output"
-                )
-            ),
+             "input_cost": input_cost,
+             "output_cost": output_cost,
+             "total_cost": input_cost + output_cost,
         }
-        cost["total_cost"] = cost["input_cost"] + cost["output_cost"]
         return tokens, cost
 
     def _sum_calculate_tokens_and_cost(self, batch_messages: dict, batch_response=None):
         results = []
         for key, messages in batch_messages.items():
-            response = batch_response[key] if batch_response else None
+            response = batch_response[key] if batch_response and key in batch_response else None
             results.append(self._calculate_tokens_and_cost(messages, response))
 
         tokens = {"input_tokens": sum(result[0]["input_tokens"] for result in results)}
@@ -163,17 +167,17 @@ class Agent(BaseModel):
             tokens.update(
                 {
                     "output_tokens": sum(
-                        result[0]["output_tokens"] for result in results
+                        result[0].get("output_tokens", 0) for result in results
                     ),
                     "total_tokens": sum(
-                        result[0]["total_tokens"] for result in results
+                        result[0].get("total_tokens", 0) for result in results
                     ),
                 }
             )
             cost.update(
                 {
-                    "output_cost": sum(result[1]["output_cost"] for result in results),
-                    "total_cost": sum(result[1]["total_cost"] for result in results),
+                    "output_cost": sum(result[1].get("output_cost", 0.0) for result in results),
+                    "total_cost": sum(result[1].get("total_cost", 0.0) for result in results),
                 }
             )
 
@@ -183,7 +187,7 @@ class Agent(BaseModel):
         if response is None:
             input_tokens = count_message_tokens(messages, self.model)
             input_cost = float(calculate_prompt_cost(messages, self.model))
-            return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
+            return {"input_tokens": input_tokens}, {"input_cost": input_cost}
         else:
             tokens_and_cost = calculate_all_costs_and_tokens(
                 messages, response["content"], self.model
