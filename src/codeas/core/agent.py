@@ -1,12 +1,10 @@
 from typing import Union
 
 from pydantic import BaseModel
-from tokencost import (
-    calculate_all_costs_and_tokens,
-    calculate_cost_by_tokens,
-    calculate_prompt_cost,
-    count_message_tokens,
-)
+from tokencost import calculate_all_costs_and_tokens
+from tokencost import calculate_cost_by_tokens
+from tokencost import calculate_prompt_cost
+from tokencost import count_message_tokens
 
 from codeas.core.llm import LLMClient
 
@@ -112,7 +110,7 @@ class Agent(BaseModel):
             if self.response_format and response is not None:
                 return self._get_request_tokens_and_cost(response)
             else:
-                return self._calculate_tokens_and_and_cost(messages, response)
+                return self._calculate_tokens_and_cost(messages, response)
 
     def _sum_get_request_tokens_and_cost(self, responses: dict):
         results = []
@@ -213,7 +211,7 @@ if __name__ == "__main__":
     from codeas.core.llm import LLMClient
     from codeas.core.repo import Repo
 
-    llm_client = LLmClient()
+    llm_client = LLMClient()
     agent = Agent(**AGENTS_CONFIGS["extract_files_detail"])
     repo = Repo(repo_path=".")
     incl_files = repo.filter_files()
