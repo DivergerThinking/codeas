@@ -45,7 +45,7 @@ class AgentPreview(BaseModel):
 class Agent(BaseModel):
     instructions: str
     model: str
-    response_format: Optional[object] = None
+    response_format: object = None
     system_prompt: Optional[str] = None
 
     def run(
@@ -54,29 +54,18 @@ class Agent(BaseModel):
         context: Union[dict, list, str] = [],
     ) -> AgentOutput:
         messages = self.get_messages(context)
-        try:
-            response = llm_client.run(
-                messages, model=self.model, response_format=self.response_format
-            )
-            tokens, cost = self.calculate_tokens_and_cost(messages, response)
-            return AgentOutput(
-                messages=messages, response=response, tokens=tokens, cost=cost
-            )
-        except Exception as e:
-            # Catch potential errors from the LLM call or processing its response
-            # Re-raise a general runtime error to prevent unhandled exceptions
-            raise RuntimeError(f"Error during LLM execution or response processing: {e}") from e
+        response = llm_client.run(
+            messages, model=self.model, response_format=self.response_format
+        )
+        tokens, cost = self.calculate_tokens_and_cost(messages, response)
+        return AgentOutput(
+            messages=messages, response=response, tokens=tokens, cost=cost
+        )
 
     def preview(self, context: Union[dict, list, str]) -> AgentPreview:
         messages = self.get_messages(context)
-        try:
-            # This call involves token/cost calculation based on messages (no response)
-            tokens, cost = self.calculate_tokens_and_cost(messages)
-            return AgentPreview(messages=messages, tokens=tokens, cost=cost)
-        except Exception as e:
-             # Catch potential errors during token calculation
-             raise RuntimeError(f"Error during token/cost calculation for preview: {e}") from e
-
+        tokens, cost = self.calculate_tokens_and_cost(messages)
+        return AgentPreview(messages=messages, tokens=tokens, cost=cost)
 
     def get_messages(self, context: Union[dict, list, str]):
         if isinstance(context, dict):
@@ -98,28 +87,6 @@ class Agent(BaseModel):
     def get_single_messages(self, context: str):
         return self._create_messages(context)
 
-    def _sanitize_string(self, text: str) -> str:
-        """Applies basic sanitization to user-provided context string."""
-        # This is a basic example. Robust LLM input sanitization is complex
-        # and depends heavily on the specific LLM, expected input format,
-        # and threat model. A real-world implementation would need more sophisticated
-        # logic based on understanding potential injection vectors for the LLM.
-        # Example: Replace potential markdown code block delimiters as they
-        # could be used to structure injected instructions outside delimiters.
-        sanitized_text = text.replace("```", "`")
-        # Add other sanitization rules as needed.
-        return sanitized_text
-
-    def _wrap_user_context(self, context_text: str) -> str:
-        """Adds markers around sanitized user-provided context to help LLM distinguish it."""
-        if not isinstance(context_text, str):
-             # Ensure context is treated as string before wrapping and sanitizing
-             context_text = str(context_text)
-        # Sanitize BEFORE wrapping
-        sanitized_text = self._sanitize_string(context_text)
-        return f"--- START_USER_CONTEXT ---\n{sanitized_text}\n--- END_USER_CONTEXT ---"
-
-
     def _create_messages(self, context):
         messages = (
             [{"role": "system", "content": self.system_prompt}]
@@ -128,16 +95,10 @@ class Agent(BaseModel):
         )
 
         if isinstance(context, list):
-            # Wrap and sanitize each item in the list context
-            messages.extend({"role": "user", "content": self._wrap_user_context(c)} for c in context)
+            messages.extend({"role": "user", "content": c} for c in context)
         elif isinstance(context, str):
-            # Wrap and sanitize the single string context
-            messages.append({"role": "user", "content": self._wrap_user_context(context)})
-        # Note: dict context is handled by get_batch_messages calling this method
-        # with individual str/list values from the dict.
+            messages.append({"role": "user", "content": context})
 
-        # The agent's core instructions are added as a final user message
-        # Placing instructions after context can sometimes help the LLM prioritize them
         messages.append({"role": "user", "content": self.instructions})
         return messages
 
@@ -224,7 +185,7 @@ class Agent(BaseModel):
         if response is None:
             input_tokens = count_message_tokens(messages, self.model)
             input_cost = float(calculate_prompt_cost(messages, self.model))
-            return (({"input_tokens": input_tokens}), ({"input_cost": input_cost}))
+            return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
             tokens_and_cost = calculate_all_costs_and_tokens(
                 messages, response["content"], self.model
