@@ -53,59 +53,27 @@ class Agent(BaseModel):
         llm_client: LLMClient,
         context: Union[dict, list, str] = [],
     ) -> AgentOutput:
-        # IMPORTANT: If 'context' originates from untrusted user input,
-        # it MUST be validated and sanitized BEFORE being passed to this method
-        # to mitigate prompt injection risks. Basic string casting is applied
-        # internally, but robust sanitization logic is the caller's responsibility.
         messages = self.get_messages(context)
-
-        try:
-            response = llm_client.run(
-                messages, model=self.model, response_format=self.response_format
-            )
-        except Exception as e:
-            # Log the error and re-raise or handle appropriately
-            print(f"Error during LLM run: {e}")
-            raise RuntimeError(f"Failed to get response from LLM: {e}") from e
-
-        try:
-            tokens, cost = self.calculate_tokens_and_cost(messages, response)
-        except Exception as e:
-            # Log the error and re-raise or handle appropriately
-            print(f"Error calculating tokens/cost after run: {e}")
-            raise RuntimeError(f"Failed to calculate tokens or cost: {e}") from e
-
+        response = llm_client.run(
+            messages, model=self.model, response_format=self.response_format
+        )
+        tokens, cost = self.calculate_tokens_and_cost(messages, response)
         return AgentOutput(
             messages=messages, response=response, tokens=tokens, cost=cost
         )
 
     def preview(self, context: Union[dict, list, str]) -> AgentPreview:
-        # IMPORTANT: If 'context' originates from untrusted user input,
-        # it MUST be validated and sanitized BEFORE being passed to this method
-        # to mitigate prompt injection risks. Basic string casting is applied
-        # internally, but robust sanitization logic is the caller's responsibility.
         messages = self.get_messages(context)
-        try:
-            tokens, cost = self.calculate_tokens_and_cost(messages)
-        except Exception as e:
-            # Log the error and re-raise or handle appropriately
-            print(f"Error calculating tokens/cost during preview: {e}")
-            raise RuntimeError(f"Failed to calculate tokens or cost for preview: {e}") from e
-
+        tokens, cost = self.calculate_tokens_and_cost(messages)
         return AgentPreview(messages=messages, tokens=tokens, cost=cost)
 
     def get_messages(self, context: Union[dict, list, str]):
-        # IMPORTANT: If 'context' originates from untrusted user input,
-        # it MUST be validated and sanitized BEFORE being passed to this method
-        # to mitigate prompt injection risks. Basic string casting is applied
-        # internally, but robust sanitization logic is the caller's responsibility.
         if isinstance(context, dict):
             return self.get_batch_messages(context)
         elif isinstance(context, list):
             return self.get_multi_messages(context)
         elif isinstance(context, str):
             return self.get_single_messages(context)
-        # Consider adding a default case or raising an error for unsupported types
 
     def get_batch_messages(self, batch_contexts: dict):
         return {
@@ -120,10 +88,6 @@ class Agent(BaseModel):
         return self._create_messages(context)
 
     def _create_messages(self, context):
-        # IMPORTANT: The content of 'context' should be validated and sanitized
-        # by the caller if it originates from untrusted user input to mitigate
-        # prompt injection risks. The string casting here is only for type
-        # consistency, not sanitization.
         messages = (
             [{"role": "system", "content": self.system_prompt}]
             if self.system_prompt
@@ -131,39 +95,28 @@ class Agent(BaseModel):
         )
 
         if isinstance(context, list):
-            # Ensure list elements are string representations for message content
-            context_list_as_strings = [str(c) for c in context]
-            messages.extend({"role": "user", "content": c} for c in context_list_as_strings)
+            messages.extend({"role": "user", "content": c} for c in context)
         elif isinstance(context, str):
-            # Ensure context is a string representation
-            context_str = str(context)
-            messages.append({"role": "user", "content": context_str})
-        # else: context type is unexpected based on get_messages, handle or assume previous validation
+            messages.append({"role": "user", "content": context})
 
         messages.append({"role": "user", "content": self.instructions})
         return messages
 
     def calculate_tokens_and_cost(self, messages: Union[list, dict], response=None):
-        try:
-            if isinstance(messages, dict):
-                if self.response_format and response is not None:
-                    return self._sum_get_request_tokens_and_cost(response)
-                else:
-                    return self._sum_calculate_tokens_and_cost(messages, response)
-            else:  # messages is a list
-                if self.response_format and response is not None:
-                    return self._get_request_tokens_and_cost(response)
-                else:
-                    return self._calculate_tokens_and_cost(messages, response)
-        except Exception as e:
-            # Log the error and re-raise or handle appropriately
-            print(f"Error within calculate_tokens_and_cost logic: {e}")
-            raise RuntimeError(f"Calculation failed: {e}") from e
+        if isinstance(messages, dict):
+            if self.response_format and response is not None:
+                return self._sum_get_request_tokens_and_cost(response)
+            else:
+                return self._sum_calculate_tokens_and_cost(messages, response)
+        else:
+            if self.response_format and response is not None:
+                return self._get_request_tokens_and_cost(response)
+            else:
+                return self._calculate_tokens_and_cost(messages, response)
 
     def _sum_get_request_tokens_and_cost(self, responses: dict):
         results = []
         for response in responses.values():
-            # Rely on the outer try/except in calculate_tokens_and_cost
             results.append(self._get_request_tokens_and_cost(response))
 
         tokens = {
@@ -179,7 +132,6 @@ class Agent(BaseModel):
         return tokens, cost
 
     def _get_request_tokens_and_cost(self, response):
-        # Rely on the outer try/except in calculate_tokens_and_cost
         tokens = {
             "input_tokens": response.usage.prompt_tokens,
             "output_tokens": response.usage.completion_tokens,
@@ -204,7 +156,6 @@ class Agent(BaseModel):
         results = []
         for key, messages in batch_messages.items():
             response = batch_response[key] if batch_response else None
-            # Rely on the outer try/except in calculate_tokens_and_cost
             results.append(self._calculate_tokens_and_cost(messages, response))
 
         tokens = {"input_tokens": sum(result[0]["input_tokens"] for result in results)}
@@ -231,7 +182,6 @@ class Agent(BaseModel):
         return tokens, cost
 
     def _calculate_tokens_and_cost(self, messages: list, response=None):
-        # Rely on the outer try/except in calculate_tokens_and_cost
         if response is None:
             input_tokens = count_message_tokens(messages, self.model)
             input_cost = float(calculate_prompt_cost(messages, self.model))
