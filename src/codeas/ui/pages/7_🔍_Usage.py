@@ -7,6 +7,10 @@ import streamlit_nested_layout  # noqa
 
 from codeas.core.usage_tracker import usage_tracker
 
+# Define constants for duplicated literals
+FORMAT_INT_COMMAS = "{:,d}"
+FORMAT_CURRENCY_TWO_DECIMALS = "${:.2f}"
+
 
 def read_usage_data(file_path: str):
     log_file = Path(file_path)
@@ -70,8 +74,8 @@ def calculate_usage_by_generator(usage_data):
         generator = item["generator"]
         if generator not in usage_by_generator:
             usage_by_generator[generator] = {"Requests": 0, "Cost": 0}
-        usage_by_generator[generator]["Requests"] += 1
         usage_by_generator[generator]["Cost"] += item["cost"]["total_cost"]
+        usage_by_generator[generator]["Requests"] += 1
     return usage_by_generator
 
 
@@ -84,7 +88,7 @@ def display_usage_metrics(usage_data):
         st.metric("🔢 Total requests", count_n_requests(usage_data))
     with col3:
         total_cost = calculate_total_cost(usage_data)
-        st.metric("💰 Total cost", f"${total_cost:.2f}")
+        st.metric("💰 Total cost", f"{total_cost:.2f}")
 
 
 def display_generator_metrics(usage_data):
@@ -93,7 +97,7 @@ def display_generator_metrics(usage_data):
         st.metric("🔢 Total requests", count_n_requests(usage_data))
     with col2:
         total_cost = calculate_total_cost(usage_data)
-        st.metric("💰 Total cost", f"${total_cost:.2f}")
+        st.metric("💰 Total cost", f"{total_cost:.2f}")
 
 
 def display_generator_by_generator(usage_data):
@@ -105,7 +109,7 @@ def display_generator_by_generator(usage_data):
     df["Percentage"] = df["Requests"] / total_requests * 100
     st.dataframe(
         df.set_index("Generator").style.format(
-            {"Cost": "${:.2f}", "Requests": "{:,d}", "Percentage": "{:.2f}%"}
+            {"Cost": FORMAT_CURRENCY_TWO_DECIMALS, "Requests": FORMAT_INT_COMMAS, "Percentage": "{:.2f}%"}
         )
     )
 
@@ -125,10 +129,10 @@ def display_usage_by_day(df):
     st.dataframe(
         df.set_index("Date").style.format(
             {
-                "Cost": "${:.2f}",
-                "Cumulative Cost": "${:.2f}",
-                "Requests": "{:,d}",
-                "Conversations": "{:,d}",
+                "Cost": FORMAT_CURRENCY_TWO_DECIMALS,
+                "Cumulative Cost": FORMAT_CURRENCY_TWO_DECIMALS,
+                "Requests": FORMAT_INT_COMMAS,
+                "Conversations": FORMAT_INT_COMMAS,
             }
         )
     )
@@ -147,7 +151,7 @@ def prepare_usage_by_model_df(usage_data):
 def display_usage_by_model(model_df):
     st.dataframe(
         model_df.set_index("Model").style.format(
-            {"Cost": "${:.2f}", "Requests": "{:,d}", "Percentage": "{:.2f}%"}
+            {"Cost": FORMAT_CURRENCY_TWO_DECIMALS, "Requests": FORMAT_INT_COMMAS, "Percentage": "{:.2f}%"}
         )
     )
 
@@ -157,7 +161,7 @@ def display_chat_usage():
 
     display_usage_metrics(usage_data)
     if any(usage_data):
-        st.subheader("📅 Usage by day")
+        st.subheader("🗓️ Usage by day")
         usage_by_day_df = prepare_usage_by_day_df(usage_data)
         display_usage_by_day(usage_by_day_df)
     if any(usage_data):
@@ -189,7 +193,7 @@ def display_documentation_usage(usage_data):
     with col1:
         st.metric("🔢 Total requests", docs_data.get("count", 0))
     with col2:
-        st.metric("💰 Total cost", f"${docs_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{docs_data.get('total_cost', 0):.2f}")
 
     with st.expander("Sections"):
         sections = [
@@ -218,7 +222,7 @@ def display_documentation_usage(usage_data):
         df = pd.DataFrame(sections_data)
         st.dataframe(
             df.set_index("Section").style.format(
-                {"Requests": "{:,d}", "Cost": "${:.2f}"}
+                {"Requests": FORMAT_INT_COMMAS, "Cost": FORMAT_CURRENCY_TWO_DECIMALS}
             ),
         )
 
@@ -230,12 +234,12 @@ def display_deployment_usage(usage_data):
         st.write("**Defining deployment strategy**:")
         define_data = usage_data.get("define_deployment", {})
         st.metric("🔢 Total requests", define_data.get("count", 0))
-        st.metric("💰 Total cost", f"${define_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{define_data.get('total_cost', 0):.2f}")
     with col2:
         st.write("**Generating deployment**:")
         generate_data = usage_data.get("generate_deployment", {})
         st.metric("🔢 Total requests", generate_data.get("count", 0))
-        st.metric("💰 Total cost", f"${generate_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{generate_data.get('total_cost', 0):.2f}")
 
 
 def display_testing_usage(usage_data):
@@ -245,12 +249,12 @@ def display_testing_usage(usage_data):
         st.write("**Defining testing strategy**:")
         strategy_data = usage_data.get("define_testing_strategy", {})
         st.metric("🔢 Total requests", strategy_data.get("count", 0))
-        st.metric("💰 Total cost", f"${strategy_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{strategy_data.get('total_cost', 0):.2f}")
     with col2:
         st.write("**Generating tests from strategy**:")
         tests_data = usage_data.get("generate_tests_from_strategy", {})
         st.metric("🔢 Total requests", tests_data.get("count", 0))
-        st.metric("💰 Total cost", f"${tests_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{tests_data.get('total_cost', 0):.2f}")
 
 
 def display_refactoring_usage(usage_data):
@@ -260,21 +264,21 @@ def display_refactoring_usage(usage_data):
         st.write("**Defining refactoring files**:")
         define_data = usage_data.get("define_refactoring_files", {})
         st.metric("🔢 Total requests", define_data.get("count", 0))
-        st.metric("💰 Total cost", f"${define_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{define_data.get('total_cost', 0):.2f}")
     with col2:
         st.write("**Generating proposed changes**:")
         propose_data = usage_data.get("generate_proposed_changes", {})
         st.metric("🔢 Total requests", propose_data.get("count", 0))
-        st.metric("💰 Total cost", f"${propose_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{propose_data.get('total_cost', 0):.2f}")
     with col3:
         st.write("**Generating diffs**:")
         diffs_data = usage_data.get("generate_diffs", {})
         st.metric("🔢 Total requests", diffs_data.get("count", 0))
-        st.metric("💰 Total cost", f"${diffs_data.get('total_cost', 0):.2f}")
+        st.metric("💰 Total cost", f"{diffs_data.get('total_cost', 0):.2f}")
 
 
 def usage_page():
-    st.subheader("🔍 Usage")
+    st.subheader("🔎 Usage")
     with st.expander("Chat", icon="💬", expanded=True):
         display_chat_usage()
     with st.expander("Prompt generator", icon="📝", expanded=True):
