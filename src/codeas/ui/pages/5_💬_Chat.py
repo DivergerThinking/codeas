@@ -11,6 +11,9 @@ from codeas.core.usage_tracker import usage_tracker
 from codeas.ui.components import metadata_ui, repo_ui
 from codeas.ui.utils import read_prompts
 
+ALL_FILES_OPTION = "All files"
+FULL_CONTENT_OPTION = "Full content"
+
 
 def chat():
     st.subheader("💬 Chat")
@@ -51,8 +54,8 @@ def display_config_section():
 
         retriever = ContextRetriever(**get_retriever_args())
         if (
-            st.session_state.get("file_types") != "All files"
-            or st.session_state.get("content_types") != "Full content"
+            st.session_state.get("file_types") != ALL_FILES_OPTION
+            or st.session_state.get("content_types") != FULL_CONTENT_OPTION
         ):
             files_missing_metadata = metadata_ui.display()
             if not any(files_missing_metadata):
@@ -76,16 +79,16 @@ def display_config_section():
             st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
             repo_ui.display_files_editor()
 
-        if not any(files_missing_metadata):
-            if st.button("Show context"):
-                context = retriever.retrieve(
-                    files_paths=state.repo.included_files_paths,
-                    files_tokens=state.repo.included_files_tokens,
-                    metadata=state.repo_metadata,
-                )
-                st.text_area("Context", context, height=300)
+        if not any(files_missing_metadata) and st.button("Show context"):
+            context = retriever.retrieve(
+                files_paths=state.repo.included_files_paths,
+                files_tokens=state.repo.included_files_tokens,
+                metadata=state.repo_metadata,
+            )
+            st.text_area("Context", context, height=300)
 
     if not any(files_missing_metadata):
+        num_selected_files, _, selected_tokens = repo_ui.get_selected_files_info()
         st.caption(f"{num_selected_files:,} files | {selected_tokens:,} tokens")
 
 
@@ -95,7 +98,7 @@ def display_file_options():
         st.selectbox(
             "File types",
             options=[
-                "All files",
+                ALL_FILES_OPTION,
                 "Code files",
                 "Testing files",
                 "Config files",
@@ -109,13 +112,13 @@ def display_file_options():
     with col2:
         st.selectbox(
             "Content types",
-            options=["Full content", "Descriptions", "Details"],
+            options=[FULL_CONTENT_OPTION, "Descriptions", "Details"],
             key="content_types",
         )
 
 
 def display_model_options():
-    all_models = MODELS.keys()
+    all_models = list(MODELS.keys())
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -191,7 +194,7 @@ def display_user_input():
 def display_template_options():
     prompt_options = [""] + list(read_prompts().keys())
 
-    col1, _ = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.selectbox(
             "Template",
@@ -199,30 +202,6 @@ def display_template_options():
             key="template1",
             index=0 if st.session_state.input_reset else None,
         )
-
-    # remaining_options = [
-    #     opt for opt in prompt_options if opt != st.session_state.template1
-    # ]
-    # with col2:
-    #     st.selectbox(
-    #         "Template 2",
-    #         options=remaining_options,
-    #         key="template2",
-    #         index=0 if st.session_state.input_reset else None,
-    #         disabled=not st.session_state.template1,
-    #     )
-
-    # final_options = [
-    #     opt for opt in remaining_options if opt != st.session_state.template2
-    # ]
-    # with col3:
-    #     st.selectbox(
-    #         "Template 3",
-    #         options=final_options,
-    #         key="template3",
-    #         index=0 if st.session_state.input_reset else None,
-    #         disabled=not st.session_state.template2,
-    #     )
 
 
 def display_input_areas():
@@ -257,13 +236,11 @@ def display_input_areas():
 
 
 def initialize_input_reset():
-    # used to empty user input and templates after user sends a message
     if "input_reset" not in st.session_state:
         st.session_state.input_reset = False
 
 
 def reset_input_flag():
-    # used to empty user input and templates after user sends a message
     if st.session_state.input_reset:
         st.session_state.input_reset = False
 
@@ -299,15 +276,19 @@ def handle_send_button():
                     {"role": "user", "content": user_input, "template": template}
                 )
         for i, user_input in enumerate(user_inputs):
-            for model in get_selected_models():
-                st.session_state.chat_history.append(
-                    {
-                        "role": "assistant",
-                        "model": model,
-                        "template": template,
-                        "multiple_models": len(get_selected_models()) > 1,
-                    }
-                )
+            if user_input:
+                template = selected_templates[i] if len(selected_templates) > 1 else ""
+                for model in get_selected_models():
+                    st.session_state.chat_history.append(
+                        {
+                            "role": "assistant",
+                            "model": model,
+                            "template": template,
+                            "multiple_models": len(get_selected_models()) > 1,
+                            "content": None,
+                            "cost": None,
+                        }
+                    )
         st.session_state.input_reset = True
     st.rerun()
 
@@ -327,43 +308,53 @@ def handle_preview_button():
     else:
         user_inputs = [st.session_state.instructions.strip()]
 
-    for i, user_input in enumerate(user_inputs):
-        if user_input:
-            template_label = (
-                f"[{selected_templates[i]}]" if len(selected_templates) > 1 else ""
+    if any(user_inputs):
+        for i, user_input in enumerate(user_inputs):
+            if user_input:
+                template_label = (
+                    f"[{selected_templates[i]}]" if len(selected_templates) > 1 else ""
+                )
+                for model in get_selected_models():
+                    with st.expander(
+                        f"🤖 PREVIEW [{model}] {template_label}", expanded=True
+                    ):
+                        with st.spinner("Previewing..."):
+                            messages = get_history_messages(model)
+                            messages.append({"role": "user", "content": user_input})
+                            st.json(messages, expanded=False)
+                            llm_client = LLMClients(model=model)
+                            cost = llm_client.calculate_cost(messages)
+                            st.write(
+                                f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
+                            )
+
+
+def _handle_claude_warning(model, llm_client, messages):
+    if model in ["claude-3-5-sonnet", "claude-3-haiku"]:
+        if tokencost.count_string_tokens(llm_client.extract_strings(messages), model) > 10000:
+            st.warning(
+                "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors."
             )
-            for model in get_selected_models():
-                with st.expander(
-                    f"🤖 PREVIEW [{model}] {template_label}", expanded=True
-                ):
-                    with st.spinner("Previewing..."):
-                        messages = get_history_messages(model)
-                        messages.append({"role": "user", "content": user_input})
-                        st.json(messages, expanded=False)
-                        llm_client = LLMClients(model=model)
-                        cost = llm_client.calculate_cost(messages)
-                        st.write(
-                            f"💰 ${cost['input_cost']:.4f} [input] ({cost['input_tokens']:,} tokens) "
-                        )
+
+
+def _get_agent_completion(model, llm_client, messages):
+    if model in ["o1-preview", "o1-mini"]:
+        st.caption("Streaming is not supported for o1 models.")
+        completion = llm_client.run(messages)
+        st.markdown(completion)
+        return completion
+    else:
+        completion = st.write_stream(llm_client.stream(messages))
+        return completion
 
 
 def run_agent(model):
     llm_client = LLMClients(model=model)
     messages = get_history_messages(model)
-    if model == "claude-3-5-sonnet" or model == "claude-3-haiku":
-        if (
-            tokencost.count_string_tokens(llm_client.extract_strings(messages), model)
-            > 10000
-        ):
-            st.warning(
-                "Anthropic API is limited to 80k tokens per minute. Using it with large context may result in errors."
-            )
-    if model == "o1-preview" or model == "o1-mini":
-        st.caption("Streaming is not supported for o1 models.")
-        completion = llm_client.run(messages)
-        st.markdown(completion)
-    else:
-        completion = st.write_stream(llm_client.stream(messages))
+
+    _handle_claude_warning(model, llm_client, messages)
+    completion = _get_agent_completion(model, llm_client, messages)
+
     cost = llm_client.calculate_cost(messages, completion)
     log_agent_execution(model, messages, cost)
     return completion, cost
@@ -387,10 +378,10 @@ def get_history_messages(model):
 
 
 def get_retriever_args():
-    file_types = st.session_state.get("file_types", "All files")
-    content_types = st.session_state.get("content_types", "Full content")
+    file_types = st.session_state.get("file_types", ALL_FILES_OPTION)
+    content_types = st.session_state.get("content_types", FULL_CONTENT_OPTION)
     return {
-        "include_all_files": file_types == "All files",
+        "include_all_files": file_types == ALL_FILES_OPTION,
         "include_code_files": file_types == "Code files",
         "include_testing_files": file_types == "Testing files",
         "include_config_files": file_types == "Config files",
@@ -404,12 +395,10 @@ def get_retriever_args():
 
 
 def log_agent_execution(model, messages, cost):
-    # Get or create a conversation ID
     if "conversation_id" not in st.session_state:
         st.session_state.conversation_id = str(uuid.uuid4())
-    # Get the content of the last message
-    prompt = messages[-1]["content"] if messages else ""
-    # Get template information
+    prompt = messages[-1].get("content", "") if messages else ""
+
     selected_templates = [
         st.session_state.get(f"template{i}")
         for i in range(1, 4)
@@ -417,9 +406,8 @@ def log_agent_execution(model, messages, cost):
     ]
     using_template = any(selected_templates)
     using_multiple_templates = len(selected_templates) > 1
-    # Check if multiple models are being used
     using_multiple_models = len(get_selected_models()) > 1
-    # Log the agent execution using the UsageTracker
+
     usage_tracker.log_agent_execution(
         model=model,
         prompt=prompt,
