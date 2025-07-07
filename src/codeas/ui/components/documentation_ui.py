@@ -6,21 +6,17 @@ from codeas.use_cases.documentation import SECTION_CONFIG, generate_docs_section
 
 
 def display():
-    # Create a list of documentation sections from SECTION_CONFIG
     doc_sections = list(SECTION_CONFIG.keys())
 
-    # Format the section names
     formatted_sections = [
         f"{' '.join(section.split('_')).upper()}" for section in doc_sections
     ]
 
-    # Create a dictionary for the data editor
     doc_data = {
-        "Incl.": [True] * len(doc_sections),  # Default all to True
+        "Incl.": [True] * len(doc_sections),
         "Section": formatted_sections,
     }
 
-    # Display the data editor
     edited_data = st.data_editor(
         doc_data,
         column_config={
@@ -31,7 +27,6 @@ def display():
         key="doc_sections_editor",
     )
 
-    # Get the selected sections
     selected_sections = [
         section for section, incl in zip(doc_sections, edited_data["Incl."]) if incl
     ]
@@ -61,16 +56,17 @@ def process_sections(
     use_previous: bool = False,
 ):
     total_cost = 0
-    total_input_tokens = 0
     total_output_tokens = 0
     total_input_cost = 0
     total_input_tokens = 0
+
     full_documentation = ""
 
     with st.expander(
         f"Sections {'[Preview]' if preview else ''}", expanded=not use_previous
     ):
         for section in selected_sections:
+            output = None
             with st.spinner(
                 f"{'Generating' if generate else 'Previewing' if preview else 'Displaying'} {section}..."
             ):
@@ -82,10 +78,16 @@ def process_sections(
                             output = run_generation(section)
                     else:
                         output = run_generation(section)
+
                     if output:
-                        total_cost += output.cost["total_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
-                        total_output_tokens += output.tokens["output_tokens"]
+                        if hasattr(output, 'cost') and isinstance(output.cost, dict) and 'total_cost' in output.cost:
+                            total_cost += output.cost["total_cost"]
+                        if hasattr(output, 'tokens') and isinstance(output.tokens, dict) and 'input_tokens' in output.tokens:
+                            total_input_tokens += output.tokens["input_tokens"]
+                        if hasattr(output, 'tokens') and isinstance(output.tokens, dict) and 'output_tokens' in output.tokens:
+                            total_output_tokens += output.tokens["output_tokens"]
+
+
                 elif preview:
                     if use_previous:
                         try:
@@ -94,17 +96,25 @@ def process_sections(
                             output = run_preview(section)
                     else:
                         output = run_preview(section)
-                    if output:
-                        total_input_cost += output.cost["input_cost"]
-                        total_input_tokens += output.tokens["input_tokens"]
 
-                display_section(section, generate, preview, use_previous)
+                    if output:
+                        st.session_state.outputs[section] = output
+
+                    if output and hasattr(output, 'cost') and isinstance(output.cost, dict) and 'input_cost' in output.cost:
+                         total_input_cost += output.cost["input_cost"]
+                    if output and hasattr(output, 'tokens') and isinstance(output.tokens, dict) and 'input_tokens' in output.tokens:
+                         total_input_tokens += output.tokens["input_tokens"]
+
+                display_section(section, generate=generate, preview=preview)
 
                 if not preview and section in st.session_state.outputs:
-                    cleaned_content = clean_markdown_content(
-                        st.session_state.outputs[section].response["content"]
-                    )
-                    full_documentation += f"\n\n{cleaned_content}"
+                    current_output = st.session_state.outputs[section]
+                    if hasattr(current_output, 'response') and isinstance(current_output.response, dict) and 'content' in current_output.response:
+                        cleaned_content = clean_markdown_content(
+                            current_output.response["content"]
+                        )
+                        full_documentation += f"\n\n{cleaned_content}"
+
 
     if generate:
         st.info(
@@ -121,7 +131,6 @@ def process_sections(
 
     if full_documentation:
         with st.expander("Full Documentation", expanded=True):
-            full_documentation = clean_markdown_content(full_documentation)
             st.markdown(full_documentation)
 
     if generate or (
@@ -160,7 +169,7 @@ def run_generation(section: str):
         return output
     else:
         st.warning(f"No context found for {section.upper()}. Skipping generation.")
-        return None  # Return None if no generation occurred
+        return None
 
 
 def run_preview(section: str):
@@ -179,75 +188,99 @@ def read_output(section: str):
         "Output",
         (),
         {
-            "response": {"content": previous_output["content"]},
-            "cost": previous_output["cost"],
-            "tokens": previous_output["tokens"],
+            "response": {"content": previous_output.get("content", "")},
+            "cost": previous_output.get("cost", {}),
+            "tokens": previous_output.get("tokens", {}),
             "messages": previous_output.get(
                 "messages",
-                [{"content": "Context was not stored with previous output"}],
-            ),  # Use stored messages if available
+                [{"content": "Context was not stored with previous output" if previous_output.get("messages") is None else ""}],
+            ),
         },
-    )
+    )()
     st.session_state.outputs[section] = output
     return output
 
 
 def clean_markdown_content(content: str) -> str:
+    if not isinstance(content, str):
+        return ""
     content = content.strip()
     if content.startswith("```markdown") and content.endswith("```"):
         content = content[11:-3].strip()
     return content
 
 
+def _display_cost_info(output, generate, preview):
+    if preview and hasattr(output, 'cost') and isinstance(output.cost, dict) and 'input_cost' in output.cost and \
+       hasattr(output, 'tokens') and isinstance(output.tokens, dict) and 'input_tokens' in output.tokens:
+        st.info(
+            f"Input cost: ${output.cost['input_cost']:.4f} ({output.tokens['input_tokens']:,} tokens)"
+        )
+    elif generate and hasattr(output, 'cost') and isinstance(output.cost, dict) and 'total_cost' in output.cost and \
+         hasattr(output, 'tokens') and isinstance(output.tokens, dict) and 'input_tokens' in output.tokens and 'output_tokens' in output.tokens:
+         st.info(
+            f"Total cost: ${output.cost['total_cost']:.4f} "
+            f"(input tokens: {output.tokens['input_tokens']:,}, "
+            f"output tokens: {output.tokens['output_tokens']:,})"
+         )
+
+def _display_valid_messages(messages, section):
+    with st.expander("Messages", expanded=False):
+        if all(isinstance(msg, dict) for msg in messages):
+             st.json(messages)
+        else:
+             st.warning("Messages format unexpected.")
+             st.write(messages)
+
+    if isinstance(messages, list) and len(messages) > 0 and \
+       isinstance(messages[0], dict) and 'content' in messages[0] and \
+       not messages[0]["content"].strip():
+         st.warning(f"No context found for {section.upper()}.")
+
+
+def _display_messages(output, section):
+    if hasattr(output, 'messages') and output.messages and isinstance(output.messages, list):
+        _display_valid_messages(output.messages, section)
+    elif hasattr(output, 'messages') and (output.messages is None or (isinstance(output.messages, list) and not output.messages)):
+         st.info("No messages stored for this section.")
+
+def _display_content(output, generate, section):
+     if generate and hasattr(output, 'response') and isinstance(output.response, dict) and 'content' in output.response:
+        content = output.response["content"]
+        content = clean_markdown_content(content)
+        st.code(content, language="markdown")
+     elif generate:
+        st.warning(f"Could not find content for {section.upper()} in output.")
+
+
 def display_section(
     section: str,
     generate: bool = False,
     preview: bool = False,
-    use_previous: bool = False,
 ):
     expander_label = (
         f"{section.replace('_', ' ').upper()}{' [Preview]' if preview else ''}"
     )
+
+    output = st.session_state.outputs.get(section)
+
     with st.expander(expander_label, expanded=False):
-        if preview:
-            if use_previous:
-                try:
-                    output = read_output(section)
-                except FileNotFoundError:
-                    output = run_preview(section)
-            else:
-                output = run_preview(section)
-            if output:
-                st.info(
-                    f"Input cost: ${output.cost['input_cost']:.4f} ({output.tokens['input_tokens']:,} tokens)"
-                )
-        elif generate:
-            output = st.session_state.outputs.get(section)
-            if output:
-                st.info(
-                    f"Total cost: ${output.cost['total_cost']:.4f} "
-                    f"(input tokens: {output.tokens['input_tokens']:,}, "
-                    f"output tokens: {output.tokens['output_tokens']:,})"
-                )
         if output:
-            with st.expander("Messages", expanded=False):
-                st.json(output.messages)
-
-            if not output.messages or not output.messages[0]["content"].strip():
-                st.warning(f"No context found for {section.upper()}.")
-
-        if generate:
-            if output:
-                content = output.response["content"]
-                content = clean_markdown_content(content)
-                st.code(content, language="markdown")
+            _display_cost_info(output, generate, preview)
+            _display_messages(output, section)
+            _display_content(output, generate, section)
 
 
 def add_download_button(selected_sections: list[str]):
     combined_content = "\n\n".join(
         [
             clean_markdown_content(
-                st.session_state.outputs[section].response["content"]
+                 st.session_state.outputs[section].response["content"]
+                 if section in st.session_state.outputs
+                 and hasattr(st.session_state.outputs[section], 'response')
+                 and isinstance(st.session_state.outputs[section].response, dict)
+                 and "content" in st.session_state.outputs[section].response
+                 else ""
             )
             for section in selected_sections
             if section in st.session_state.outputs
@@ -260,4 +293,5 @@ def add_download_button(selected_sections: list[str]):
         file_name="docs.md",
         mime="text/markdown",
         type="primary",
+        disabled=not combined_content.strip()
     )
