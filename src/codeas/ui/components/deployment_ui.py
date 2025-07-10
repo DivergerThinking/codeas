@@ -3,9 +3,8 @@ import streamlit as st
 from codeas.core.state import state
 from codeas.use_cases.deployment import define_deployment, generate_deployment
 
-DEPLOYMENT_STRATEGY_FILE = "deployment_strategy.json"
-TERRAFORM_CODE_FILE = "terraform_code.json"
-
+DEPLOYMENT_STRATEGY_FILENAME = "deployment_strategy.json"
+TERRAFORM_CODE_FILENAME = "terraform_code.json"
 
 def display():
     use_previous_outputs_strategy = st.toggle(
@@ -20,7 +19,7 @@ def display():
         with st.spinner("Defining deployment requirements..."):
             if use_previous_outputs_strategy:
                 try:
-                    previous_output = state.read_output(DEPLOYMENT_STRATEGY_FILE)
+                    previous_output = state.read_output(DEPLOYMENT_STRATEGY_FILENAME)
                     st.session_state.outputs["deployment_strategy"] = type(
                         "Output",
                         (),
@@ -32,9 +31,6 @@ def display():
                         },
                     )
                 except FileNotFoundError:
-                    # st.warning(
-                    #     "No previous output found for deployment strategy. Running generation..."
-                    # )
                     st.session_state.outputs[
                         "deployment_strategy"
                     ] = define_deployment()
@@ -53,7 +49,7 @@ def display():
                                 "deployment_strategy"
                             ].messages,
                         },
-                        DEPLOYMENT_STRATEGY_FILE,
+                        DEPLOYMENT_STRATEGY_FILENAME,
                     )
             else:
                 st.session_state.outputs["deployment_strategy"] = define_deployment()
@@ -70,7 +66,7 @@ def display():
                             "deployment_strategy"
                         ].messages,
                     },
-                    DEPLOYMENT_STRATEGY_FILE,
+                    DEPLOYMENT_STRATEGY_FILENAME,
                 )
 
     if st.button("Preview", key="preview_deployment_strategy"):
@@ -102,14 +98,16 @@ def display_generate_deployment():
         "Use previous outputs", value=True, key="use_previous_outputs_deployment"
     )
 
-    if st.button("Generate Terraform code", type="primary", key="generate_terraform_code"):
+    if st.button(
+        "Generate Terraform code", type="primary", key="generate_terraform_code"
+    ):
         with st.spinner("Generating Terraform code..."):
             deployment_strategy = st.session_state.outputs[
                 "deployment_strategy"
             ].response["content"]
             if use_previous_outputs_deployment:
                 try:
-                    previous_output = state.read_output(TERRAFORM_CODE_FILE)
+                    previous_output = state.read_output(TERRAFORM_CODE_FILENAME)
                     st.session_state.outputs["terraform_code"] = type(
                         "Output",
                         (),
@@ -121,9 +119,6 @@ def display_generate_deployment():
                         },
                     )
                 except FileNotFoundError:
-                    # st.warning(
-                    #     "No previous output found for Terraform code. Running generation..."
-                    # )
                     st.session_state.outputs["terraform_code"] = generate_deployment(
                         deployment_strategy
                     )
@@ -138,7 +133,7 @@ def display_generate_deployment():
                                 "terraform_code"
                             ].messages,
                         },
-                        TERRAFORM_CODE_FILE,
+                        TERRAFORM_CODE_FILENAME,
                     )
             else:
                 st.session_state.outputs["terraform_code"] = generate_deployment(
@@ -155,7 +150,7 @@ def display_generate_deployment():
                             "terraform_code"
                         ].messages,
                     },
-                    TERRAFORM_CODE_FILE,
+                    TERRAFORM_CODE_FILENAME,
                 )
 
     if st.button("Preview", key="preview_terraform_code"):
