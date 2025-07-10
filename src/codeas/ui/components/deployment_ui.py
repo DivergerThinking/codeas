@@ -3,6 +3,7 @@ import streamlit as st
 from codeas.core.state import state
 from codeas.use_cases.deployment import define_deployment, generate_deployment
 
+# Define constants for filenames
 DEPLOYMENT_STRATEGY_FILENAME = "deployment_strategy.json"
 TERRAFORM_CODE_FILENAME = "terraform_code.json"
 
@@ -32,9 +33,13 @@ def display():
                         },
                     )
                 except FileNotFoundError:
+                    # st.warning(
+                    #     "No previous output found for deployment strategy. Running generation..."
+                    # )
                     st.session_state.outputs[
                         "deployment_strategy"
                     ] = define_deployment()
+                    # Write the output to a file
                     state.write_output(
                         {
                             "content": st.session_state.outputs[
@@ -54,6 +59,7 @@ def display():
                     )
             else:
                 st.session_state.outputs["deployment_strategy"] = define_deployment()
+                # Write the output to a file
                 state.write_output(
                     {
                         "content": st.session_state.outputs[
@@ -99,9 +105,7 @@ def display_generate_deployment():
         "Use previous outputs", value=True, key="use_previous_outputs_deployment"
     )
 
-    if st.button(
-        "Generate Terraform code", type="primary", key="generate_terraform_code"
-    ):
+    if st.button("Generate Terraform code", type="primary", key="generate_terraform_code"):
         with st.spinner("Generating Terraform code..."):
             deployment_strategy = st.session_state.outputs[
                 "deployment_strategy"
@@ -120,9 +124,13 @@ def display_generate_deployment():
                         },
                     )
                 except FileNotFoundError:
+                    # st.warning(
+                    #     "No previous output found for Terraform code. Running generation..."
+                    # )
                     st.session_state.outputs["terraform_code"] = generate_deployment(
                         deployment_strategy
                     )
+                    # Write the output to a file
                     state.write_output(
                         {
                             "content": st.session_state.outputs[
@@ -140,6 +148,7 @@ def display_generate_deployment():
                 st.session_state.outputs["terraform_code"] = generate_deployment(
                     deployment_strategy
                 )
+                # Write the output to a file
                 state.write_output(
                     {
                         "content": st.session_state.outputs["terraform_code"].response[
