@@ -3,7 +3,6 @@ import streamlit as st
 from codeas.core.state import state
 from codeas.use_cases.deployment import define_deployment, generate_deployment
 
-
 DEPLOYMENT_STRATEGY_FILENAME = "deployment_strategy.json"
 TERRAFORM_CODE_FILENAME = "terraform_code.json"
 
