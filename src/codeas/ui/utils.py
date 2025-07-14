@@ -68,6 +68,10 @@ def extract_name_version(existing_names):
 
 
 def apply_diffs(file_content, diff_content):
+    MAX_DIFF_SIZE_BYTES = 10 * 1024 * 1024 # Limit size of diff_content to prevent potential DoS
+    if len(diff_content.encode('utf-8')) > MAX_DIFF_SIZE_BYTES:
+        raise ValueError(f"Diff content exceeds maximum allowed size ({MAX_DIFF_SIZE_BYTES} bytes). Processing aborted.")
+
     edits = list(find_diffs(diff_content))
 
     for path, hunk in edits:
@@ -84,7 +88,7 @@ def apply_diffs(file_content, diff_content):
                 "The diff could not be applied uniquely to the file content."
             )
 
-        if not file_content:
+        if file_content is None:
             if os.path.exists("dummy_path"):
                 os.remove("dummy_path")
             raise ValueError("The diff failed to apply to the file content.")
@@ -113,67 +117,62 @@ def find_diffs(content):
                 break
             line_num += 1
 
-    # For now, just take 1!
-    # edits = edits[:1]
-
     return edits
 
 
 def process_fenced_block(lines, start_line_num):
-    for line_num in range(start_line_num, len(lines)):
-        line = lines[line_num]
+    end_line_num = start_line_num
+    for end_line_num in range(start_line_num, len(lines)):
+        line = lines[end_line_num]
         if line.startswith("```"):
             break
-
-    block = lines[start_line_num:line_num]
-    block.append("@@ @@")
-
-    if block[0].startswith("--- ") and block[1].startswith("+++ "):
-        # Extract the file path, considering that it might contain spaces
-        fname = block[1][4:].strip()
-        block = block[2:]
     else:
-        fname = None
+         end_line_num = len(lines)
+
+    block = lines[start_line_num:end_line_num]
+
+    fname = None
+    block_start_index = 0
+    if block and len(block) > 1 and block[0].startswith("--- ") and block[1].startswith("+++ "):
+        fname = block[1][4:].strip()
+        block_start_index = 2
 
     edits = []
-
-    keeper = False
     hunk = []
-    op = " "
-    for line in block:
+    current_fname = fname
+    has_changes_in_hunk = False
+
+    i = block_start_index
+    while i < len(block):
+        line = block[i]
+
+        if line.startswith("--- ") and i + 1 < len(block) and block[i + 1].startswith("+++ "):
+            if hunk and has_changes_in_hunk:
+                 edits.append((current_fname, hunk))
+            hunk = []
+            has_changes_in_hunk = False
+            current_fname = block[i + 1][4:].strip()
+            i += 2
+            continue
+
+        if line.startswith("@@"):
+            if hunk and has_changes_in_hunk:
+                 edits.append((current_fname, hunk))
+            hunk = [line]
+            has_changes_in_hunk = False
+            i += 1
+            continue
+
+        if line.startswith(("-", "+")):
+             has_changes_in_hunk = True
+
         hunk.append(line)
-        if len(line) < 2:
-            continue
+        i += 1
 
-        if line.startswith("+++ ") and hunk[-2].startswith("--- "):
-            if hunk[-3] == "\n":
-                hunk = hunk[:-3]
-            else:
-                hunk = hunk[:-2]
+    if hunk and has_changes_in_hunk:
+         edits.append((current_fname, hunk))
 
-            edits.append((fname, hunk))
-            hunk = []
-            keeper = False
-
-            fname = line[4:].strip()
-            continue
-
-        op = line[0]
-        if op in "-+":
-            keeper = True
-            continue
-        if op != "@":
-            continue
-        if not keeper:
-            hunk = []
-            continue
-
-        hunk = hunk[:-1]
-        edits.append((fname, hunk))
-        hunk = []
-        keeper = False
-
-    return line_num + 1, edits
+    return end_line_num + 1, edits
 
 
 def normalize_hunk(hunk):
@@ -198,22 +197,17 @@ def cleanup_pure_whitespace_lines(lines):
 def hunk_to_before_after(hunk, lines=False):
     before = []
     after = []
-    op = " "
     for line in hunk:
-        if len(line) < 2:
-            op = " "
-            line = line
-        else:
-            op = line[0]
-            line = line[1:]
+        op = line[0] if line else ' '
+        content_part = line[1:] if len(line) > 0 else ''
 
         if op == " ":
-            before.append(line)
-            after.append(line)
+            before.append(content_part)
+            after.append(content_part)
         elif op == "-":
-            before.append(line)
+            before.append(content_part)
         elif op == "+":
-            after.append(line)
+            after.append(content_part)
 
     if lines:
         return before, after
@@ -229,41 +223,36 @@ def do_replace(fname, content, hunk):
 
     before_text, after_text = hunk_to_before_after(hunk)
 
-    # does it want to make a new file?
     if not fname.exists() and not before_text.strip():
         fname.touch()
         content = ""
 
     if content is None:
-        return
+        return None
 
-    # TODO: handle inserting into new file
     if not before_text.strip():
-        # append to existing file, or start a new file
         new_content = content + after_text
         return new_content
 
-    new_content = None
-
     new_content = apply_hunk(content, hunk)
-    if new_content:
+    if new_content is not None:
         return new_content
+
+    return None
 
 
 def apply_hunk(content, hunk):
-    before_text, after_text = hunk_to_before_after(hunk)
+    _, _ = hunk_to_before_after(hunk)
 
     res = directly_apply_hunk(content, hunk)
-    if res:
+    if res is not None:
         return res
 
     hunk = make_new_lines_explicit(content, hunk)
 
-    # just consider space vs not-space
-    ops = "".join([line[0] for line in hunk])
+    ops = "".join([line[0] for line in hunk if len(line) > 0])
     ops = ops.replace("-", "x")
     ops = ops.replace("+", "x")
-    ops = ops.replace("\n", " ")
 
     cur_op = " "
     section = []
@@ -288,16 +277,16 @@ def apply_hunk(content, hunk):
         following_context = sections[i]
 
         res = apply_partial_hunk(content, preceding_context, changes, following_context)
-        if res:
+        if res is not None:
             content = res
         else:
             all_done = False
-            # FAILED!
-            # this_hunk = preceding_context + changes + following_context
             break
 
     if all_done:
         return content
+    else:
+        return None
 
 
 def make_new_lines_explicit(content, hunk):
@@ -309,13 +298,11 @@ def make_new_lines_explicit(content, hunk):
     for line in diff:
         if line[0] == "+":
             continue
-        # if line[0] == "-":
-        #    line = "+" + line[1:]
 
         back_diff.append(line)
 
     new_before = directly_apply_hunk(before, back_diff)
-    if not new_before:
+    if new_before is None:
         return hunk
 
     if len(new_before.strip()) < 10:
@@ -339,7 +326,6 @@ def make_new_lines_explicit(content, hunk):
 def diff_lines(search_text, replace_text):
     dmp = diff_match_patch()
     dmp.Diff_Timeout = 5
-    # dmp.Diff_EditCost = 16
     search_lines, replace_lines, mapping = dmp.diff_linesToChars(
         search_text, replace_text
     )
@@ -350,7 +336,6 @@ def diff_lines(search_text, replace_text):
 
     diff = list(diff_lines)
     dmp.diff_charsToLines(diff, mapping)
-    # dump(diff)
 
     udiff = []
     for d, lines in diff:
@@ -366,48 +351,48 @@ def diff_lines(search_text, replace_text):
     return udiff
 
 
+def _try_partial_context(content, preceding_context, changes, following_context, use_prec, use_foll):
+    if use_prec:
+        this_prec = preceding_context[-use_prec:]
+    else:
+        this_prec = []
+
+    this_foll = following_context[:use_foll]
+
+    res = directly_apply_hunk(content, this_prec + changes + this_foll)
+    return res
+
+
 def apply_partial_hunk(content, preceding_context, changes, following_context):
     len_prec = len(preceding_context)
     len_foll = len(following_context)
 
     use_all = len_prec + len_foll
 
-    # if there is a - in the hunk, we can go all the way to `use=0`
     for drop in range(use_all + 1):
         use = use_all - drop
 
         for use_prec in range(len_prec, -1, -1):
-            if use_prec > use:
-                continue
-
             use_foll = use - use_prec
-            if use_foll > len_foll:
-                continue
 
-            if use_prec:
-                this_prec = preceding_context[-use_prec:]
-            else:
-                this_prec = []
-
-            this_foll = following_context[:use_foll]
-
-            res = directly_apply_hunk(content, this_prec + changes + this_foll)
-            if res:
-                return res
+            if use_prec <= len_prec and use_foll <= len_foll:
+                res = _try_partial_context(content, preceding_context, changes, following_context, use_prec, use_foll)
+                if res is not None:
+                    return res
+    return None
 
 
 def directly_apply_hunk(content, hunk):
     before, after = hunk_to_before_after(hunk)
 
     if not before:
-        return
+        return None
 
     before_lines, _ = hunk_to_before_after(hunk, lines=True)
-    before_lines = "".join([line.strip() for line in before_lines])
+    before_lines_stripped = "".join([line.strip() for line in before_lines])
 
-    # Refuse to do a repeated search and replace on a tiny bit of non-whitespace context
-    if len(before_lines) < 10 and content.count(before) > 1:
-        return
+    if len(before_lines_stripped) < 10 and content.count(before) > 1:
+        return None
 
     try:
         new_content = flexi_just_search_and_replace([before, after, content])
@@ -432,7 +417,7 @@ def search_and_replace(texts):
     # if num > 1:
     #    raise SearchTextNotUnique()
     if num == 0:
-        return
+        return None
 
     new_text = original_text.replace(search_text, replace_text)
 
@@ -449,32 +434,35 @@ def flexible_search_and_replace(texts, strategies):
 
     for strategy, preprocs in strategies:
         for preproc in preprocs:
-            res = try_strategy(texts, strategy, preproc)
-            if res:
-                return res
+            try:
+                res = try_strategy(texts, strategy, preproc)
+                if res is not None:
+                    return res
+            except ValueError:
+                 pass
+
+    return None
 
 
 def try_strategy(texts, strategy, preproc):
     preproc_strip_blank_lines, preproc_relative_indent, preproc_reverse = preproc
     ri = None
+    processed_texts = list(texts)
 
     if preproc_strip_blank_lines:
-        texts = strip_blank_lines(texts)
+        processed_texts = strip_blank_lines(processed_texts)
     if preproc_relative_indent:
-        ri, texts = relative_indent(texts)
+        ri, processed_texts = relative_indent(processed_texts)
     if preproc_reverse:
-        texts = list(map(reverse_lines, texts))
+        processed_texts = list(map(reverse_lines, processed_texts))
 
-    res = strategy(texts)
+    res = strategy(processed_texts)
 
-    if res and preproc_reverse:
+    if res is not None and preproc_reverse:
         res = reverse_lines(res)
 
-    if res and preproc_relative_indent:
-        try:
-            res = ri.make_absolute(res)
-        except ValueError:
-            return
+    if res is not None and preproc_relative_indent:
+        res = ri.make_absolute(res)
 
     return res
 
@@ -586,7 +574,7 @@ class RelativeIndenter:
         """
 
         if self.marker in text:
-            raise ValueError("Text already contains the outdent marker: {self.marker}")
+            raise ValueError(f"Text already contains the outdent marker: {self.marker}")
 
         lines = text.splitlines(keepends=True)
 
@@ -606,8 +594,7 @@ class RelativeIndenter:
                 cur_indent = ""
 
             out_line = cur_indent + "\n" + line[len_indent:]
-            # dump(len_indent, change, out_line)
-            # print(out_line)
+
             output.append(out_line)
             prev_indent = indent
 
@@ -623,27 +610,34 @@ class RelativeIndenter:
         output = []
         prev_indent = ""
         for i in range(0, len(lines), 2):
+            if i + 1 >= len(lines):
+                 raise ValueError(f"Malformed relative-indented text: Odd number of lines found. Cannot process line index {i} without a following content line.")
+
             dent = lines[i].rstrip("\r\n")
             non_indent = lines[i + 1]
 
+            cur_indent = ""
             if dent.startswith(self.marker):
-                len_outdent = len(dent)
-                cur_indent = prev_indent[:-len_outdent]
+                len_outdent_chars = len(dent)
+                if len(prev_indent) >= len_outdent_chars:
+                     cur_indent = prev_indent[:-len_outdent_chars]
+                else:
+                     raise ValueError(f"Malformed relative-indented text: Cannot outdent {len_outdent_chars} chars from previous indent of {len(prev_indent)} chars.")
             else:
                 cur_indent = prev_indent + dent
 
             if not non_indent.rstrip("\r\n"):
-                out_line = non_indent  # don't indent a blank line
+                out_line = non_indent
             else:
                 out_line = cur_indent + non_indent
 
             output.append(out_line)
-            prev_indent = cur_indent
+            if non_indent.rstrip("\r\n"):
+                prev_indent = cur_indent
 
         res = "".join(output)
         if self.marker in res:
-            # dump(res)
-            raise ValueError("Error transforming text back to absolute indents")
+            raise ValueError("Error transforming text back to absolute indents: Marker still present")
 
         return res
 
@@ -660,17 +654,13 @@ all_preprocs = [
     (True, False, False),
     (False, True, False),
     (True, True, False),
-    # (False, False, True),
-    # (True, False, True),
-    # (False, True, True),
-    # (True, True, True),
 ]
 
 if __name__ == "__main__":
     # Test case for apply_diffs function
     original_content = """def hello():
     print("Hello, World!")
-    
+
 def goodbye():
     print("Goodbye, World!")
 """
@@ -683,7 +673,7 @@ def goodbye():
 -    print("Hello, World!")
 +    print("Hello, Universe!")
 +    print("How are you today?")
-     
+
  def goodbye():
 -    print("Goodbye, World!")
 +    print("Farewell, Universe!")
@@ -700,3 +690,46 @@ def goodbye():
         print(result)
     except Exception as e:
         print(f"An error occurred: {e}")
+
+    print("\n--- Test case: Append/New File ---")
+    original_content_empty = ""
+    diff_content_append = """```diff
+--- /dev/null
++++ new_file.py
+@@ -0,0 +1,3 @@
++def new_function():
++    print("This is a new file.")
+"""
+    if os.path.exists("dummy_path"):
+        os.remove("dummy_path")
+
+    try:
+        result_append = apply_diffs(original_content_empty, diff_content_append)
+        print("Original content (empty):")
+        print(repr(original_content_empty))
+        print("\nDiff content (append):")
+        print(diff_content_append)
+        print("\nResult after applying diffs (append):")
+        print(result_append)
+
+    except Exception as e:
+        print(f"An error occurred during append test: {e}")
+    finally:
+        if os.path.exists("dummy_path"):
+            os.remove("dummy_path")
+
+    print("\n--- Test case: Large Diff Content ---")
+    large_diff_content = "```diff\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-line\n+newline\n" * 100000
+
+    try:
+        if os.path.exists("dummy_path"):
+            os.remove("dummy_path")
+        apply_diffs("initial content", large_diff_content)
+        print("Large diff test passed (unexpectedly?).")
+    except ValueError as e:
+        print(f"Large diff test failed as expected: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred during large diff test: {e}")
+    finally:
+        if os.path.exists("dummy_path"):
+            os.remove("dummy_path")
