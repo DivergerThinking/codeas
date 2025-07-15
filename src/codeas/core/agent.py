@@ -155,7 +155,7 @@ class Agent(BaseModel):
     def _sum_calculate_tokens_and_cost(self, batch_messages: dict, batch_response=None):
         results = []
         for key, messages in batch_messages.items():
-            response = batch_response.get(key) if batch_response else None
+            response = batch_response[key] if batch_response else None
             results.append(self._calculate_tokens_and_cost(messages, response))
 
         tokens = {"input_tokens": sum(result[0]["input_tokens"] for result in results)}
@@ -187,10 +187,8 @@ class Agent(BaseModel):
             input_cost = float(calculate_prompt_cost(messages, self.model))
             return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
-            response_content = response.get("content", "") if isinstance(response, dict) else getattr(response, "content", "")
-
             tokens_and_cost = calculate_all_costs_and_tokens(
-                messages, response_content, self.model
+                messages, response["content"], self.model
             )
             return (
                 {
