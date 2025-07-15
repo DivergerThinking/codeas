@@ -2,7 +2,6 @@ from typing import Union
 
 from pydantic import BaseModel
 from tokencost import (
-    calculate_all_costs_and_tokens,
     calculate_cost_by_tokens,
     calculate_prompt_cost,
     count_message_tokens,
@@ -187,23 +186,24 @@ class Agent(BaseModel):
             input_cost = float(calculate_prompt_cost(messages, self.model))
             return ({"input_tokens": input_tokens}, {"input_cost": input_cost})
         else:
-            tokens_and_cost = calculate_all_costs_and_tokens(
-                messages, response["content"], self.model
-            )
+            input_tokens = response.usage.prompt_tokens
+            output_tokens = response.usage.completion_tokens
+            total_tokens = response.usage.total_tokens
+
+            input_cost = float(calculate_cost_by_tokens(input_tokens, self.model, "input"))
+            output_cost = float(calculate_cost_by_tokens(output_tokens, self.model, "output"))
+            total_cost = input_cost + output_cost
+
             return (
                 {
-                    "input_tokens": tokens_and_cost["prompt_tokens"],
-                    "output_tokens": tokens_and_cost["completion_tokens"],
-                    "total_tokens": tokens_and_cost["prompt_tokens"]
-                    + tokens_and_cost["completion_tokens"],
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": total_tokens,
                 },
                 {
-                    "input_cost": float(tokens_and_cost["prompt_cost"]),
-                    "output_cost": float(tokens_and_cost["completion_cost"]),
-                    "total_cost": float(
-                        tokens_and_cost["prompt_cost"]
-                        + tokens_and_cost["completion_cost"]
-                    ),
+                    "input_cost": input_cost,
+                    "output_cost": output_cost,
+                    "total_cost": total_cost,
                 },
             )
 
