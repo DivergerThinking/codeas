@@ -5,6 +5,9 @@ import streamlit as st
 
 from codeas.core.state import state
 
+# Define constant for the "Incl." column name to avoid duplication
+INCL_COLUMN = "Incl."
+
 
 def display():
     display_repo_path()
@@ -25,11 +28,11 @@ def display_files():
 
 
 def get_selected_files_info():
-    num_selected_files = sum(state.files_data["Incl."])
-    total_files = len(state.files_data["Incl."])
+    num_selected_files = sum(state.files_data[INCL_COLUMN])
+    total_files = len(state.files_data[INCL_COLUMN])
     selected_tokens = sum(
         token
-        for incl, token in zip(state.files_data["Incl."], state.files_data["Tokens"])
+        for incl, token in zip(state.files_data[INCL_COLUMN], state.files_data["Tokens"])
         if incl
     )
     return num_selected_files, total_files, selected_tokens
@@ -68,7 +71,7 @@ def display_files_editor():
         state.files_data,
         use_container_width=True,
         column_config={
-            "Incl.": st.column_config.CheckboxColumn(width=5),
+            INCL_COLUMN: st.column_config.CheckboxColumn(width=5),
             "Path": st.column_config.TextColumn(width="large"),
             "Tokens": st.column_config.NumberColumn(width=5),
         },
@@ -83,7 +86,7 @@ def display_metadata_editor(files_metadata):
         files_metadata,
         use_container_width=True,
         column_config={
-            "Incl.": st.column_config.CheckboxColumn(width=5),
+            INCL_COLUMN: st.column_config.CheckboxColumn(width=5),
             "Path": st.column_config.TextColumn(width="large"),
             "Tokens": st.column_config.NumberColumn(width=5),
         },
@@ -95,14 +98,14 @@ def display_metadata_editor(files_metadata):
 def sort_files_data():
     sorted_data = sorted(
         zip(
-            state.files_data["Incl."],
+            state.files_data[INCL_COLUMN],
             state.files_data["Path"],
             state.files_data["Tokens"],
         ),
         key=lambda x: (not x[0], x[1]),
     )
     (
-        state.files_data["Incl."],
+        state.files_data[INCL_COLUMN],
         state.files_data["Path"],
         state.files_data["Tokens"],
     ) = zip(*sorted_data)
@@ -111,14 +114,14 @@ def sort_files_data():
 def sort_files_metadata(files_metadata):
     sorted_data = sorted(
         zip(
-            files_metadata["Incl."],
+            files_metadata[INCL_COLUMN],
             files_metadata["Path"],
             files_metadata["Tokens"],
         ),
         key=lambda x: (not x[0], x[1]),
     )
     (
-        files_metadata["Incl."],
+        files_metadata[INCL_COLUMN],
         files_metadata["Path"],
         files_metadata["Tokens"],
     ) = zip(*sorted_data)
