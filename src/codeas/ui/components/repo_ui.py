@@ -5,6 +5,9 @@ import streamlit as st
 
 from codeas.core.state import state
 
+# Define a constant for the 'Incl.' column name to avoid literal duplication.
+COLUMN_INCL = "Incl."
+
 
 def display():
     display_repo_path()
@@ -12,7 +15,8 @@ def display():
 
 
 def display_repo_path():
-    st.markdown(f"**Repo**: {os.path.abspath(state.repo_path)}")
+    # FIX: Remove os.path.abspath to reduce information leakage (Security concern)
+    st.markdown(f"**Repo**: {state.repo_path}")
 
 
 def display_files():
@@ -25,11 +29,11 @@ def display_files():
 
 
 def get_selected_files_info():
-    num_selected_files = sum(state.files_data["Incl."])
-    total_files = len(state.files_data["Incl."])
+    num_selected_files = sum(state.files_data[COLUMN_INCL])
+    total_files = len(state.files_data[COLUMN_INCL])
     selected_tokens = sum(
         token
-        for incl, token in zip(state.files_data["Incl."], state.files_data["Tokens"])
+        for incl, token in zip(state.files_data[COLUMN_INCL], state.files_data["Tokens"])
         if incl
     )
     return num_selected_files, total_files, selected_tokens
@@ -58,7 +62,17 @@ def display_filters():
 
 def update_filter(filter_type: Literal["include", "exclude"]):
     input_key = f"{filter_type}_input"
-    update_args = {filter_type: st.session_state[input_key]}
+    new_pattern = st.session_state[input_key].strip()
+
+    # FIX: Add security validation for filter patterns (Path Traversal/Denial of Service)
+    # Prevent patterns containing '..' for directory traversal, or starting with '/' or '\' for absolute paths.
+    if ".." in new_pattern or new_pattern.startswith('/') or new_pattern.startswith('\\'):
+        st.error(f"Invalid {filter_type} pattern: Patterns cannot contain '..' or start with '/' or '\\'.")
+        # The st.text_input will automatically revert to the value of page_filter.include/exclude
+        # on the next rerun if state.update_page_filter is not called.
+        return
+
+    update_args = {filter_type: new_pattern}
     state.update_page_filter(**update_args)
 
 
@@ -68,7 +82,7 @@ def display_files_editor():
         state.files_data,
         use_container_width=True,
         column_config={
-            "Incl.": st.column_config.CheckboxColumn(width=5),
+            COLUMN_INCL: st.column_config.CheckboxColumn(width=5),
             "Path": st.column_config.TextColumn(width="large"),
             "Tokens": st.column_config.NumberColumn(width=5),
         },
@@ -83,7 +97,7 @@ def display_metadata_editor(files_metadata):
         files_metadata,
         use_container_width=True,
         column_config={
-            "Incl.": st.column_config.CheckboxColumn(width=5),
+            COLUMN_INCL: st.column_config.CheckboxColumn(width=5),
             "Path": st.column_config.TextColumn(width="large"),
             "Tokens": st.column_config.NumberColumn(width=5),
         },
@@ -95,14 +109,14 @@ def display_metadata_editor(files_metadata):
 def sort_files_data():
     sorted_data = sorted(
         zip(
-            state.files_data["Incl."],
+            state.files_data[COLUMN_INCL],
             state.files_data["Path"],
             state.files_data["Tokens"],
         ),
         key=lambda x: (not x[0], x[1]),
     )
     (
-        state.files_data["Incl."],
+        state.files_data[COLUMN_INCL],
         state.files_data["Path"],
         state.files_data["Tokens"],
     ) = zip(*sorted_data)
@@ -111,14 +125,14 @@ def sort_files_data():
 def sort_files_metadata(files_metadata):
     sorted_data = sorted(
         zip(
-            files_metadata["Incl."],
+            files_metadata[COLUMN_INCL],
             files_metadata["Path"],
             files_metadata["Tokens"],
         ),
         key=lambda x: (not x[0], x[1]),
     )
     (
-        files_metadata["Incl."],
+        files_metadata[COLUMN_INCL],
         files_metadata["Path"],
         files_metadata["Tokens"],
     ) = zip(*sorted_data)
