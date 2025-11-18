@@ -56,3 +56,43 @@
 - Clasifica grupos de archivos candidatos a mejora, propone estrategias de refactor y genera diffs o instrucciones aplicables.
 - Usa recuperación contextual para limitar cambios al ámbito relevante y documenta el razonamiento detrás de cada propuesta.
 - Resultado: mantenimiento preventivo asistido que reduce deuda técnica con menor riesgo.
+
+## 4. Evidencias de novedad y madurez
+
+### Hitos y evolución tecnológica
+- **UI y experiencia**: primera versión en Streamlit con flujos guiados y vistas previas; evolución hacia paneles de coste y control de contexto.
+- **Agentes y prompts especializados**: incorporación de agentes por dominio (documentación, testing, despliegue, refactor) con prompts diferenciados y selección dinámica de metadatos.
+- **Recuperación optimizada**: mejoras en clasificación y descripciones de archivos que reducen coste de tokens y aumentan precisión contextual.
+- **Multimodelo y multilenguaje**: soporte progresivo a OpenAI, Anthropic y Gemini, ampliando la cobertura de lenguajes y stacks de infraestructura.
+
+### Resultados cuantificables
+- Reducción de coste/tiempo al reutilizar metadatos y limitar el contexto enviado al LLM.
+- Mayor trazabilidad: cada sección generada mantiene referencia al contexto utilizado, facilitando auditorías.
+- Incremento de cobertura de QA y seguridad mediante estrategias de prueba y análisis de dependencias automatizados.
+
+## 5. Justificación de impacto y beneficios
+
+### Eficiencia operativa
+- **Automatización supervisada**: disminuye el tiempo de documentación, diseño de pruebas y despliegue manteniendo control humano en cada paso.
+- **Selección contextual**: evita enviar información irrelevante, reduciendo costes de cómputo y riesgos de filtrado de datos.
+
+### Calidad y seguridad
+- **Trazabilidad completa**: las salidas (docs, tests, Terraform, diffs) se vinculan al contexto de origen, facilitando revisiones y cumplimiento.
+- **Prevención de errores**: previsualización y aplicación selectiva minimizan el riesgo de cambios incorrectos en código crítico.
+
+### Innovación aplicada
+- **Metadatos estructurados**: clasificación y descripciones enriquecidas permiten adaptar prompts a dominios específicos (UI, API, DB, seguridad, QA).
+- **Artefactos listos para uso**: genera scripts de infraestructura, casos de prueba y diffs aplicables, acelerando la entrega de valor.
+
+## 6. Pruebas de concepto y casos demostrativos
+
+### Ejemplos sugeridos
+1. **Generación de documentación**: captura de entrada (selección de contexto) y salida de secciones de arquitectura, APIs y seguridad.
+2. **Estrategia de testing**: guías de tipos de prueba, detección de áreas críticas y casos concretos propuestos.
+3. **Plan de despliegue y Terraform**: estrategia para AWS con recursos derivados del código y scripts Terraform generados.
+4. **Refactorización**: lista de archivos candidatos, plan de cambios y diff aplicado en un módulo específico.
+
+### Trazabilidad y anexos
+- Para cada caso, incluir: contexto seleccionado (archivos y descripciones), prompt utilizado, salida generada y resultado aplicado (si procede).
+- Incorporar capturas o logs de la interfaz Streamlit mostrando la previsualización de contexto y el control de costes.
+- Documentar las métricas obtenidas (tokens usados, tiempo de procesamiento, cobertura de prueba generada) como evidencia objetiva de eficiencia.
