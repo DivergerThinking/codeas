@@ -4,13 +4,13 @@ Este documento resume cómo está organizada la herramienta **codeas**, cuáles 
 
 ## Arquitectura global
 
-1. **Entrada y experiencia de usuario**. El ejecutable `codeas` inicia la interfaz de Streamlit definida en `src/codeas/main.py`, la cual carga la página principal `ui/🏠_Home.py`. Desde allí se navega por las páginas de documentación, despliegue, testing, refactorización, chat y uso (todas en `src/codeas/ui/pages`).
+1. **Entrada y experiencia de usuario**. El ejecutable `codeas` inicia la interfaz de Streamlit definida en `src/codeas/main.py`, la cual carga la página principal `ui/🏠_Home.py`. Desde allí se navega por las páginas de documentación, despliegue, testing, refactorización, chat, gestión de prompts y uso (todas en `src/codeas/ui/pages`).
 2. **Estado compartido de la sesión**. `codeas.core.state.State` centraliza la ruta del repositorio activo, la instancia del cliente LLM, los metadatos precargados y los filtros de archivos. El estado también gestiona la tabla de archivos visibles, la lectura/escritura de salidas y la persistencia de filtros en `.codeas/filters.json`.
 3. **Modelo del repositorio**. `codeas.core.repo.Repo` indexa todos los archivos, calcula su costo en tokens, aplica filtros `include/exclude` y expone las rutas incluídas para los distintos casos de uso.
 4. **Metadatos y enriquecimiento**. `codeas.core.metadata.RepoMetadata` coordina agentes especializados para clasificar cada archivo (`FileUsage`), generar descripciones, extraer detalles de código y de pruebas, y persistir los resultados en `.codeas/metadata.json`.
 5. **Recuperación de contexto**. `codeas.core.retriever.ContextRetriever` decide qué archivos (o resúmenes) enviar al LLM según flags por dominio (UI, API, DB, etc.) y según si se requieren descripciones o detalles estructurados.
 6. **Casos de uso**. Cada funcionalidad de alto nivel (documentación, despliegue, testing, refactorización) reside en `src/codeas/use_cases`. Allí se preparan contextos, prompts y modelos específicos, y se registra el costo en `UsageTracker`.
-7. **Agentes y clientes LLM**. `codeas.core.agent.Agent` encapsula la construcción de mensajes, el cálculo de costos/tokens (vía `tokencost`) y la ejecución en `codeas.core.llm.LLMClient` (OpenAI) o `codeas.core.clients.LLMClients` (OpenAI/Anthropic/Gemini). Los prompts se parametrizan en `src/codeas/configs/prompts.py` y las páginas usan `configs/agents_configs.py` y `configs/llm_params.py` según corresponda.
+7. **Agentes y clientes LLM**. `codeas.core.agent.Agent` encapsula la construcción de mensajes, el cálculo de costos/tokens (vía `tokencost`) y la ejecución en `codeas.core.llm.LLMClient` (OpenAI) o `codeas.core.clients.LLMClients` (OpenAI/Anthropic/Gemini). Los prompts de los casos de uso se parametrizan en `src/codeas/configs/prompts.py`, mientras que los prompts de metadatos residen en `src/codeas/core/metadata.py`. Las páginas usan `configs/agents_configs.py` y `configs/llm_params.py` según corresponda.
 8. **Telemetría de uso**. `codeas.core.usage_tracker.UsageTracker` persiste estadísticas de cada llamada (costos, recuentos y logs de chat) en `~/codeas/usage.json`, lo cual alimenta la página “Usage”.
 
 ## Servicios y módulos clave
@@ -18,7 +18,7 @@ Este documento resume cómo está organizada la herramienta **codeas**, cuáles 
 | Servicio / módulo | Responsabilidad principal |
 | --- | --- |
 | `src/codeas/main.py` | Lanza la aplicación Streamlit y enlaza la CLI con la UI. |
-| `src/codeas/ui/🏠_Home.py` + `ui/pages` | Componen la experiencia visual, muestran formularios para cada caso de uso y disparan acciones sobre el `state`. |
+| `src/codeas/ui/🏠_Home.py` + `ui/pages` | Componen la experiencia visual, muestran formularios para cada caso de uso (Docs, Test, Deploy, Refactor, Chat, Prompts) y disparan acciones sobre el `state`. |
 | `src/codeas/core/state.py` | Mantiene el estado compartido (repo activo, metadatos, filtros, datos para tablas) y coordina operaciones auxiliares (lectura/escritura de salidas). |
 | `src/codeas/core/repo.py` | Descubre archivos, calcula tokens y aplica filtros `include/exclude` con coincidencias flexibles. |
 | `src/codeas/core/metadata.py` | Define los esquemas de metadatos, orquesta agentes para poblarlos y expone helpers de lectura/exportación. |

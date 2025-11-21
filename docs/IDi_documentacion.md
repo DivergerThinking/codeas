@@ -12,6 +12,7 @@
 - Vistas previas de contexto recuperado (archivos, descripciones y fragmentos) y estimación de costes antes de ejecutar operaciones, lo que habilita control financiero y técnico.
 - Selección granular de pasos/fragmentos generados y aplicación automática de cambios en el repositorio, manteniendo historial claro de acciones.
 - Gestión de prompts personalizados, chat contextual sobre el código y panel de uso/costes, facilitando iteraciones rápidas y reproducibles.
+- La página de gestión de prompts permite ver y modificar los prompts utilizados por los agentes, adaptando el comportamiento de la herramienta a necesidades específicas sin tocar el código fuente.
 - Exportación e importación de metadatos para acelerar sesiones posteriores o compartir conocimiento entre equipos.
 
 ### Innovación frente al estado del arte
@@ -105,6 +106,7 @@
 3. **Plan de despliegue y Terraform**: estrategia para AWS con recursos derivados del código y scripts Terraform generados. Incluir validación con `terraform plan` y evidencias de conformidad con políticas internas.
 4. **Refactorización**: lista de archivos candidatos, plan de cambios y diff aplicado en un módulo específico. Acompañar con ejecución de tests relacionados para demostrar no regresión.
 5. **Chat contextual**: conversación guiada para resolver dudas de arquitectura o seguridad usando el contexto recuperado, mostrando precisión y rapidez frente a búsquedas manuales.
+6. **Gestión de Prompts**: demostración de cómo la modificación de un prompt de sistema afecta la salida de un caso de uso (ej. cambiar el estilo de documentación), evidenciando la flexibilidad de la plataforma.
 
 ### Trazabilidad y anexos
 - Para cada caso, incluir: contexto seleccionado (archivos y descripciones), prompt utilizado, salida generada y resultado aplicado (si procede). Adjuntar hashes o referencias de commit para asegurar reproducibilidad.
