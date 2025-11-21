@@ -13,6 +13,27 @@ Este documento resume cómo está organizada la herramienta **codeas**, cuáles 
 7. **Agentes y clientes LLM**. `codeas.core.agent.Agent` encapsula la construcción de mensajes, el cálculo de costos/tokens (vía `tokencost`) y la ejecución en `codeas.core.llm.LLMClient` (OpenAI) o `codeas.core.clients.LLMClients` (OpenAI/Anthropic/Gemini). Los prompts se parametrizan en `src/codeas/configs/prompts.py` y las páginas usan `configs/agents_configs.py` y `configs/llm_params.py` según corresponda.
 8. **Telemetría de uso**. `codeas.core.usage_tracker.UsageTracker` persiste estadísticas de cada llamada (costos, recuentos y logs de chat) en `~/codeas/usage.json`, lo cual alimenta la página “Usage”.
 
+## Configuración y dependencias
+
+- **Gestión de claves y modelos**. La carga de proveedores y modelos disponibles se centraliza en `src/codeas/configs/llm_params.py`, que define los parámetros por defecto y las opciones expuestas en la UI. Las claves pueden declararse mediante variables de entorno o en la pantalla principal.
+- **Prompts y plantillas**. Los prompts base se encuentran en `src/codeas/configs/prompts.py`, mientras que las configuraciones específicas por caso de uso se agrupan en `src/codeas/configs/agents_configs.py`. Esto permite ajustar temperatura, número de muestras y plantillas por dominio.
+- **Dependencias de UI**. Los componentes reutilizables (tablas, paneles de filtros, selectores de modelos) residen en `src/codeas/ui/components` y consumen utilidades comunes desde `src/codeas/ui/utils.py` y `src/codeas/ui/ui_state.py`.
+
+## Secuencia típica de ejecución
+
+1. El usuario selecciona un repositorio en la página de inicio y decide si desea precargar metadatos existentes o generarlos desde cero.
+2. `State` instancia `Repo` para descubrir archivos y calcular costes de tokens aproximados; en paralelo, se cargan los filtros previos desde `.codeas`.
+3. Cuando se ejecuta un caso de uso, `ContextRetriever` utiliza los metadatos y los filtros activos para construir el contexto textual. Dependiendo de la página, se añaden opciones como “solo estructura” o “resumen detallado”.
+4. El agente correspondiente construye el prompt combinando contexto, instrucciones y parámetros de modelo. La petición se envía vía `LLMClient/LLMClients`, registrando el coste estimado y real en `UsageTracker`.
+5. Las salidas se muestran en la UI con controles de aceptación o descarte; si el usuario decide aplicarlas, `State` escribe los archivos o diffs seleccionados en el repositorio.
+
+## Consideraciones de seguridad y trazabilidad
+
+- Los filtros `include/exclude` evitan que archivos sensibles entren en el contexto. Esta selección queda reflejada en `.codeas/filters.json` para auditorías posteriores.
+- `UsageTracker` registra modelo, parámetros y tamaño de contexto para cada operación, facilitando revisiones de coste y cumplimiento.
+- Las rutas de salida se almacenan en `.codeas` para que los artefactos generados puedan verificarse sin reconsultar el modelo, útil en entornos con conectividad limitada.
+- La UI exige confirmación antes de aplicar cambios en disco y puede ejecutarse en modo lectura (solo vista de contexto) para revisiones sin riesgo.
+
 ## Servicios y módulos clave
 
 | Servicio / módulo | Responsabilidad principal |
