@@ -4,7 +4,7 @@ VENV := .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
-.PHONY: venv
+.PHONY: venv install run pre-commit style help
 venv: ## Crea el virtualenv del proyecto
 	@if [ ! -d "$(VENV)" ]; then \
 		echo "Creating virtualenv..." && \
