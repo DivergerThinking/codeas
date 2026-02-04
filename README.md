@@ -44,6 +44,16 @@ Codeas provides a user-friendly Streamlit interface to interact with your codeba
 codeas
 ```
 
+#### Development setup
+
+For development, you can use the Makefile which handles virtualenv creation and dependencies:
+
+```bash
+make run
+```
+
+This will create a virtual environment, install dependencies, and start the application.
+
 The Streamlit interface offers several features:
 
 1. **Documentation Generation**: Automatically generate comprehensive documentation for your project.
