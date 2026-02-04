@@ -4,32 +4,34 @@ VENV := .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
-.PHONY: venv install run pre-commit style help
-venv: ## Crea el virtualenv del proyecto
+.PHONY: venv
+venv: ## Create project virtualenv
 	@if [ ! -d "$(VENV)" ]; then \
 		echo "Creating virtualenv..." && \
 		python3 -m venv $(VENV) && \
 		$(PIP) install --upgrade pip; \
 	fi
 
-install: venv ## Instala las dependencias del proyecto
+install: venv ## Install project dependencies
 	@echo "Installing dependencies..." && \
 	$(PIP) install -e .
 
-install-dev: venv ## Instala las dependencias de desarrollo (pre-commit, black, isort, ruff)
+install-dev: venv ## Installs development tools
 	@echo "Installing development tools..." && \
 	$(PIP) install pre-commit black isort ruff
 
-run: install ## Inicia la aplicación Codeas (instala dependencias primero)
+run: install ## Start Codeas application (installs dependencies first)
 	@echo "Starting Codeas..." && \
 	$(PYTHON) -m streamlit run src/codeas/ui/🏠_Home.py
 
-pre-commit: install-dev ## Instala y configura pre-commit hooks
-	@echo "Configuring pre-commit hooks..." && \
+pre-commit: install-dev ## Installs and configures pre-commit hooks
+	@echo "Installing pre-commit..." && \
+	$(PIP) install pre-commit && \
 	$(VENV)/bin/pre-commit install
 
-style: install-dev ## Formatea el código con black, isort y ruff
-	@echo "Running style tools..." && \
+style: venv ## Formats code with black, isort, and ruff
+	@echo "Installing style tools..." && \
+	$(PIP) install black isort ruff && \
 	echo "Run black" && \
 	$(VENV)/bin/black . && \
 	echo "Run isort" && \
@@ -37,7 +39,7 @@ style: install-dev ## Formatea el código con black, isort y ruff
 	echo "Run ruff" && \
 	$(VENV)/bin/ruff check . --fix
 
-help: ## Muestra esta ayuda
-	@echo "Uso: make [target]\n"
-	@echo "Targets disponibles:"
+help: ## Show this help
+	@echo "Usage: make [target]\n"
+	@echo "Available targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
