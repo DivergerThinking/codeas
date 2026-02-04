@@ -6,9 +6,11 @@ PIP := $(VENV)/bin/pip
 
 .PHONY: venv
 venv: ## Crea el virtualenv del proyecto
-	@echo "Creating virtualenv..." && \
-	python3 -m venv $(VENV) && \
-	$(PIP) install --upgrade pip
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "Creating virtualenv..." && \
+		python3 -m venv $(VENV) && \
+		$(PIP) install --upgrade pip; \
+	fi
 
 install: venv ## Instala las dependencias del proyecto
 	@echo "Installing dependencies..." && \
@@ -24,7 +26,9 @@ pre-commit: venv ## Instala y configura pre-commit hooks
 	$(VENV)/bin/pre-commit install
 
 style: venv ## Formatea el código con black, isort y ruff
-	@echo "Run black" && \
+	@echo "Installing style tools..." && \
+	$(PIP) install black isort ruff && \
+	echo "Run black" && \
 	$(VENV)/bin/black . && \
 	echo "Run isort" && \
 	$(VENV)/bin/isort . && \
