@@ -32,11 +32,11 @@ pre-commit: install-dev ## Installs and configures pre-commit hooks
 style: venv ## Formats code with black, isort, and ruff
 	@echo "Installing style tools..." && \
 	$(PIP) install black isort ruff && \
-	echo "Run black" && \
+	@echo "Run black" && \
 	$(VENV)/bin/black . && \
-	echo "Run isort" && \
+	@echo "Run isort" && \
 	$(VENV)/bin/isort . && \
-	echo "Run ruff" && \
+	@echo "Run ruff" && \
 	$(VENV)/bin/ruff check . --fix
 
 help: ## Show this help
