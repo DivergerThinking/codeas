@@ -16,18 +16,20 @@ install: venv ## Instala las dependencias del proyecto
 	@echo "Installing dependencies..." && \
 	$(PIP) install -e .
 
+install-dev: venv ## Instala las dependencias de desarrollo (pre-commit, black, isort, ruff)
+	@echo "Installing development tools..." && \
+	$(PIP) install pre-commit black isort ruff
+
 run: install ## Inicia la aplicación Codeas (instala dependencias primero)
 	@echo "Starting Codeas..." && \
 	$(PYTHON) -m streamlit run src/codeas/ui/🏠_Home.py
 
-pre-commit: venv ## Instala y configura pre-commit hooks
-	@echo "Installing pre-commit..." && \
-	$(PIP) install pre-commit && \
+pre-commit: install-dev ## Instala y configura pre-commit hooks
+	@echo "Configuring pre-commit hooks..." && \
 	$(VENV)/bin/pre-commit install
 
-style: venv ## Formatea el código con black, isort y ruff
-	@echo "Installing style tools..." && \
-	$(PIP) install black isort ruff && \
+style: install-dev ## Formatea el código con black, isort y ruff
+	@echo "Running style tools..." && \
 	echo "Run black" && \
 	$(VENV)/bin/black . && \
 	echo "Run isort" && \
