@@ -8,3 +8,4 @@ debug/
 .ruff_cache
 dist/
 *.DS_Store
+.node/
