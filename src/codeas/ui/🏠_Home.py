@@ -1,6 +1,10 @@
 import os
 
 import streamlit as st
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde .env si existe
+load_dotenv()
 
 
 def home_page():
